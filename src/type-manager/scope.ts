@@ -1,0 +1,100 @@
+import {
+  Signature,
+  SignatureDefinitionBaseType,
+  SignatureDefinitionType
+} from 'meta-utils';
+
+import { CompletionItemKind } from '../types/completion';
+import { EntityFactory, IEntity, IScope, ScopeOptions } from '../types/object';
+import { Entity } from './entity';
+
+export class Scope implements IScope {
+  private _factory: EntityFactory;
+  private _parent: IScope | null;
+  private _globals: IEntity;
+  private _locals: IEntity;
+
+  get types(): Set<SignatureDefinitionType> {
+    return this._locals.types;
+  }
+
+  get values(): Map<string, IEntity> {
+    return this._locals.values;
+  }
+
+  get globals(): IEntity {
+    return this._globals;
+  }
+
+  get outer(): IEntity | null {
+    return this._parent?.locals ?? null;
+  }
+
+  get locals(): IEntity {
+    return this._locals;
+  }
+
+  constructor(options: ScopeOptions) {
+    this._factory = options.factory;
+    this._parent = options.parent ?? null;
+    this._globals =
+      options.globals ??
+      this._factory(CompletionItemKind.Variable).addType(
+        SignatureDefinitionBaseType.Map
+      );
+    this._locals =
+      options.locals ??
+      this._factory(CompletionItemKind.Variable).addType(
+        SignatureDefinitionBaseType.Map
+      );
+  }
+
+  hasProperty(property: string | IEntity): boolean {
+    return this._locals.hasProperty(property);
+  }
+
+  resolveProperty(
+    property: string | IEntity,
+    noInvoke: boolean = false
+  ): IEntity | null {
+    if (this._locals.hasProperty(property)) {
+      return this._locals.resolveProperty(property, noInvoke);
+    } else if (this.outer?.hasProperty(property)) {
+      return this.outer?.resolveProperty(property, noInvoke);
+    } else if (this._globals.hasProperty(property)) {
+      return this._globals.resolveProperty(property, noInvoke);
+    }
+
+    return null;
+  }
+
+  setProperty(name: string | IEntity, container: Entity): boolean {
+    return this._locals.setProperty(name, container);
+  }
+
+  addType(): this {
+    throw new Error('Scope cannot get type assigned!');
+  }
+
+  insertSignature(signature: Signature): this {
+    this._locals.insertSignature(signature);
+    return this;
+  }
+
+  isCallable(): boolean {
+    return false;
+  }
+
+  getCallableReturnTypes(): null {
+    return null;
+  }
+
+  copy(): IScope {
+    return new Scope({
+      factory: this._factory,
+      parent: this._parent.copy(),
+      globals: this._globals.copy(),
+      locals: this._locals.copy()
+    });
+  }
+}

@@ -1,0 +1,56 @@
+import { SignatureDefinition } from 'meta-utils';
+import { hash } from 'object-code';
+
+export class ObjectSetIterator<T> implements Iterator<T> {
+  value: T[];
+  index: number;
+
+  constructor(value: T[]) {
+    const me = this;
+    me.value = value;
+    me.index = 0;
+  }
+
+  next(): IteratorResult<T> {
+    const me = this;
+
+    if (me.index >= me.value.length) {
+      return {
+        value: null,
+        done: true
+      };
+    }
+
+    return {
+      value: me.value[me.index++],
+      done: false
+    };
+  }
+}
+
+export class ObjectSet<T> {
+  private _map: Map<number, T>;
+
+  constructor(values?: readonly T[] | null) {
+    this._map = new Map(values?.map((value) => [hash(value), value]));
+  }
+
+  [Symbol.iterator](): ObjectSetIterator<T> {
+    return new ObjectSetIterator(Array.from(this._map.values()));
+  }
+
+  add(value: T): this {
+    const key = hash(value);
+    this._map.set(key, value);
+    return this;
+  }
+
+  delete(value: T): boolean {
+    const key = hash(value);
+    return this._map.delete(key);
+  }
+
+  clear(): void {
+    this._map.clear();
+  }
+}
