@@ -1,5 +1,5 @@
 import { SignatureDefinitionBaseType } from 'meta-utils';
-import { ASTBase, ASTIdentifier, ASTType } from 'miniscript-core';
+import { ASTBase, ASTIdentifier, ASTLiteral, ASTType } from 'miniscript-core';
 
 import { AggregatorOptions, IAggregator } from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
@@ -89,8 +89,24 @@ export class Aggregator implements IAggregator {
           item.unary?.operator === '@'
         );
       } else if (isResolveChainItemWithIndex(item)) {
-        const index = this.resolveType(item.getter);
-        current = current.resolveProperty(index, item.unary?.operator === '@');
+        if (item.getter.type === ASTType.StringLiteral) {
+          current = current.resolveProperty(
+            (item.getter as ASTLiteral).value.toString(),
+            item.unary?.operator === '@'
+          );
+        } else {
+          const index = this.resolveType(item.getter);
+          current = current.resolveProperty(
+            index,
+            item.unary?.operator === '@'
+          );
+        }
+      } else if (item.type === ASTType.CallExpression && current.isCallable()) {
+        current = this._factory(CompletionItemKind.Property).addType(
+          ...current.getCallableReturnTypes()
+        );
+      } else {
+        return null;
       }
     }
 

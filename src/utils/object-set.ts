@@ -1,7 +1,7 @@
 import { SignatureDefinition } from 'meta-utils';
 import { hash } from 'object-code';
 
-export class ObjectSetIterator<T> implements Iterator<T> {
+export class ObjectSetIterator<T extends object> implements Iterator<T> {
   value: T[];
   index: number;
 
@@ -28,7 +28,7 @@ export class ObjectSetIterator<T> implements Iterator<T> {
   }
 }
 
-export class ObjectSet<T> {
+export class ObjectSet<T extends object> {
   private _map: Map<number, T>;
 
   constructor(values?: readonly T[] | null) {
@@ -48,6 +48,13 @@ export class ObjectSet<T> {
   delete(value: T): boolean {
     const key = hash(value);
     return this._map.delete(key);
+  }
+
+  extend(value: ObjectSet<T>): this {
+    for (const keyPair of value._map) {
+      this._map.set(...keyPair);
+    }
+    return this;
   }
 
   clear(): void {

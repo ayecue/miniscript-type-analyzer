@@ -1,27 +1,40 @@
 import {
-  SignatureDefinitionType,
-  SignatureDefinitionBaseType,
-  SignatureDefinitionFunction,
   Container,
   Signature,
-  SignatureDefinition
+  SignatureDefinition,
+  SignatureDefinitionBaseType,
+  SignatureDefinitionFunction,
+  SignatureDefinitionType
 } from 'meta-utils';
-import { ObjectSet } from '../utils/object-set';
+
 import { CompletionItemKind } from '../types/completion';
+import {
+  EntityFactory,
+  EntityOptions,
+  IEntity,
+  IEntityPropertyHandler
+} from '../types/object';
 import { isSignatureDefinitionFunction } from '../types/signature';
-import { EntityOptions, IEntity, IEntityPropertyHandler } from '../types/object';
+import { ObjectSet } from '../utils/object-set';
 
 const identifierPropertyHandler: IEntityPropertyHandler<string> = {
-  hasProperty(this: IEntity, property: string): boolean {
-    if (!this.types.has(SignatureDefinitionBaseType.Map)) return false;
-    return this.values.has(`i:${property}`);
+  hasProperty(origin: IEntity, property: string): boolean {
+    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
+    return origin.values.has(`i:${property}`);
   },
 
-  resolveProperty(this: IEntity, container: Container, property: string, noInvoke: boolean = false): IEntity | null {
-    const entity = this.types.has(SignatureDefinitionBaseType.Map) ? this.values.get(`i:${property}`) : null;
+  resolveProperty(
+    origin: IEntity,
+    container: Container,
+    property: string,
+    noInvoke: boolean = false
+  ): IEntity | null {
+    const entity = origin.types.has(SignatureDefinitionBaseType.Map)
+      ? origin.values.get(`i:${property}`)
+      : null;
 
     if (entity == null) {
-      const def = container.getDefinition(Array.from(this.types), property);
+      const def = container.getDefinition(Array.from(origin.types), property);
 
       if (def === null) {
         return new Entity({
@@ -60,39 +73,59 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
     }).addType(SignatureDefinitionBaseType.Any);
   },
 
-  setProperty(this: IEntity, property: string, entity: Entity): boolean {
-    if (!this.types.has(SignatureDefinitionBaseType.Map)) return false;
-    this.values.set(`i:${property}`, entity);
+  setProperty(origin: IEntity, property: string, entity: Entity): boolean {
+    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
+    origin.values.set(`i:${property}`, entity);
     return true;
   }
-}
+};
 
 const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
-  hasProperty(this: IEntity, property: Entity): boolean {
-    if (!this.types.has(SignatureDefinitionBaseType.Map)) return false;
+  hasProperty(origin: IEntity, property: Entity): boolean {
+    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
     for (const type of property.types) {
-      if (this.values.has(`t:${type}`)) {
+      if (origin.values.has(`t:${type}`)) {
         return true;
       }
     }
     return false;
   },
 
-  resolveProperty(this: IEntity, container: Container, property: Entity, noInvoke: boolean = false): IEntity | null {
-    if (!this.types.has(SignatureDefinitionBaseType.Map)) {
+  resolveProperty(
+    origin: IEntity,
+    container: Container,
+    property: Entity,
+    noInvoke: boolean = false
+  ): IEntity | null {
+    if (!origin.types.has(SignatureDefinitionBaseType.Map)) {
       return new Entity({
         kind: CompletionItemKind.Variable,
         container
-      }).addType(SignatureDefinitionBaseType.Any)
+      }).addType(SignatureDefinitionBaseType.Any);
     }
 
-    const entity = new Entity
-  }
+    const aggregatedEntity = new Entity({
+      kind: CompletionItemKind.Variable,
+      container
+    });
 
-  setProperty(this: IEntity, property: Entity, entity: Entity): boolean {
+    for (const type of property.types) {
+      const entity = aggregatedEntity.values.get(`t:${type}`);
+      if (!entity) continue;
+      aggregatedEntity.extend(entity);
+    }
 
+    return aggregatedEntity;
+  },
+
+  setProperty(origin: IEntity, property: Entity, entity: Entity): boolean {
+    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
+    for (const type of property.types) {
+      origin.values.set(`t:${type}`, entity);
+    }
+    return true;
   }
-}
+};
 
 export class Entity implements IEntity {
   readonly kind: CompletionItemKind;
@@ -100,6 +133,10 @@ export class Entity implements IEntity {
   private _signatureDefinitions: ObjectSet<SignatureDefinition>;
   private _types: Set<SignatureDefinitionType>;
   private _values: Map<string, IEntity>;
+
+  get signatureDefinitions() {
+    return this._signatureDefinitions;
+  }
 
   get types() {
     return this._types;
@@ -111,7 +148,8 @@ export class Entity implements IEntity {
 
   constructor(options: EntityOptions) {
     this.kind = options.kind;
-    this._signatureDefinitions = options.signatureDefinitions ?? new ObjectSet();
+    this._signatureDefinitions =
+      options.signatureDefinitions ?? new ObjectSet();
     this._types = options.types ?? new Set();
     this._values = options.values ?? new Map();
     this._container = options.container;
@@ -123,7 +161,9 @@ export class Entity implements IEntity {
 
   getCallableReturnTypes(): string[] | null {
     if (!this.isCallable()) return null;
-    const functionDefs = Array.from(this._signatureDefinitions).filter((item) => isSignatureDefinitionFunction(item)) as SignatureDefinitionFunction[];
+    const functionDefs = Array.from(this._signatureDefinitions).filter((item) =>
+      isSignatureDefinitionFunction(item)
+    ) as SignatureDefinitionFunction[];
     if (functionDefs.length === 0) return null;
     return functionDefs
       .flatMap((item) => item.getReturns())
@@ -137,31 +177,41 @@ export class Entity implements IEntity {
   }
 
   addType(...types: SignatureDefinitionType[]): this {
-    this._types = new Set([
-      ...types,
-      ...this._types
-    ]);
+    for (const type of types) this._types.add(type);
     return this;
   }
 
   hasProperty(property: string | IEntity): boolean {
     switch (typeof property) {
       case 'object': {
-        return entityPropertyHandler.hasProperty.call(this, property as IEntity);
+        return entityPropertyHandler.hasProperty(this, property as IEntity);
       }
       default: {
-        return identifierPropertyHandler.hasProperty.call(this, property);
+        return identifierPropertyHandler.hasProperty(this, property);
       }
     }
   }
 
-  resolveProperty(property: string | IEntity, noInvoke: boolean = false): IEntity | null {
+  resolveProperty(
+    property: string | IEntity,
+    noInvoke: boolean = false
+  ): IEntity | null {
     switch (typeof property) {
       case 'object': {
-        return entityPropertyHandler.resolveProperty.call(this, this._container, property as IEntity, noInvoke);
+        return entityPropertyHandler.resolveProperty(
+          this,
+          this._container,
+          property as IEntity,
+          noInvoke
+        );
       }
       default: {
-        return identifierPropertyHandler.resolveProperty.call(this, this._container, property, noInvoke);
+        return identifierPropertyHandler.resolveProperty(
+          this,
+          this._container,
+          property,
+          noInvoke
+        );
       }
     }
   }
@@ -169,12 +219,23 @@ export class Entity implements IEntity {
   setProperty(property: string | IEntity, entity: Entity): boolean {
     switch (typeof property) {
       case 'object': {
-        return entityPropertyHandler.setProperty.call(this, property as IEntity, entity);
+        return entityPropertyHandler.setProperty(
+          this,
+          property as IEntity,
+          entity
+        );
       }
       default: {
-        return identifierPropertyHandler.setProperty.call(this, property, entity);
+        return identifierPropertyHandler.setProperty(this, property, entity);
       }
     }
+  }
+
+  extend(entity: IEntity): this {
+    this._signatureDefinitions.extend(entity.signatureDefinitions);
+    this.addType(...entity.types);
+    for (const keyPair of entity.values) this._values.set(...keyPair);
+    return this;
   }
 
   insertSignature(signature: Signature): this {
@@ -207,6 +268,6 @@ export class Entity implements IEntity {
       values: new Map(
         Array.from(this._values, ([key, value]) => [key, value.copy()])
       )
-    })
+    });
   }
 }

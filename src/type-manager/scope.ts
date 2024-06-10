@@ -1,11 +1,13 @@
 import {
   Signature,
+  SignatureDefinition,
   SignatureDefinitionBaseType,
   SignatureDefinitionType
 } from 'meta-utils';
 
 import { CompletionItemKind } from '../types/completion';
 import { EntityFactory, IEntity, IScope, ScopeOptions } from '../types/object';
+import { ObjectSet } from '../utils/object-set';
 import { Entity } from './entity';
 
 export class Scope implements IScope {
@@ -13,6 +15,10 @@ export class Scope implements IScope {
   private _parent: IScope | null;
   private _globals: IEntity;
   private _locals: IEntity;
+
+  get signatureDefinitions(): ObjectSet<SignatureDefinition> {
+    return this._locals.signatureDefinitions;
+  }
 
   get types(): Set<SignatureDefinitionType> {
     return this._locals.types;
@@ -49,6 +55,10 @@ export class Scope implements IScope {
       );
   }
 
+  addSignatureType(): this {
+    throw new Error('Cannot add signature type to scope!');
+  }
+
   hasProperty(property: string | IEntity): boolean {
     return this._locals.hasProperty(property);
   }
@@ -70,6 +80,10 @@ export class Scope implements IScope {
 
   setProperty(name: string | IEntity, container: Entity): boolean {
     return this._locals.setProperty(name, container);
+  }
+
+  extend(): this {
+    throw new Error('Scope cannot get extended!');
   }
 
   addType(): this {
