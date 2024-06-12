@@ -9,7 +9,7 @@ import {
   ASTUnaryExpression
 } from 'miniscript-core';
 
-import { ResolveChainItem } from '../types';
+import { ResolveChainItem } from '../types/resolve';
 
 function handler(
   current: ASTBase,

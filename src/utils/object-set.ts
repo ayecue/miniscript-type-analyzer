@@ -1,4 +1,3 @@
-import { SignatureDefinition } from 'meta-utils';
 import { hash } from 'object-code';
 
 export class ObjectSetIterator<T extends object> implements Iterator<T> {
@@ -55,6 +54,10 @@ export class ObjectSet<T extends object> {
       this._map.set(...keyPair);
     }
     return this;
+  }
+
+  toJSON(): object {
+    return Array.from(this._map.values());
   }
 
   clear(): void {

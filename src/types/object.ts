@@ -43,8 +43,11 @@ export interface IEntity {
   insertSignature(signature: Signature): this;
   copy(): IEntity;
   extend(entity: IEntity): this;
+  hasDefinition(property: string): boolean;
+  resolveDefinition(property: string): SignatureDefinition | null;
   isCallable(): boolean;
   getCallableReturnTypes(): string[] | null;
+  toJSON(): object;
 }
 
 export interface ScopeOptions {

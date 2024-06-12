@@ -78,6 +78,14 @@ export class Scope implements IScope {
     return null;
   }
 
+  hasDefinition(property: string): boolean {
+    return this._locals.hasDefinition(property);
+  }
+
+  resolveDefinition(property: string): SignatureDefinition | null {
+    return this._locals.resolveDefinition(property);
+  }
+
   setProperty(name: string | IEntity, container: Entity): boolean {
     return this._locals.setProperty(name, container);
   }
@@ -101,6 +109,10 @@ export class Scope implements IScope {
 
   getCallableReturnTypes(): null {
     return null;
+  }
+
+  toJSON() {
+    return this._locals.toJSON();
   }
 
   copy(): IScope {

@@ -9,7 +9,6 @@ import {
 
 import { CompletionItemKind } from '../types/completion';
 import {
-  EntityFactory,
   EntityOptions,
   IEntity,
   IEntityPropertyHandler
@@ -20,7 +19,8 @@ import { ObjectSet } from '../utils/object-set';
 const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   hasProperty(origin: IEntity, property: string): boolean {
     if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
-    return origin.values.has(`i:${property}`);
+    if (origin.values.has(`i:${property}`)) return true;
+    return origin.hasDefinition(property);
   },
 
   resolveProperty(
@@ -34,7 +34,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
       : null;
 
     if (entity == null) {
-      const def = container.getDefinition(Array.from(origin.types), property);
+      const def = origin.resolveDefinition(property);
 
       if (def === null) {
         return new Entity({
@@ -43,39 +43,54 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
         }).addType(SignatureDefinitionBaseType.Any);
       }
 
-      if (def.getType().type === SignatureDefinitionBaseType.Function) {
+      if (
+        def.getType().type === SignatureDefinitionBaseType.Function &&
+        !noInvoke
+      ) {
+        const fnDef = def as SignatureDefinitionFunction;
         return new Entity({
           kind: CompletionItemKind.Variable,
           container
-        }).addSignatureType(def);
+        }).addType(...fnDef.getReturns().map((item) => item.type));
       }
 
       return new Entity({
         kind: CompletionItemKind.Variable,
         container
-      }).addType(def.getType().type);
+      }).addSignatureType(def);
     }
 
-    if (noInvoke) return entity;
+    if (entity.isCallable() && !noInvoke) {
+      const returnTypes = entity.getCallableReturnTypes();
 
-    const returnTypes = entity.getCallableReturnTypes();
+      if (returnTypes) {
+        return new Entity({
+          kind: CompletionItemKind.Variable,
+          container
+        }).addType(...returnTypes);
+      }
 
-    if (returnTypes) {
       return new Entity({
         kind: CompletionItemKind.Variable,
         container
-      }).addType(...returnTypes);
+      }).addType(SignatureDefinitionBaseType.Any);
     }
 
-    return new Entity({
-      kind: CompletionItemKind.Variable,
-      container
-    }).addType(SignatureDefinitionBaseType.Any);
+    return entity;
   },
 
   setProperty(origin: IEntity, property: string, entity: Entity): boolean {
     if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
-    origin.values.set(`i:${property}`, entity);
+
+    const key = `i:${property}`;
+    const existingEntity = origin.values.get(key);
+
+    if (existingEntity) {
+      existingEntity.extend(entity);
+    } else {
+      origin.values.set(key, entity);
+    }
+
     return true;
   }
 };
@@ -94,8 +109,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   resolveProperty(
     origin: IEntity,
     container: Container,
-    property: Entity,
-    noInvoke: boolean = false
+    property: Entity
   ): IEntity | null {
     if (!origin.types.has(SignatureDefinitionBaseType.Map)) {
       return new Entity({
@@ -121,7 +135,14 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   setProperty(origin: IEntity, property: Entity, entity: Entity): boolean {
     if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
     for (const type of property.types) {
-      origin.values.set(`t:${type}`, entity);
+      const key = `t:${type}`;
+      const existingEntity = origin.values.get(key);
+
+      if (existingEntity) {
+        existingEntity.extend(entity);
+      } else {
+        origin.values.set(key, entity);
+      }
     }
     return true;
   }
@@ -216,6 +237,21 @@ export class Entity implements IEntity {
     }
   }
 
+  hasDefinition(property: string): boolean {
+    for (const type of this.types) {
+      const signature = this._container.getTypeSignature(type);
+      if (signature === null) continue;
+      if (signature.getDefinitions()[property]) return true;
+    }
+    return false;
+  }
+
+  resolveDefinition(property: string): SignatureDefinition | null {
+    return (
+      this._container.getDefinition(Array.from(this.types), property) ?? null
+    );
+  }
+
   setProperty(property: string | IEntity, entity: Entity): boolean {
     switch (typeof property) {
       case 'object': {
@@ -255,6 +291,21 @@ export class Entity implements IEntity {
     }
 
     return this;
+  }
+
+  toJSON() {
+    return {
+      kind: this.kind,
+      signatureDefinitions: this._signatureDefinitions.toJSON(),
+      types: Array.from(this._types),
+      values: Array.from(this._values).reduce<Record<string, object>>(
+        (result, [key, value]) => {
+          result[key] = value.toJSON();
+          return result;
+        },
+        {}
+      )
+    };
   }
 
   copy(): IEntity {

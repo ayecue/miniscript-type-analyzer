@@ -1,5 +1,12 @@
 import { SignatureDefinitionBaseType } from 'meta-utils';
-import { ASTBase, ASTIdentifier, ASTLiteral, ASTType } from 'miniscript-core';
+import {
+  ASTBase,
+  ASTIdentifier,
+  ASTIndexExpression,
+  ASTLiteral,
+  ASTMemberExpression,
+  ASTType
+} from 'miniscript-core';
 
 import { AggregatorOptions, IAggregator } from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
@@ -8,7 +15,8 @@ import {
   isResolveChainItemWithIdentifier,
   isResolveChainItemWithIndex,
   isResolveChainItemWithMember,
-  isResolveChainItemWithValue
+  isResolveChainItemWithValue,
+  ResolveChainItem
 } from '../types/resolve';
 import { createResolveChain } from '../utils/get-ast-chain';
 
@@ -19,6 +27,50 @@ export class Aggregator implements IAggregator {
   constructor(options: AggregatorOptions) {
     this._scope = options.scope;
     this._factory = options.factory;
+  }
+
+  private resolveIndexExpression(
+    item: ASTIndexExpression,
+    noInvoke: boolean = false
+  ): IEntity {
+    const entity = this.resolveNamespace(item);
+
+    if (entity === null) {
+      return this._factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      );
+    }
+
+    return entity;
+  }
+
+  private resolveMemberExpression(
+    item: ASTMemberExpression,
+    noInvoke: boolean = false
+  ): IEntity {
+    const entity = this.resolveNamespace(item);
+
+    if (entity === null) {
+      return this._factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      );
+    }
+
+    if (entity.isCallable() && !noInvoke) {
+      const returnTypes = entity.getCallableReturnTypes();
+
+      if (returnTypes) {
+        return this._factory(CompletionItemKind.Variable).addType(
+          ...returnTypes
+        );
+      }
+
+      return this._factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      );
+    }
+
+    return entity;
   }
 
   private resolveIdentifier(
@@ -34,6 +86,16 @@ export class Aggregator implements IAggregator {
     }
 
     switch (item.type) {
+      case ASTType.IndexExpression:
+        return this.resolveIndexExpression(
+          item as ASTIndexExpression,
+          noInvoke
+        );
+      case ASTType.MemberExpression:
+        return this.resolveMemberExpression(
+          item as ASTMemberExpression,
+          noInvoke
+        );
       case ASTType.Identifier:
         return this.resolveIdentifier(item as ASTIdentifier, noInvoke);
       case ASTType.NilLiteral:
@@ -54,10 +116,13 @@ export class Aggregator implements IAggregator {
     }
   }
 
-  resolveNamespace(item: ASTBase): IEntity | null {
-    const astChain = createResolveChain(item);
+  private resolveChain(chain: ResolveChainItem[]): IEntity | null {
+    if (chain.length === 0) {
+      return null;
+    }
+
     let current: IEntity = null;
-    const first = astChain[0];
+    const first = chain[0];
 
     if (isResolveChainItemWithIdentifier(first)) {
       if (first.getter.name === 'globals') {
@@ -78,10 +143,10 @@ export class Aggregator implements IAggregator {
       return null;
     }
 
-    const length = astChain.length;
+    const length = chain.length;
 
     for (let index = 1; index < length; index++) {
-      const item = astChain[index];
+      const item = chain[index];
 
       if (isResolveChainItemWithMember(item)) {
         current = current.resolveProperty(
@@ -113,39 +178,45 @@ export class Aggregator implements IAggregator {
     return current;
   }
 
+  resolveNamespace(item: ASTBase) {
+    const astChain = createResolveChain(item);
+    return this.resolveChain(astChain);
+  }
+
   defineNamespace(item: ASTBase, container: IEntity): boolean {
     const astChain = createResolveChain(item);
-    const lastIndex = astChain.length - 1;
-    let current: IEntity = this._scope;
+    const last = astChain.pop();
 
-    if (lastIndex > 0) {
-      const first = astChain[0];
+    if (astChain.length > 0) {
+      const resolvedContext = this.resolveChain(astChain);
 
-      if (isResolveChainItemWithIdentifier(first)) {
-        current = current.resolveProperty(
-          first.getter.name,
-          first.unary?.operator === '@'
-        );
-      } else {
+      if (resolvedContext === null) {
         return false;
       }
 
-      for (let index = 1; index < lastIndex; index) {
-        const item = astChain[index];
-
-        if (isResolveChainItemWithMember(item)) {
-          current = current.resolveProperty(
-            item.getter.name,
-            item.unary?.operator === '@'
+      if (isResolveChainItemWithMember(last)) {
+        return resolvedContext.setProperty(last.getter.name, container);
+      } else if (isResolveChainItemWithIndex(last)) {
+        if (last.getter.type === ASTType.StringLiteral) {
+          return resolvedContext.setProperty(
+            (last.getter as ASTLiteral).value.toString(),
+            container
           );
-        } else if (isResolveChainItemWithIndex(item)) {
-          const index = this.resolveType(item.getter);
-          current = current.resolveProperty(
-            index,
-            item.unary?.operator === '@'
-          );
+        } else {
+          const index = this.resolveType(last.getter);
+          return resolvedContext.setProperty(index, container);
         }
       }
+
+      return false;
     }
+
+    const context: IEntity = this._scope;
+
+    if (isResolveChainItemWithIdentifier(last)) {
+      return context.setProperty(last.getter.name, container);
+    }
+
+    return false;
   }
 }
