@@ -13,10 +13,10 @@ import { Aggregator } from './aggregator';
 import { Scope } from './scope';
 
 export class Document {
-  private _root: ASTChunk;
-  private _scopeMapping: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
-  private _factory: EntityFactory;
-  private _globals: IEntity;
+  protected _root: ASTChunk;
+  protected _scopeMapping: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
+  protected _factory: EntityFactory;
+  protected _globals: IEntity;
 
   constructor(options: DocumentOptions) {
     this._root = options.root;
@@ -27,7 +27,7 @@ export class Document {
       .addType(SignatureDefinitionBaseType.Map, 'general');
   }
 
-  private analyzeScope(block: ASTBaseBlockWithScope): void {
+  protected analyzeScope(block: ASTBaseBlockWithScope): void {
     const parentContext = block.scope
       ? this._scopeMapping.get(block.scope)
       : null;
@@ -38,13 +38,14 @@ export class Document {
     });
     const aggregator = new Aggregator({
       scope,
+      root: this._root,
       factory: this._factory
     });
 
     for (let index = 0; index < block.assignments.length; index++) {
       const item = block.assignments[index] as ASTAssignmentStatement;
       const value =
-        aggregator.resolveNamespace(item.init) ??
+        aggregator.resolveType(item.init) ??
         this._factory(CompletionItemKind.Value).addType(
           SignatureDefinitionBaseType.Any
         );

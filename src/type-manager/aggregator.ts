@@ -1,6 +1,14 @@
-import { SignatureDefinitionBaseType } from 'meta-utils';
 import {
+  SignatureDefinitionBaseType,
+  SignatureDefinitionFunction,
+  SignatureDefinitionTypeMeta
+} from 'meta-utils';
+import {
+  ASTAssignmentStatement,
   ASTBase,
+  ASTChunk,
+  ASTComment,
+  ASTFunctionStatement,
   ASTIdentifier,
   ASTIndexExpression,
   ASTListConstructorExpression,
@@ -10,7 +18,11 @@ import {
   ASTType
 } from 'miniscript-core';
 
-import { AggregatorOptions, IAggregator } from '../types/aggregator';
+import {
+  AggregatorOptions,
+  DEFAULT_CUSTOM_FUNCTION_DESCRIPTION,
+  IAggregator
+} from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
 import { EntityFactory, IEntity, IScope } from '../types/object';
 import {
@@ -23,27 +35,142 @@ import {
 import { createResolveChain } from '../utils/get-ast-chain';
 
 export class Aggregator implements IAggregator {
-  private _scope: IScope;
-  private _factory: EntityFactory;
+  protected _scope: IScope;
+  protected _factory: EntityFactory;
+  protected _root: ASTChunk;
 
   constructor(options: AggregatorOptions) {
+    this._root = options.root;
     this._scope = options.scope;
     this._factory = options.factory;
   }
 
-  private resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
-    return this._factory(CompletionItemKind.Value).addType(
+  protected getLastASTItemOfLine(line: number): ASTBase {
+    if (this._root.lines.has(line)) {
+      const items = this._root.lines.get(line);
+
+      if (items.length > 0) {
+        return items[items.length - 1];
+      }
+    }
+
+    return null;
+  }
+
+  protected findASTItemInLine(line: number, type: ASTType): ASTBase {
+    if (this._root.lines.has(line)) {
+      const items = this._root.lines.get(line);
+      const result = items.find((item) => item.type === type);
+
+      if (result) {
+        return result;
+      }
+    }
+
+    return null;
+  }
+
+  protected createFunctionDescription(
+    item: ASTBase,
+    defaultText: string = DEFAULT_CUSTOM_FUNCTION_DESCRIPTION
+  ): string | null {
+    const previousItem = this.getLastASTItemOfLine(item.start.line - 1);
+    const currentItem = this.findASTItemInLine(
+      item.start.line,
+      ASTType.Comment
+    );
+
+    if (previousItem instanceof ASTComment) {
+      const lines = [previousItem.value];
+      let index = item.start.line - 2;
+
+      while (index >= 0) {
+        const item = this.getLastASTItemOfLine(index--);
+
+        if (item instanceof ASTComment) {
+          lines.unshift(item.value);
+        } else {
+          break;
+        }
+      }
+
+      return lines.join('\n\n');
+    } else if (currentItem instanceof ASTComment) {
+      return currentItem.value;
+    }
+
+    return defaultText;
+  }
+
+  protected resolveFunctionStatement(item: ASTFunctionStatement) {
+    const signature = SignatureDefinitionFunction.parse({
+      type: SignatureDefinitionBaseType.Function,
+      description: this.createFunctionDescription(item),
+      arguments: item.parameters.map((arg: ASTBase) => {
+        if (arg.type === ASTType.Identifier) {
+          return {
+            label: (arg as ASTIdentifier).name ?? 'unknown',
+            type: SignatureDefinitionBaseType.Any
+          };
+        }
+
+        const assignment = arg as ASTAssignmentStatement;
+
+        return {
+          label: (assignment.variable as ASTIdentifier)?.name ?? 'unknown',
+          types: Array.from(this.resolveType(assignment.init).types)
+        };
+      }),
+      returns: ['any']
+    });
+
+    return this._factory(CompletionItemKind.Function)
+      .addType(SignatureDefinitionBaseType.Function)
+      .addSignatureType(signature);
+  }
+
+  protected resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
+    const mapEntity = this._factory(CompletionItemKind.Value).addType(
       SignatureDefinitionBaseType.Map
     );
+
+    for (const field of item.fields) {
+      const value = this.resolveType(field.value);
+
+      if (field.key.type === ASTType.StringLiteral) {
+        mapEntity.setProperty(
+          (field.key as ASTLiteral).value.toString(),
+          value
+        );
+      } else {
+        const key = this.resolveType(field.key);
+        mapEntity.setProperty(key, value);
+      }
+    }
+
+    return mapEntity;
   }
 
-  private resolveListConstructorExpression(item: ASTListConstructorExpression) {
-    return this._factory(CompletionItemKind.Value).addType(
+  protected resolveListConstructorExpression(
+    item: ASTListConstructorExpression
+  ) {
+    const listEntity = this._factory(CompletionItemKind.Value).addType(
       SignatureDefinitionBaseType.List
     );
+
+    for (const field of item.fields) {
+      const key = this._factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Number
+      );
+      const value = this.resolveType(field.value);
+
+      listEntity.setProperty(key, value);
+    }
+
+    return listEntity;
   }
 
-  private resolveIndexExpression(
+  protected resolveIndexExpression(
     item: ASTIndexExpression,
     noInvoke: boolean = false
   ): IEntity {
@@ -58,7 +185,7 @@ export class Aggregator implements IAggregator {
     return entity;
   }
 
-  private resolveMemberExpression(
+  protected resolveMemberExpression(
     item: ASTMemberExpression,
     noInvoke: boolean = false
   ): IEntity {
@@ -87,7 +214,7 @@ export class Aggregator implements IAggregator {
     return entity;
   }
 
-  private resolveIdentifier(
+  protected resolveIdentifier(
     item: ASTIdentifier,
     noInvoke: boolean = false
   ): IEntity {
@@ -100,6 +227,8 @@ export class Aggregator implements IAggregator {
     }
 
     switch (item.type) {
+      case ASTType.FunctionDeclaration:
+        return this.resolveFunctionStatement(item as ASTFunctionStatement);
       case ASTType.IndexExpression:
         return this.resolveIndexExpression(
           item as ASTIndexExpression,
@@ -138,7 +267,7 @@ export class Aggregator implements IAggregator {
     }
   }
 
-  private resolveChain(chain: ResolveChainItem[]): IEntity | null {
+  protected resolveChain(chain: ResolveChainItem[]): IEntity | null {
     if (chain.length === 0) {
       return null;
     }

@@ -11,10 +11,10 @@ import { ObjectSet } from '../utils/object-set';
 import { Entity } from './entity';
 
 export class Scope implements IScope {
-  private _factory: EntityFactory;
-  private _parent: IScope | null;
-  private _globals: IEntity;
-  private _locals: IEntity;
+  protected _factory: EntityFactory;
+  protected _parent: IScope | null;
+  protected _globals: IEntity;
+  protected _locals: IEntity;
 
   get signatureDefinitions(): ObjectSet<SignatureDefinition> {
     return this._locals.signatureDefinitions;

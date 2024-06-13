@@ -175,10 +175,10 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 
 export class Entity implements IEntity {
   readonly kind: CompletionItemKind;
-  private _container: Container;
-  private _signatureDefinitions: ObjectSet<SignatureDefinition>;
-  private _types: Set<SignatureDefinitionType>;
-  private _values: Map<string, IEntity>;
+  protected _container: Container;
+  protected _signatureDefinitions: ObjectSet<SignatureDefinition>;
+  protected _types: Set<SignatureDefinitionType>;
+  protected _values: Map<string, IEntity>;
 
   get signatureDefinitions() {
     return this._signatureDefinitions;
