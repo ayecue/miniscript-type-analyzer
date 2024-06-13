@@ -8,6 +8,7 @@ import {
   ASTBase,
   ASTChunk,
   ASTComment,
+  ASTEvaluationExpression,
   ASTFunctionStatement,
   ASTIdentifier,
   ASTIndexExpression,
@@ -15,7 +16,8 @@ import {
   ASTLiteral,
   ASTMapConstructorExpression,
   ASTMemberExpression,
-  ASTType
+  ASTType,
+  ASTUnaryExpression
 } from 'miniscript-core';
 
 import {
@@ -137,6 +139,45 @@ export class Aggregator implements IAggregator {
       .addSignatureType(signature);
   }
 
+  protected resolveBinaryExpression(item: ASTEvaluationExpression) {
+    // improve logic
+    const left =
+      this.resolveType(item.left) ??
+      this.factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      );
+    const right =
+      this.resolveType(item.right) ??
+      this.factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      );
+    return left.extend(right);
+  }
+
+  protected resolveLogicalExpression(item: ASTEvaluationExpression) {
+    // improve logic
+    const left =
+      this.resolveType(item.left) ??
+      this.factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      );
+    const right =
+      this.resolveType(item.right) ??
+      this.factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      );
+    return left.extend(right);
+  }
+
+  protected resolveUnaryExpression(item: ASTUnaryExpression) {
+    return (
+      this.resolveType(item.argument) ??
+      this.factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      )
+    );
+  }
+
   protected resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
     const mapEntity = this.factory(CompletionItemKind.Value).addType(
       SignatureDefinitionBaseType.Map
@@ -226,7 +267,12 @@ export class Aggregator implements IAggregator {
     item: ASTIdentifier,
     noInvoke: boolean = false
   ): IEntity {
-    return this._scope.resolveProperty(item.name, noInvoke);
+    return (
+      this._scope.resolveProperty(item.name, noInvoke) ??
+      this.factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Any
+      )
+    );
   }
 
   resolveType(item: ASTBase, noInvoke: boolean = false): IEntity {
@@ -235,6 +281,11 @@ export class Aggregator implements IAggregator {
     }
 
     switch (item.type) {
+      case ASTType.BinaryExpression:
+        return this.resolveBinaryExpression(item as ASTEvaluationExpression);
+      case ASTType.LogicalExpression:
+      case ASTType.IsaExpression:
+        return this.resolveLogicalExpression(item as ASTEvaluationExpression);
       case ASTType.FunctionDeclaration:
         return this.resolveFunctionStatement(item as ASTFunctionStatement);
       case ASTType.IndexExpression:
@@ -257,6 +308,10 @@ export class Aggregator implements IAggregator {
         return this.resolveListConstructorExpression(
           item as ASTListConstructorExpression
         );
+      case ASTType.NegationExpression:
+      case ASTType.BinaryNegatedExpression:
+      case ASTType.UnaryExpression:
+        return this.resolveUnaryExpression(item as ASTUnaryExpression);
       case ASTType.NilLiteral:
         return this.factory(CompletionItemKind.Value).addType('null');
       case ASTType.StringLiteral:
@@ -337,6 +392,9 @@ export class Aggregator implements IAggregator {
         current = this.factory(CompletionItemKind.Property).addType(
           ...current.getCallableReturnTypes()
         );
+      } else if (item.type === ASTType.SliceExpression) {
+        // while slicing it will remain pretty much as the same value
+        current = current.copy();
       } else {
         return null;
       }

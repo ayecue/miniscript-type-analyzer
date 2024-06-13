@@ -51,6 +51,8 @@ function handler(
       });
       return;
     }
+    case ASTType.NegationExpression:
+    case ASTType.BinaryNegatedExpression:
     case ASTType.UnaryExpression: {
       const unaryExpr = current as ASTUnaryExpression;
       handler(unaryExpr.argument, chain, unaryExpr);
@@ -72,6 +74,13 @@ function handler(
       chain.push({
         type: current.type,
         value: current,
+        unary
+      });
+      return;
+    }
+    case ASTType.SliceExpression: {
+      chain.push({
+        type: current.type,
         unary
       });
     }

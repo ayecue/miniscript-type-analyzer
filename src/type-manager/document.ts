@@ -1,6 +1,7 @@
 import { Container, SignatureDefinitionBaseType } from 'meta-utils';
 import {
   ASTAssignmentStatement,
+  ASTBase,
   ASTBaseBlockWithScope,
   ASTChunk
 } from 'miniscript-core';
@@ -8,6 +9,7 @@ import {
 import { CompletionItemKind } from '../types/completion';
 import { DocumentOptions, ScopeContext } from '../types/document';
 import { IEntity } from '../types/object';
+import { createExpressionHash } from '../utils/create-expression-hash';
 import { Aggregator } from './aggregator';
 import { Entity } from './entity';
 import { Scope } from './scope';
@@ -17,11 +19,15 @@ export class Document {
   protected _scopeMapping: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
   protected _container: Container;
   protected _globals: IEntity;
+  protected _cache: Map<number, IEntity>;
+  protected _hashRefMap: Map<number, ASTAssignmentStatement[]>;
 
   constructor(options: DocumentOptions) {
     this._root = options.root;
     this._container = options.container;
     this._scopeMapping = options.scopeMapping ?? new WeakMap();
+    this._cache = new Map();
+    this._hashRefMap = new Map();
     this._globals =
       options.globals ??
       new Entity({
@@ -51,13 +57,23 @@ export class Document {
 
     for (let index = 0; index < block.assignments.length; index++) {
       const item = block.assignments[index] as ASTAssignmentStatement;
+      const hash = createExpressionHash(item.variable);
       const value =
         aggregator.resolveType(item.init) ??
         new Entity({
           kind: CompletionItemKind.Value,
           container: this._container
         }).addType(SignatureDefinitionBaseType.Any);
-      aggregator.defineNamespace(item.variable, value);
+      const cachedEntity = this._cache.get(hash);
+
+      if (cachedEntity) {
+        cachedEntity.extend(value);
+        this._hashRefMap.get(hash).push(item);
+      } else {
+        aggregator.defineNamespace(item.variable, value);
+        this._cache.set(hash, value);
+        this._hashRefMap.set(hash, [item]);
+      }
     }
 
     this._scopeMapping.set(block, {
@@ -87,6 +103,11 @@ export class Document {
 
   getScopeContext(block: ASTBaseBlockWithScope): ScopeContext | null {
     return this._scopeMapping.get(block) ?? null;
+  }
+
+  getAssignmentsForElement(item: ASTBase): ASTAssignmentStatement[] {
+    const hash = createExpressionHash(item);
+    return this._hashRefMap.get(hash) ?? [];
   }
 
   fork(...typeDocs: Document[]): Document {
