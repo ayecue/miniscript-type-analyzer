@@ -18,14 +18,8 @@ import {
 
 import { getHashCode, getStringHashCode } from './hash';
 
-function attachCache(current: any, hash: number): number {
-  if (current.$$hash == null) current.$$hash = hash;
-  return hash;
-}
-
-function retreiveCache(current: any): number | null {
-  return current.$$hash ?? null;
-}
+const attachCache = (c: any, h: number): number => (c.$$hash = h);
+const retreiveCache = (c: any): number | null => c.$$hash ?? null;
 
 function hashHandler(current: ASTBase): number {
   const cachedHash = retreiveCache(current);
