@@ -1,11 +1,12 @@
+import { Container } from 'meta-utils';
 import { ASTBase, ASTChunk } from 'miniscript-core';
 
-import { EntityFactory, IEntity, IScope } from './object';
+import { IEntity, IScope } from './object';
 
 export interface AggregatorOptions {
   root: ASTChunk;
   scope: IScope;
-  factory: EntityFactory;
+  container: Container;
 }
 
 export interface IAggregator {

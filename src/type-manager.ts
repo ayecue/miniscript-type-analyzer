@@ -22,12 +22,7 @@ export class TypeManager {
     console.time(`Analyzing for ${document.fileName} done within`);
 
     const typeDoc = new Document({
-      factory: (kind: CompletionItemKind) => {
-        return new Entity({
-          kind,
-          container: this._container
-        })
-      },
+      container: this._container,
       root: chunk
     });
 

@@ -8,10 +8,6 @@ import {
 import { ObjectSet } from '../utils/object-set';
 import { CompletionItemKind } from './completion';
 
-export interface EntityFactory {
-  (kind: CompletionItemKind): IEntity;
-}
-
 export interface EntityOptions {
   kind: CompletionItemKind;
   container: Container;
@@ -52,9 +48,9 @@ export interface IEntity {
 }
 
 export interface ScopeOptions {
-  factory: EntityFactory;
+  container: Container;
+  globals: IEntity;
   parent?: IScope;
-  globals?: IEntity;
   locals?: IEntity;
 }
 

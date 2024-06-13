@@ -1,4 +1,5 @@
 import {
+  Container,
   Signature,
   SignatureDefinition,
   SignatureDefinitionBaseType,
@@ -6,22 +7,22 @@ import {
 } from 'meta-utils';
 
 import { CompletionItemKind } from '../types/completion';
-import { EntityFactory, IEntity, IScope, ScopeOptions } from '../types/object';
+import { IEntity, IScope, ScopeOptions } from '../types/object';
 import { ObjectSet } from '../utils/object-set';
 import { Entity } from './entity';
 
 export class Scope implements IScope {
-  protected _factory: EntityFactory;
+  protected _container: Container;
   protected _parent: IScope | null;
   protected _globals: IEntity;
   protected _locals: IEntity;
 
   get signatureDefinitions(): ObjectSet<SignatureDefinition> {
-    return this._locals.signatureDefinitions;
+    return null;
   }
 
   get types(): Set<SignatureDefinitionType> {
-    return this._locals.types;
+    return new Set(SignatureDefinitionBaseType.Map);
   }
 
   get values(): Map<string, IEntity> {
@@ -41,18 +42,15 @@ export class Scope implements IScope {
   }
 
   constructor(options: ScopeOptions) {
-    this._factory = options.factory;
+    this._container = options.container;
     this._parent = options.parent ?? null;
-    this._globals =
-      options.globals ??
-      this._factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Map
-      );
+    this._globals = options.globals;
     this._locals =
       options.locals ??
-      this._factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Map
-      );
+      new Entity({
+        kind: CompletionItemKind.Value,
+        container: this._container
+      }).addType(SignatureDefinitionBaseType.Map);
   }
 
   addSignatureType(): this {
@@ -60,17 +58,56 @@ export class Scope implements IScope {
   }
 
   hasProperty(property: string | IEntity): boolean {
-    return this._locals.hasProperty(property);
+    if (typeof property !== 'string') {
+      throw new Error('Invalid property type for scope!');
+    }
+    if (
+      property === 'locals' ||
+      property === 'globals' ||
+      property === 'outer'
+    ) {
+      return true;
+    }
+    return this._locals.values.has(`i:${property}`);
   }
 
   resolveProperty(
     property: string | IEntity,
     noInvoke: boolean = false
   ): IEntity | null {
-    if (this._locals.hasProperty(property)) {
-      return this._locals.resolveProperty(property, noInvoke);
-    } else if (this.outer?.hasProperty(property)) {
-      return this.outer?.resolveProperty(property, noInvoke);
+    if (typeof property !== 'string') {
+      throw new Error('Invalid property type for scope!');
+    }
+
+    if (this.hasProperty(property)) {
+      if (property === 'locals') {
+        return this._locals;
+      } else if (property === 'outer') {
+        return this._parent?.locals ?? this._globals;
+      } else if (property === 'globals') {
+        return this._globals;
+      }
+      const entity = this._locals.values.get(`i:${property}`);
+
+      if (entity.isCallable() && !noInvoke) {
+        const returnTypes = entity.getCallableReturnTypes();
+
+        if (returnTypes) {
+          return new Entity({
+            kind: CompletionItemKind.Variable,
+            container: this._container
+          }).addType(...returnTypes);
+        }
+
+        return new Entity({
+          kind: CompletionItemKind.Variable,
+          container: this._container
+        }).addType(SignatureDefinitionBaseType.Any);
+      }
+
+      return entity;
+    } else if (this._parent?.hasProperty(property)) {
+      return this._parent?.resolveProperty(property, noInvoke);
     } else if (this._globals.hasProperty(property)) {
       return this._globals.resolveProperty(property, noInvoke);
     }
@@ -118,7 +155,14 @@ export class Scope implements IScope {
     const globalIdentifier = this._globals.getAllIdentifier();
 
     return Array.from(
-      new Set([...globalIdentifier, ...outerIdentifier, ...localIdentifier])
+      new Set([
+        'globals',
+        'locals',
+        'outer',
+        ...globalIdentifier,
+        ...outerIdentifier,
+        ...localIdentifier
+      ])
     );
   }
 
@@ -128,7 +172,7 @@ export class Scope implements IScope {
 
   copy(): IScope {
     return new Scope({
-      factory: this._factory,
+      container: this._container,
       parent: this._parent.copy(),
       globals: this._globals.copy(),
       locals: this._locals.copy()

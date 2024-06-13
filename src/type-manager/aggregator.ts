@@ -1,4 +1,5 @@
 import {
+  Container,
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction
 } from 'meta-utils';
@@ -23,7 +24,7 @@ import {
   IAggregator
 } from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
-import { EntityFactory, IEntity, IScope } from '../types/object';
+import { IEntity, IScope } from '../types/object';
 import {
   isResolveChainItemWithIdentifier,
   isResolveChainItemWithIndex,
@@ -32,16 +33,24 @@ import {
   ResolveChainItem
 } from '../types/resolve';
 import { createResolveChain } from '../utils/get-ast-chain';
+import { Entity } from './entity';
 
 export class Aggregator implements IAggregator {
   protected _scope: IScope;
-  protected _factory: EntityFactory;
+  protected _container: Container;
   protected _root: ASTChunk;
 
   constructor(options: AggregatorOptions) {
     this._root = options.root;
     this._scope = options.scope;
-    this._factory = options.factory;
+    this._container = options.container;
+  }
+
+  protected factory(kind: CompletionItemKind): IEntity {
+    return new Entity({
+      kind,
+      container: this._container
+    });
   }
 
   protected getLastASTItemOfLine(line: number): ASTBase {
@@ -123,13 +132,13 @@ export class Aggregator implements IAggregator {
       returns: ['any']
     });
 
-    return this._factory(CompletionItemKind.Function)
+    return this.factory(CompletionItemKind.Function)
       .addType(SignatureDefinitionBaseType.Function)
       .addSignatureType(signature);
   }
 
   protected resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
-    const mapEntity = this._factory(CompletionItemKind.Value).addType(
+    const mapEntity = this.factory(CompletionItemKind.Value).addType(
       SignatureDefinitionBaseType.Map
     );
 
@@ -153,12 +162,12 @@ export class Aggregator implements IAggregator {
   protected resolveListConstructorExpression(
     item: ASTListConstructorExpression
   ) {
-    const listEntity = this._factory(CompletionItemKind.Value).addType(
+    const listEntity = this.factory(CompletionItemKind.Value).addType(
       SignatureDefinitionBaseType.List
     );
 
     for (const field of item.fields) {
-      const key = this._factory(CompletionItemKind.Value).addType(
+      const key = this.factory(CompletionItemKind.Value).addType(
         SignatureDefinitionBaseType.Number
       );
       const value = this.resolveType(field.value);
@@ -176,7 +185,7 @@ export class Aggregator implements IAggregator {
     const entity = this.resolveNamespace(item);
 
     if (entity === null) {
-      return this._factory(CompletionItemKind.Value).addType(
+      return this.factory(CompletionItemKind.Value).addType(
         SignatureDefinitionBaseType.Any
       );
     }
@@ -191,7 +200,7 @@ export class Aggregator implements IAggregator {
     const entity = this.resolveNamespace(item);
 
     if (entity === null) {
-      return this._factory(CompletionItemKind.Value).addType(
+      return this.factory(CompletionItemKind.Value).addType(
         SignatureDefinitionBaseType.Any
       );
     }
@@ -200,12 +209,12 @@ export class Aggregator implements IAggregator {
       const returnTypes = entity.getCallableReturnTypes();
 
       if (returnTypes) {
-        return this._factory(CompletionItemKind.Variable).addType(
+        return this.factory(CompletionItemKind.Variable).addType(
           ...returnTypes
         );
       }
 
-      return this._factory(CompletionItemKind.Value).addType(
+      return this.factory(CompletionItemKind.Value).addType(
         SignatureDefinitionBaseType.Any
       );
     }
@@ -249,18 +258,18 @@ export class Aggregator implements IAggregator {
           item as ASTListConstructorExpression
         );
       case ASTType.NilLiteral:
-        return this._factory(CompletionItemKind.Value).addType('null');
+        return this.factory(CompletionItemKind.Value).addType('null');
       case ASTType.StringLiteral:
-        return this._factory(CompletionItemKind.Value).addType(
+        return this.factory(CompletionItemKind.Value).addType(
           SignatureDefinitionBaseType.String
         );
       case ASTType.NumericLiteral:
       case ASTType.BooleanLiteral:
-        return this._factory(CompletionItemKind.Value).addType(
+        return this.factory(CompletionItemKind.Value).addType(
           SignatureDefinitionBaseType.Number
         );
       default:
-        return this._factory(CompletionItemKind.Value).addType(
+        return this.factory(CompletionItemKind.Value).addType(
           SignatureDefinitionBaseType.Any
         );
     }
@@ -294,7 +303,7 @@ export class Aggregator implements IAggregator {
     }
 
     if (first.unary?.operator === 'new' && current !== null) {
-      const newInstance = this._factory(CompletionItemKind.Value).addType(
+      const newInstance = this.factory(CompletionItemKind.Value).addType(
         SignatureDefinitionBaseType.Map
       );
       newInstance.setProperty('__isa', current);
@@ -325,7 +334,7 @@ export class Aggregator implements IAggregator {
           );
         }
       } else if (item.type === ASTType.CallExpression && current.isCallable()) {
-        current = this._factory(CompletionItemKind.Property).addType(
+        current = this.factory(CompletionItemKind.Property).addType(
           ...current.getCallableReturnTypes()
         );
       } else {
@@ -333,7 +342,7 @@ export class Aggregator implements IAggregator {
       }
 
       if (first.unary?.operator === 'new' && current !== null) {
-        const newInstance = this._factory(CompletionItemKind.Value).addType(
+        const newInstance = this.factory(CompletionItemKind.Value).addType(
           SignatureDefinitionBaseType.Map
         );
         newInstance.setProperty('__isa', current);

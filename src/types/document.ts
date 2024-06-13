@@ -1,11 +1,12 @@
+import { Container } from 'meta-utils';
 import { ASTBaseBlockWithScope, ASTChunk } from 'miniscript-core';
 
 import { IAggregator } from './aggregator';
-import { EntityFactory, IEntity, IScope } from './object';
+import { IEntity, IScope } from './object';
 
 export interface DocumentOptions {
   root: ASTChunk;
-  factory: EntityFactory;
+  container: Container;
   scopeMapping?: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
   globals?: IEntity;
 }
