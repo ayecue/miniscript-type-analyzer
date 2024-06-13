@@ -4,6 +4,7 @@ import {
   ASTBaseBlockWithScope,
   ASTChunk
 } from 'miniscript-core';
+import util from 'util';
 
 import { CompletionItemKind } from '../types/completion';
 import { DocumentOptions, ScopeContext } from '../types/document';
@@ -50,7 +51,7 @@ export class Document {
       aggregator.defineNamespace(item.variable, value);
     }
 
-    console.log(scope.toJSON());
+    console.log(util.inspect(scope.toJSON(), { depth: 5 }));
 
     this._scopeMapping.set(block, {
       scope,

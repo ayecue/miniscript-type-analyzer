@@ -23,11 +23,31 @@ const isEligibleForProperties = (entity: IEntity) => {
   );
 };
 
+const lookupProperty = (entity: IEntity, property: string): IEntity | null => {
+  let current = entity;
+
+  while (isEligibleForProperties(current)) {
+    const item = current.values.get(`i:${property}`);
+
+    if (item != null) {
+      return item;
+    }
+
+    const isa = current.values.get('i:__isa');
+
+    if (isa == null) {
+      break;
+    }
+
+    current = isa;
+  }
+
+  return null;
+};
+
 const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   hasProperty(origin: IEntity, property: string): boolean {
-    if (!isEligibleForProperties(origin)) return false;
-    if (origin.values.has(`i:${property}`)) return true;
-    return origin.hasDefinition(property);
+    return !!lookupProperty(origin, property) || origin.hasDefinition(property);
   },
 
   resolveProperty(
@@ -36,9 +56,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
     property: string,
     noInvoke: boolean = false
   ): IEntity | null {
-    const entity = isEligibleForProperties(origin)
-      ? origin.values.get(`i:${property}`)
-      : null;
+    const entity = lookupProperty(origin, property) ?? null;
 
     if (entity == null) {
       const def = origin.resolveDefinition(property);

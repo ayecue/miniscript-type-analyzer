@@ -165,6 +165,14 @@ export class Aggregator implements IAggregator {
       return null;
     }
 
+    if (first.unary?.operator === 'new' && current !== null) {
+      const newInstance = this._factory(CompletionItemKind.Value).addType(
+        SignatureDefinitionBaseType.Map
+      );
+      newInstance.setProperty('__isa', current);
+      current = newInstance;
+    }
+
     const length = chain.length;
 
     for (let index = 1; index < length && current !== null; index++) {
@@ -194,6 +202,14 @@ export class Aggregator implements IAggregator {
         );
       } else {
         return null;
+      }
+
+      if (first.unary?.operator === 'new' && current !== null) {
+        const newInstance = this._factory(CompletionItemKind.Value).addType(
+          SignatureDefinitionBaseType.Map
+        );
+        newInstance.setProperty('__isa', current);
+        current = newInstance;
       }
     }
 
