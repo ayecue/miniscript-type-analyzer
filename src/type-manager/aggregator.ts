@@ -1,7 +1,6 @@
 import {
   SignatureDefinitionBaseType,
-  SignatureDefinitionFunction,
-  SignatureDefinitionTypeMeta
+  SignatureDefinitionFunction
 } from 'meta-utils';
 import {
   ASTAssignmentStatement,

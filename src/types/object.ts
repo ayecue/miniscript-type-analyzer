@@ -45,6 +45,7 @@ export interface IEntity {
   extend(entity: IEntity): this;
   hasDefinition(property: string): boolean;
   resolveDefinition(property: string): SignatureDefinition | null;
+  getAllIdentifier(): string[];
   isCallable(): boolean;
   getCallableReturnTypes(): string[] | null;
   toJSON(): object;

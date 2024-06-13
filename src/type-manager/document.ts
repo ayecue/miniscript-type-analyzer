@@ -4,7 +4,6 @@ import {
   ASTBaseBlockWithScope,
   ASTChunk
 } from 'miniscript-core';
-import util from 'util';
 
 import { CompletionItemKind } from '../types/completion';
 import { DocumentOptions, ScopeContext } from '../types/document';
@@ -21,10 +20,12 @@ export class Document {
   constructor(options: DocumentOptions) {
     this._root = options.root;
     this._factory = options.factory;
-    this._scopeMapping = new WeakMap();
-    this._globals = options
-      .factory(CompletionItemKind.Variable)
-      .addType(SignatureDefinitionBaseType.Map, 'general');
+    this._scopeMapping = options.scopeMapping ?? new WeakMap();
+    this._globals =
+      options.globals ??
+      options
+        .factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Map, 'general');
   }
 
   protected analyzeScope(block: ASTBaseBlockWithScope): void {
@@ -52,8 +53,6 @@ export class Document {
       aggregator.defineNamespace(item.variable, value);
     }
 
-    console.log(util.inspect(scope.toJSON(), { depth: 5 }));
-
     this._scopeMapping.set(block, {
       scope,
       aggregator
@@ -67,5 +66,34 @@ export class Document {
       const item = queue.pop();
       this.analyzeScope(item);
     }
+  }
+
+  getRootScopeContext(): ScopeContext {
+    return this._scopeMapping.get(this._root);
+  }
+
+  getAllScopeContexts(): ScopeContext[] {
+    return [this._root, ...this._root.scopes].map((item) =>
+      this._scopeMapping.get(item)
+    );
+  }
+
+  getScopeContext(block: ASTBaseBlockWithScope): ScopeContext | null {
+    return this._scopeMapping.get(block) ?? null;
+  }
+
+  fork(...typeDocs: Document[]): Document {
+    const newTypeDoc = new Document({
+      root: this._root,
+      factory: this._factory,
+      scopeMapping: this._scopeMapping,
+      globals: this._globals.copy()
+    });
+
+    for (const typeDoc of typeDocs) {
+      newTypeDoc._globals.extend(typeDoc._globals);
+    }
+
+    return newTypeDoc;
   }
 }

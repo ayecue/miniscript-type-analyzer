@@ -90,8 +90,9 @@ export class Scope implements IScope {
     return this._locals.setProperty(name, container);
   }
 
-  extend(): this {
-    throw new Error('Scope cannot get extended!');
+  extend(entity: IEntity): this {
+    this._locals.extend(entity);
+    return this;
   }
 
   addType(): this {
@@ -109,6 +110,16 @@ export class Scope implements IScope {
 
   getCallableReturnTypes(): null {
     return null;
+  }
+
+  getAllIdentifier(): string[] {
+    const localIdentifier = this._locals.getAllIdentifier();
+    const outerIdentifier = this._parent?.locals.getAllIdentifier() ?? [];
+    const globalIdentifier = this._globals.getAllIdentifier();
+
+    return Array.from(
+      new Set([...globalIdentifier, ...outerIdentifier, ...localIdentifier])
+    );
   }
 
   toJSON() {

@@ -318,6 +318,25 @@ export class Entity implements IEntity {
     return this;
   }
 
+  getAllIdentifier(): string[] {
+    const identifiers: Set<string> = new Set();
+
+    for (const type of this._types) {
+      const keys = Object.keys(
+        this._container.getTypeSignature(type).getDefinitions()
+      );
+      for (const key of keys) identifiers.add(key);
+    }
+
+    for (const item of this._values.keys()) {
+      if (item.startsWith('i:')) {
+        identifiers.add(item.slice(2));
+      }
+    }
+
+    return Array.from(identifiers);
+  }
+
   toJSONInternal(visited = new WeakMap()) {
     if (visited.has(this)) {
       return visited.get(this);
@@ -337,7 +356,8 @@ export class Entity implements IEntity {
     ref.types = Array.from(this._types);
     ref.values = Array.from(this._values).reduce<Record<string, object>>(
       (result, [key, value]) => {
-        result[key] = (value as Entity).toJSONInternal(visited);
+        // for some reason value can be null here but shouldn't
+        result[key] = (value as Entity)?.toJSONInternal(visited);
         return result;
       },
       {}
