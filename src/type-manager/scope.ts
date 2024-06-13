@@ -9,7 +9,7 @@ import {
 import { CompletionItemKind } from '../types/completion';
 import { IEntity, IScope, ScopeOptions } from '../types/object';
 import { ObjectSet } from '../utils/object-set';
-import { Entity } from './entity';
+import { Entity, resolveEntity } from './entity';
 
 export class Scope implements IScope {
   protected _container: Container;
@@ -88,24 +88,7 @@ export class Scope implements IScope {
         return this._globals;
       }
       const entity = this._locals.values.get(`i:${property}`);
-
-      if (entity.isCallable() && !noInvoke) {
-        const returnTypes = entity.getCallableReturnTypes();
-
-        if (returnTypes) {
-          return new Entity({
-            kind: CompletionItemKind.Variable,
-            container: this._container
-          }).addType(...returnTypes);
-        }
-
-        return new Entity({
-          kind: CompletionItemKind.Variable,
-          container: this._container
-        }).addType(SignatureDefinitionBaseType.Any);
-      }
-
-      return entity;
+      return resolveEntity(this._container, entity, noInvoke);
     } else if (this._parent?.hasProperty(property)) {
       return this._parent?.resolveProperty(property, noInvoke);
     } else if (this._globals.hasProperty(property)) {

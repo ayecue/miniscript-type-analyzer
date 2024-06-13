@@ -45,6 +45,30 @@ const lookupProperty = (entity: IEntity, property: string): IEntity | null => {
   return null;
 };
 
+export const resolveEntity = (
+  container: Container,
+  entity: IEntity,
+  noInvoke: boolean = false
+) => {
+  if (entity.isCallable() && !noInvoke) {
+    const returnTypes = entity.getCallableReturnTypes();
+
+    if (returnTypes) {
+      return new Entity({
+        kind: CompletionItemKind.Variable,
+        container
+      }).addType(...returnTypes);
+    }
+
+    return new Entity({
+      kind: CompletionItemKind.Variable,
+      container
+    }).addType(SignatureDefinitionBaseType.Any);
+  }
+
+  return entity;
+};
+
 const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   hasProperty(origin: IEntity, property: string): boolean {
     return !!lookupProperty(origin, property) || origin.hasDefinition(property);
@@ -85,23 +109,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
       }).addSignatureType(def);
     }
 
-    if (entity.isCallable() && !noInvoke) {
-      const returnTypes = entity.getCallableReturnTypes();
-
-      if (returnTypes) {
-        return new Entity({
-          kind: CompletionItemKind.Variable,
-          container
-        }).addType(...returnTypes);
-      }
-
-      return new Entity({
-        kind: CompletionItemKind.Variable,
-        container
-      }).addType(SignatureDefinitionBaseType.Any);
-    }
-
-    return entity;
+    return resolveEntity(container, entity, noInvoke);
   },
 
   setProperty(origin: IEntity, property: string, entity: Entity): boolean {
