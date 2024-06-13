@@ -16,9 +16,16 @@ import {
 import { isSignatureDefinitionFunction } from '../types/signature';
 import { ObjectSet } from '../utils/object-set';
 
+const isEligibleForProperties = (entity: IEntity) => {
+  return (
+    entity.types.has(SignatureDefinitionBaseType.Map) ||
+    entity.types.has(SignatureDefinitionBaseType.Any)
+  );
+};
+
 const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   hasProperty(origin: IEntity, property: string): boolean {
-    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
+    if (!isEligibleForProperties(origin)) return false;
     if (origin.values.has(`i:${property}`)) return true;
     return origin.hasDefinition(property);
   },
@@ -29,7 +36,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
     property: string,
     noInvoke: boolean = false
   ): IEntity | null {
-    const entity = origin.types.has(SignatureDefinitionBaseType.Map)
+    const entity = isEligibleForProperties(origin)
       ? origin.values.get(`i:${property}`)
       : null;
 
@@ -80,7 +87,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   },
 
   setProperty(origin: IEntity, property: string, entity: Entity): boolean {
-    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
+    if (!isEligibleForProperties(origin)) return false;
 
     const key = `i:${property}`;
     const existingEntity = origin.values.get(key);
@@ -97,7 +104,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
 
 const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   hasProperty(origin: IEntity, property: Entity): boolean {
-    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
+    if (!isEligibleForProperties(origin)) return false;
     for (const type of property.types) {
       if (origin.values.has(`t:${type}`)) {
         return true;
@@ -111,7 +118,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
     container: Container,
     property: Entity
   ): IEntity | null {
-    if (!origin.types.has(SignatureDefinitionBaseType.Map)) {
+    if (!isEligibleForProperties(origin)) {
       return new Entity({
         kind: CompletionItemKind.Variable,
         container
@@ -133,7 +140,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   },
 
   setProperty(origin: IEntity, property: Entity, entity: Entity): boolean {
-    if (!origin.types.has(SignatureDefinitionBaseType.Map)) return false;
+    if (!isEligibleForProperties(origin)) return false;
     for (const type of property.types) {
       const key = `t:${type}`;
       const existingEntity = origin.values.get(key);
@@ -293,19 +300,36 @@ export class Entity implements IEntity {
     return this;
   }
 
+  toJSONInternal(visited = new WeakMap()) {
+    if (visited.has(this)) {
+      return visited.get(this);
+    }
+
+    const ref: Partial<{
+      kind: CompletionItemKind;
+      signatureDefinitions: object;
+      types: string[];
+      values: Record<string, object>;
+    }> = {};
+
+    visited.set(this, ref);
+
+    ref.kind = this.kind;
+    ref.signatureDefinitions = this._signatureDefinitions.toJSON();
+    ref.types = Array.from(this._types);
+    ref.values = Array.from(this._values).reduce<Record<string, object>>(
+      (result, [key, value]) => {
+        result[key] = (value as Entity).toJSONInternal(visited);
+        return result;
+      },
+      {}
+    );
+
+    return ref;
+  }
+
   toJSON() {
-    return {
-      kind: this.kind,
-      signatureDefinitions: this._signatureDefinitions.toJSON(),
-      types: Array.from(this._types),
-      values: Array.from(this._values).reduce<Record<string, object>>(
-        (result, [key, value]) => {
-          result[key] = value.toJSON();
-          return result;
-        },
-        {}
-      )
-    };
+    return this.toJSONInternal();
   }
 
   copy(): IEntity {

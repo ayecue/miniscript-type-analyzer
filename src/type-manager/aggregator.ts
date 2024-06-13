@@ -3,7 +3,9 @@ import {
   ASTBase,
   ASTIdentifier,
   ASTIndexExpression,
+  ASTListConstructorExpression,
   ASTLiteral,
+  ASTMapConstructorExpression,
   ASTMemberExpression,
   ASTType
 } from 'miniscript-core';
@@ -27,6 +29,18 @@ export class Aggregator implements IAggregator {
   constructor(options: AggregatorOptions) {
     this._scope = options.scope;
     this._factory = options.factory;
+  }
+
+  private resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
+    return this._factory(CompletionItemKind.Value).addType(
+      SignatureDefinitionBaseType.Map
+    );
+  }
+
+  private resolveListConstructorExpression(item: ASTListConstructorExpression) {
+    return this._factory(CompletionItemKind.Value).addType(
+      SignatureDefinitionBaseType.List
+    );
   }
 
   private resolveIndexExpression(
@@ -98,6 +112,14 @@ export class Aggregator implements IAggregator {
         );
       case ASTType.Identifier:
         return this.resolveIdentifier(item as ASTIdentifier, noInvoke);
+      case ASTType.MapConstructorExpression:
+        return this.resolveMapConstructorExpression(
+          item as ASTMapConstructorExpression
+        );
+      case ASTType.ListConstructorExpression:
+        return this.resolveListConstructorExpression(
+          item as ASTListConstructorExpression
+        );
       case ASTType.NilLiteral:
         return this._factory(CompletionItemKind.Value).addType('null');
       case ASTType.StringLiteral:
@@ -145,7 +167,7 @@ export class Aggregator implements IAggregator {
 
     const length = chain.length;
 
-    for (let index = 1; index < length; index++) {
+    for (let index = 1; index < length && current !== null; index++) {
       const item = chain[index];
 
       if (isResolveChainItemWithMember(item)) {

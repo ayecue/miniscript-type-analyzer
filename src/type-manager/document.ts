@@ -42,11 +42,15 @@ export class Document {
 
     for (let index = 0; index < block.assignments.length; index++) {
       const item = block.assignments[index] as ASTAssignmentStatement;
-      const value = aggregator.resolveNamespace(item.init);
+      const value =
+        aggregator.resolveNamespace(item.init) ??
+        this._factory(CompletionItemKind.Value).addType(
+          SignatureDefinitionBaseType.Any
+        );
       aggregator.defineNamespace(item.variable, value);
     }
 
-    console.log(JSON.stringify(scope.toJSON(), null, 4));
+    console.log(scope.toJSON());
 
     this._scopeMapping.set(block, {
       scope,
