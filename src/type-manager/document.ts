@@ -30,6 +30,10 @@ export class Document implements IDocument {
   protected _globals: IEntity;
   protected _intrinscis: Intrinsics;
 
+  get root() {
+    return this._root;
+  }
+
   get container() {
     return this._container;
   }
@@ -134,7 +138,8 @@ export class Document implements IDocument {
     const aggregator = new Aggregator({
       scope,
       root: block,
-      document: this
+      document: this,
+      parent: parentContext?.aggregator
     });
 
     aggregator.analyze();

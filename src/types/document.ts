@@ -18,6 +18,7 @@ export interface DocumentOptions {
 }
 
 export interface IDocument {
+  root: ASTChunk;
   intrinsics: Intrinsics;
   globals: IEntity;
 
@@ -30,6 +31,11 @@ export interface IDocument {
   ): IEntity | null;
   getLastASTItemOfLine(line: number): ASTBase;
   findASTItemInLine(line: number, type: ASTType): ASTBase;
+  analyze(): void;
+  merge(...typeDocs: IDocument[]): IDocument;
+  getScopeContext(block: ASTBaseBlockWithScope): ScopeContext | null;
+  getAllScopeContexts(): ScopeContext[];
+  getRootScopeContext(): ScopeContext;
 }
 
 export interface ScopeContext {

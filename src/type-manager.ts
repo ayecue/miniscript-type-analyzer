@@ -1,4 +1,4 @@
-import { ASTChunkAdvanced } from 'greybel-core';
+import { ASTChunk } from 'miniscript-core';
 import { Container } from 'meta-utils';
 import { Document } from './type-manager/document';
 import { TextDocumentLike, TypeManagerOptions } from './types/type-manager';
@@ -13,7 +13,7 @@ export class TypeManager {
     this._types = new Map();
   }
 
-  analyze(document: TextDocumentLike, chunk: ASTChunkAdvanced): Document {
+  analyze(document: TextDocumentLike, chunk: ASTChunk): Document {
     console.time(`Analyzing for ${document.fileName} done within`);
 
     const typeDoc = new Document({

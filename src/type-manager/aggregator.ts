@@ -34,19 +34,24 @@ import {
   isResolveChainItemWithValue,
   ResolveChainItem
 } from '../types/resolve';
+import { createExpressionHash } from '../utils/create-expression-hash';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { createResolveChain } from '../utils/get-ast-chain';
 import { Entity } from './entity';
 
 export class Aggregator implements IAggregator {
+  protected _parent: IAggregator | null;
   protected _scope: IScope;
   protected _document: IDocument;
   protected _root: ASTBaseBlockWithScope;
+  protected _definitions: Map<number, ASTAssignmentStatement[]>;
 
   constructor(options: AggregatorOptions) {
     this._root = options.root;
     this._scope = options.scope;
     this._document = options.document;
+    this._parent = options.parent ?? null;
+    this._definitions = new Map();
   }
 
   protected factory(kind: CompletionItemKind): IEntity {
@@ -434,9 +439,15 @@ export class Aggregator implements IAggregator {
     return false;
   }
 
+  findAssignments(item: ASTBase): ASTAssignmentStatement[] {
+    const itemHash = createExpressionHash(item);
+    return this._definitions.get(itemHash) ?? [];
+  }
+
   analyze() {
     for (let index = 0; index < this._root.assignments.length; index++) {
       const item = this._root.assignments[index] as ASTAssignmentStatement;
+      const variableHash = createExpressionHash(item.variable);
       const value =
         this.resolveType(item.init) ??
         new Entity({
@@ -445,6 +456,14 @@ export class Aggregator implements IAggregator {
         }).addType(SignatureDefinitionBaseType.Any);
 
       this.defineNamespace(item.variable, value);
+
+      const definition = this._definitions.get(variableHash);
+
+      if (definition) {
+        definition.push(item);
+      } else {
+        this._definitions.set(variableHash, [item]);
+      }
     }
   }
 }
