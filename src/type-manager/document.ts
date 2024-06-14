@@ -155,25 +155,10 @@ export class Document {
     return this._scopeMapping.get(block) ?? null;
   }
 
-  fork(...typeDocs: Document[]): Document {
+  merge(...typeDocs: Document[]): Document {
     const newTypeDoc = new Document({
       root: this._root,
-      container: this._container,
-      scopeMapping: this._scopeMapping,
-      globals: this._globals.copy(),
-      intrinsics: Object.entries(this._intrinscis).reduce<Intrinsics>(
-        (result, [key, value]) => {
-          result[key] = value.copy();
-          return result;
-        },
-        {
-          map: null,
-          funcRef: null,
-          number: null,
-          string: null,
-          list: null
-        }
-      )
+      container: this._container
     });
 
     for (const typeDoc of typeDocs) {
@@ -184,6 +169,8 @@ export class Document {
       newTypeDoc._intrinscis.string.extend(typeDoc._intrinscis.string);
       newTypeDoc._intrinscis.list.extend(typeDoc._intrinscis.list);
     }
+
+    newTypeDoc.analyze();
 
     return newTypeDoc;
   }

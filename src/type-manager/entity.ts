@@ -320,7 +320,14 @@ export class Entity implements IEntity {
   extend(entity: IEntity): this {
     this._signatureDefinitions.extend(entity.signatureDefinitions);
     this.addType(...entity.types);
-    for (const keyPair of entity.values) this.setProperty(...keyPair);
+    for (const [key, value] of entity.values) {
+      const item = this.values.get(key);
+      if (item == null) {
+        this.values.set(key, value);
+      } else {
+        item.extend(value);
+      }
+    }
     return this;
   }
 
