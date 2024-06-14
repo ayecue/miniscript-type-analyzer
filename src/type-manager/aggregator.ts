@@ -171,12 +171,15 @@ export class Aggregator implements IAggregator {
   }
 
   protected resolveUnaryExpression(item: ASTUnaryExpression) {
-    return (
-      this.resolveType(item.argument) ??
-      this.factory(CompletionItemKind.Value).addType(
+    const entity = this.resolveNamespace(item);
+
+    if (entity === null) {
+      return this.factory(CompletionItemKind.Value).addType(
         SignatureDefinitionBaseType.Any
-      )
-    );
+      );
+    }
+
+    return entity;
   }
 
   protected resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
