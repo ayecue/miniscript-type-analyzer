@@ -51,6 +51,12 @@ export const resolveEntity = (
   noInvoke: boolean = false
 ) => {
   if (entity.isCallable() && !noInvoke) {
+    const returnEntity = entity.getReturnEntity();
+
+    if (returnEntity !== null) {
+      return returnEntity;
+    }
+
     const returnTypes = entity.getCallableReturnTypes();
 
     if (returnTypes) {
@@ -185,6 +191,7 @@ export class Entity implements IEntity {
   readonly kind: CompletionItemKind;
   protected _container: Container;
   protected _signatureDefinitions: ObjectSet<SignatureDefinition>;
+  protected _returnEntity: IEntity | null;
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
 
@@ -207,6 +214,7 @@ export class Entity implements IEntity {
     this._types = options.types ?? new Set();
     this._values = options.values ?? new Map();
     this._container = options.container;
+    this._returnEntity = options.returnEntity ?? null;
   }
 
   isCallable() {
@@ -228,6 +236,15 @@ export class Entity implements IEntity {
     this._signatureDefinitions.add(definition);
     this.addType(definition.getType().type);
     return this;
+  }
+
+  setReturnEntity(entitiy: IEntity): this {
+    this._returnEntity = entitiy;
+    return this;
+  }
+
+  getReturnEntity(): IEntity | null {
+    return this._returnEntity;
   }
 
   addType(...types: SignatureDefinitionType[]): this {
@@ -285,7 +302,7 @@ export class Entity implements IEntity {
     );
   }
 
-  setProperty(property: string | IEntity, entity: Entity): boolean {
+  setProperty(property: string | IEntity, entity: IEntity): boolean {
     switch (typeof property) {
       case 'object': {
         return entityPropertyHandler.setProperty(
@@ -303,7 +320,7 @@ export class Entity implements IEntity {
   extend(entity: IEntity): this {
     this._signatureDefinitions.extend(entity.signatureDefinitions);
     this.addType(...entity.types);
-    for (const keyPair of entity.values) this._values.set(...keyPair);
+    for (const keyPair of entity.values) this.setProperty(...keyPair);
     return this;
   }
 
@@ -388,7 +405,8 @@ export class Entity implements IEntity {
       types: new Set(this._types),
       values: new Map(
         Array.from(this._values, ([key, value]) => [key, value.copy()])
-      )
+      ),
+      returnEntity: this._returnEntity
     });
   }
 }

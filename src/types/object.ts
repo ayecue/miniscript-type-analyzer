@@ -14,6 +14,7 @@ export interface EntityOptions {
   signatureDefinitions?: ObjectSet<SignatureDefinition>;
   types?: Set<SignatureDefinitionType>;
   values?: Map<string, IEntity>;
+  returnEntity?: IEntity;
 }
 
 export interface IEntityPropertyHandler<T> {
@@ -44,6 +45,8 @@ export interface IEntity {
   getAllIdentifier(): string[];
   isCallable(): boolean;
   getCallableReturnTypes(): string[] | null;
+  setReturnEntity(entitiy: IEntity): this;
+  getReturnEntity(): IEntity;
   toJSON(): object;
 }
 

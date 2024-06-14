@@ -6,7 +6,7 @@ import {
 } from 'miniscript-core';
 
 import { CompletionItemKind } from '../types/completion';
-import { DocumentOptions, ScopeContext } from '../types/document';
+import { DocumentOptions, Intrinsics, ScopeContext } from '../types/document';
 import { IEntity } from '../types/object';
 import { Aggregator } from './aggregator';
 import { Entity } from './entity';
@@ -17,21 +17,86 @@ export class Document {
   protected _scopeMapping: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
   protected _container: Container;
   protected _globals: IEntity;
+  protected _intrinscis: Intrinsics;
 
   constructor(options: DocumentOptions) {
     this._root = options.root;
     this._container = options.container;
     this._scopeMapping = options.scopeMapping ?? new WeakMap();
-    this._globals =
-      options.globals ??
-      new Entity({
+    this._intrinscis = options.intrinsics ?? this.createIntrinscis();
+    this._globals = options.globals ?? this.initGlobals();
+  }
+
+  protected createIntrinscis(): Intrinsics {
+    return {
+      map: new Entity({
         kind: CompletionItemKind.Constant,
         container: this._container
       })
         .addType(SignatureDefinitionBaseType.Map)
         .insertSignature(
-          this._container.getTypeSignature(SignatureDefinitionBaseType.General)
-        );
+          this._container.getTypeSignature(SignatureDefinitionBaseType.Map)
+        ),
+      funcRef: new Entity({
+        kind: CompletionItemKind.Constant,
+        container: this._container
+      })
+        .addType(SignatureDefinitionBaseType.Map)
+        .insertSignature(
+          this._container.getTypeSignature(SignatureDefinitionBaseType.Function)
+        ),
+      number: new Entity({
+        kind: CompletionItemKind.Constant,
+        container: this._container
+      })
+        .addType(SignatureDefinitionBaseType.Map)
+        .insertSignature(
+          this._container.getTypeSignature(SignatureDefinitionBaseType.Number)
+        ),
+      string: new Entity({
+        kind: CompletionItemKind.Constant,
+        container: this._container
+      })
+        .addType(SignatureDefinitionBaseType.Map)
+        .insertSignature(
+          this._container.getTypeSignature(SignatureDefinitionBaseType.String)
+        ),
+      list: new Entity({
+        kind: CompletionItemKind.Constant,
+        container: this._container
+      })
+        .addType(SignatureDefinitionBaseType.Map)
+        .insertSignature(
+          this._container.getTypeSignature(SignatureDefinitionBaseType.List)
+        )
+    };
+  }
+
+  protected initGlobals(): IEntity {
+    const globals = new Entity({
+      kind: CompletionItemKind.Constant,
+      container: this._container
+    })
+      .addType(SignatureDefinitionBaseType.Map)
+      .insertSignature(
+        this._container.getTypeSignature(SignatureDefinitionBaseType.General)
+      );
+
+    globals.resolveProperty('map', true).setReturnEntity(this._intrinscis.map);
+    globals
+      .resolveProperty('funcRef', true)
+      .setReturnEntity(this._intrinscis.funcRef);
+    globals
+      .resolveProperty('number', true)
+      .setReturnEntity(this._intrinscis.number);
+    globals
+      .resolveProperty('string', true)
+      .setReturnEntity(this._intrinscis.string);
+    globals
+      .resolveProperty('list', true)
+      .setReturnEntity(this._intrinscis.list);
+
+    return globals;
   }
 
   protected analyzeScope(block: ASTBaseBlockWithScope): void {
@@ -95,11 +160,29 @@ export class Document {
       root: this._root,
       container: this._container,
       scopeMapping: this._scopeMapping,
-      globals: this._globals.copy()
+      globals: this._globals.copy(),
+      intrinsics: Object.entries(this._intrinscis).reduce<Intrinsics>(
+        (result, [key, value]) => {
+          result[key] = value.copy();
+          return result;
+        },
+        {
+          map: null,
+          funcRef: null,
+          number: null,
+          string: null,
+          list: null
+        }
+      )
     });
 
     for (const typeDoc of typeDocs) {
       newTypeDoc._globals.extend(typeDoc._globals);
+      newTypeDoc._intrinscis.map.extend(typeDoc._intrinscis.map);
+      newTypeDoc._intrinscis.funcRef.extend(typeDoc._intrinscis.funcRef);
+      newTypeDoc._intrinscis.number.extend(typeDoc._intrinscis.number);
+      newTypeDoc._intrinscis.string.extend(typeDoc._intrinscis.string);
+      newTypeDoc._intrinscis.list.extend(typeDoc._intrinscis.list);
     }
 
     return newTypeDoc;

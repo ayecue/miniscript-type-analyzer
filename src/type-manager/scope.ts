@@ -119,6 +119,14 @@ export class Scope implements IScope {
     throw new Error('Scope cannot get type assigned!');
   }
 
+  setReturnEntity(): this {
+    throw new Error('Scope cannot set return entity!');
+  }
+
+  getReturnEntity(): IEntity | null {
+    throw new Error('Scope cannot get return entity!');
+  }
+
   insertSignature(signature: Signature): this {
     this._locals.insertSignature(signature);
     return this;
