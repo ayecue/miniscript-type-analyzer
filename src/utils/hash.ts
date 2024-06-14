@@ -13,7 +13,8 @@ export function getHashCode(value: number, offset: number = 0): number {
 export const getStringHashCode = (function () {
   const cache = new Map<string, number>();
   const generateHash = (s: string) => {
-    for (var i = 0, h = 0; i < s.length; i++)
+    let i, h;
+    for (i = 0, h = 0; i < s.length; i++)
       h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
     return h;
   };

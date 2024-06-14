@@ -1,5 +1,4 @@
 import {
-  Container,
   Signature,
   SignatureDefinition,
   SignatureDefinitionBaseType,
@@ -7,15 +6,16 @@ import {
 } from 'meta-utils';
 
 import { CompletionItemKind } from '../types/completion';
+import { IDocument } from '../types/document';
 import { IEntity, IScope, ScopeOptions } from '../types/object';
 import { ObjectSet } from '../utils/object-set';
 import { Entity, resolveEntity } from './entity';
 
 export class Scope implements IScope {
-  protected _container: Container;
   protected _parent: IScope | null;
   protected _globals: IEntity;
   protected _locals: IEntity;
+  protected _document: IDocument;
 
   get signatureDefinitions(): ObjectSet<SignatureDefinition> {
     return null;
@@ -42,14 +42,14 @@ export class Scope implements IScope {
   }
 
   constructor(options: ScopeOptions) {
-    this._container = options.container;
+    this._document = options.document;
     this._parent = options.parent ?? null;
     this._globals = options.globals;
     this._locals =
       options.locals ??
       new Entity({
         kind: CompletionItemKind.Value,
-        container: this._container
+        document: this._document
       }).addType(SignatureDefinitionBaseType.Map);
   }
 
@@ -88,7 +88,7 @@ export class Scope implements IScope {
         return this._globals;
       }
       const entity = this._locals.values.get(`i:${property}`);
-      return resolveEntity(this._container, entity, noInvoke);
+      return resolveEntity(this._document, entity, noInvoke);
     } else if (this._parent?.hasProperty(property)) {
       return this._parent?.resolveProperty(property, noInvoke);
     } else if (this._globals.hasProperty(property)) {
@@ -96,14 +96,6 @@ export class Scope implements IScope {
     }
 
     return null;
-  }
-
-  hasDefinition(property: string): boolean {
-    return this._locals.hasDefinition(property);
-  }
-
-  resolveDefinition(property: string): SignatureDefinition | null {
-    return this._locals.resolveDefinition(property);
   }
 
   setProperty(name: string | IEntity, container: Entity): boolean {
@@ -161,12 +153,12 @@ export class Scope implements IScope {
     return this._locals.toJSON();
   }
 
-  copy(): IScope {
+  copy(document?: IDocument): IScope {
     return new Scope({
-      container: this._container,
-      parent: this._parent.copy(),
-      globals: this._globals.copy(),
-      locals: this._locals.copy()
+      document: document ?? this._document,
+      parent: this._parent.copy(document),
+      globals: this._globals.copy(document),
+      locals: this._locals.copy(document)
     });
   }
 }

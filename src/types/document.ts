@@ -1,4 +1,4 @@
-import { Container } from 'meta-utils';
+import { Container, SignatureDefinitionType } from 'meta-utils';
 import { ASTBaseBlockWithScope, ASTChunk } from 'miniscript-core';
 
 import { IAggregator } from './aggregator';
@@ -10,6 +10,19 @@ export interface DocumentOptions {
   scopeMapping?: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
   intrinsics?: Intrinsics;
   globals?: IEntity;
+}
+
+export interface IDocument {
+  intrinsics: Intrinsics;
+  globals: IEntity;
+
+  getPropertiesOfType(type: SignatureDefinitionType): string[];
+  hasDefinition(type: SignatureDefinitionType[], property: string): boolean;
+  resolveDefinition(
+    types: SignatureDefinitionType[],
+    property: string,
+    noInvoke: boolean
+  ): IEntity | null;
 }
 
 export interface ScopeContext {

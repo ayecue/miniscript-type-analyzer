@@ -1,5 +1,4 @@
 import {
-  Container,
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction
 } from 'meta-utils';
@@ -26,6 +25,7 @@ import {
   IAggregator
 } from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
+import { IDocument } from '../types/document';
 import { IEntity, IScope } from '../types/object';
 import {
   isResolveChainItemWithIdentifier,
@@ -40,19 +40,19 @@ import { Entity } from './entity';
 
 export class Aggregator implements IAggregator {
   protected _scope: IScope;
-  protected _container: Container;
+  protected _document: IDocument;
   protected _root: ASTChunk;
 
   constructor(options: AggregatorOptions) {
     this._root = options.root;
     this._scope = options.scope;
-    this._container = options.container;
+    this._document = options.document;
   }
 
   protected factory(kind: CompletionItemKind): IEntity {
     return new Entity({
       kind,
-      container: this._container
+      document: this._document
     });
   }
 

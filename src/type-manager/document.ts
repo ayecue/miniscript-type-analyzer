@@ -1,4 +1,9 @@
-import { Container, SignatureDefinitionBaseType } from 'meta-utils';
+import {
+  Container,
+  SignatureDefinitionBaseType,
+  SignatureDefinitionFunction,
+  SignatureDefinitionType
+} from 'meta-utils';
 import {
   ASTAssignmentStatement,
   ASTBaseBlockWithScope,
@@ -6,18 +11,35 @@ import {
 } from 'miniscript-core';
 
 import { CompletionItemKind } from '../types/completion';
-import { DocumentOptions, Intrinsics, ScopeContext } from '../types/document';
+import {
+  DocumentOptions,
+  IDocument,
+  Intrinsics,
+  ScopeContext
+} from '../types/document';
 import { IEntity } from '../types/object';
 import { Aggregator } from './aggregator';
 import { Entity } from './entity';
 import { Scope } from './scope';
 
-export class Document {
+export class Document implements IDocument {
   protected _root: ASTChunk;
   protected _scopeMapping: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
   protected _container: Container;
   protected _globals: IEntity;
   protected _intrinscis: Intrinsics;
+
+  get container() {
+    return this._container;
+  }
+
+  get intrinsics() {
+    return this._intrinscis;
+  }
+
+  get globals() {
+    return this._globals;
+  }
 
   constructor(options: DocumentOptions) {
     this._root = options.root;
@@ -31,7 +53,7 @@ export class Document {
     return {
       map: new Entity({
         kind: CompletionItemKind.Constant,
-        container: this._container
+        document: this
       })
         .addType(SignatureDefinitionBaseType.Map)
         .insertSignature(
@@ -39,7 +61,7 @@ export class Document {
         ),
       funcRef: new Entity({
         kind: CompletionItemKind.Constant,
-        container: this._container
+        document: this
       })
         .addType(SignatureDefinitionBaseType.Map)
         .insertSignature(
@@ -47,7 +69,7 @@ export class Document {
         ),
       number: new Entity({
         kind: CompletionItemKind.Constant,
-        container: this._container
+        document: this
       })
         .addType(SignatureDefinitionBaseType.Map)
         .insertSignature(
@@ -55,7 +77,7 @@ export class Document {
         ),
       string: new Entity({
         kind: CompletionItemKind.Constant,
-        container: this._container
+        document: this
       })
         .addType(SignatureDefinitionBaseType.Map)
         .insertSignature(
@@ -63,7 +85,7 @@ export class Document {
         ),
       list: new Entity({
         kind: CompletionItemKind.Constant,
-        container: this._container
+        document: this
       })
         .addType(SignatureDefinitionBaseType.Map)
         .insertSignature(
@@ -75,7 +97,7 @@ export class Document {
   protected initGlobals(): IEntity {
     const globals = new Entity({
       kind: CompletionItemKind.Constant,
-      container: this._container
+      document: this
     })
       .addType(SignatureDefinitionBaseType.Map)
       .insertSignature(
@@ -104,14 +126,14 @@ export class Document {
       ? this._scopeMapping.get(block.scope)
       : null;
     const scope = new Scope({
-      container: this._container,
+      document: this,
       parent: parentContext?.scope,
       globals: this._globals
     });
     const aggregator = new Aggregator({
       scope,
       root: this._root,
-      container: this._container
+      document: this
     });
 
     for (let index = 0; index < block.assignments.length; index++) {
@@ -120,7 +142,7 @@ export class Document {
         aggregator.resolveType(item.init) ??
         new Entity({
           kind: CompletionItemKind.Value,
-          container: this._container
+          document: this
         }).addType(SignatureDefinitionBaseType.Any);
 
       aggregator.defineNamespace(item.variable, value);
@@ -138,6 +160,124 @@ export class Document {
     while (queue.length > 0) {
       const item = queue.pop();
       this.analyzeScope(item);
+    }
+  }
+
+  protected hasDefinitionEx(type: SignatureDefinitionType, property: string) {
+    switch (type) {
+      case SignatureDefinitionBaseType.Function:
+        return this._intrinscis.funcRef.values.has(`i:${property}`);
+      case SignatureDefinitionBaseType.Map:
+        return this._intrinscis.map.values.has(`i:${property}`);
+      case SignatureDefinitionBaseType.List:
+        return this._intrinscis.list.values.has(`i:${property}`);
+      case SignatureDefinitionBaseType.String:
+        return this._intrinscis.string.values.has(`i:${property}`);
+      case SignatureDefinitionBaseType.Number:
+        return this._intrinscis.number.values.has(`i:${property}`);
+      default:
+        const signature = this._container.getTypeSignature(type);
+        return signature !== null && !!signature.getDefinitions()[property];
+    }
+  }
+
+  hasDefinition(types: SignatureDefinitionType[], property: string): boolean {
+    for (const type of types) {
+      if (this.hasDefinitionEx(type, property)) return true;
+    }
+    return false;
+  }
+
+  protected resolveDefinitionEx(
+    type: SignatureDefinitionType,
+    property: string
+  ): IEntity | null {
+    switch (type) {
+      case SignatureDefinitionBaseType.Function:
+        return this._intrinscis.funcRef.values.get(`i:${property}`) ?? null;
+      case SignatureDefinitionBaseType.Map:
+        return this._intrinscis.map.values.get(`i:${property}`) ?? null;
+      case SignatureDefinitionBaseType.List:
+        return this._intrinscis.list.values.get(`i:${property}`) ?? null;
+      case SignatureDefinitionBaseType.String:
+        return this._intrinscis.string.values.get(`i:${property}`) ?? null;
+      case SignatureDefinitionBaseType.Number:
+        return this._intrinscis.number.values.get(`i:${property}`) ?? null;
+      default:
+        return null;
+    }
+  }
+
+  resolveDefinition(
+    types: SignatureDefinitionType[],
+    property: string,
+    noInvoke: boolean = false
+  ): IEntity {
+    const innerMatchingEntity: IEntity = new Entity({
+      kind: CompletionItemKind.Value,
+      document: this
+    });
+    const signatureDef = this._container.getDefinition(types, property);
+
+    for (const type of types) {
+      const item = this.resolveDefinitionEx(type, property);
+      if (item !== null) innerMatchingEntity.extend(item);
+    }
+
+    if (innerMatchingEntity.types.size > 0) {
+      return innerMatchingEntity;
+    }
+
+    if (signatureDef === null) {
+      return new Entity({
+        kind: CompletionItemKind.Variable,
+        document: this
+      }).addType(SignatureDefinitionBaseType.Any);
+    }
+
+    if (
+      signatureDef.getType().type === SignatureDefinitionBaseType.Function &&
+      !noInvoke
+    ) {
+      const fnDef = signatureDef as SignatureDefinitionFunction;
+      return new Entity({
+        kind: CompletionItemKind.Variable,
+        document: this
+      }).addType(...fnDef.getReturns().map((item) => item.type));
+    }
+
+    return new Entity({
+      kind: CompletionItemKind.Variable,
+      document: this
+    }).addSignatureType(signatureDef);
+  }
+
+  getPropertiesOfType(type: SignatureDefinitionType): string[] {
+    switch (type) {
+      case SignatureDefinitionBaseType.Function:
+        return Array.from(this._intrinscis.funcRef.values.keys()).map((key) =>
+          key.slice(2)
+        );
+      case SignatureDefinitionBaseType.Map:
+        return Array.from(this._intrinscis.map.values.keys()).map((key) =>
+          key.slice(2)
+        );
+      case SignatureDefinitionBaseType.List:
+        return Array.from(this._intrinscis.list.values.keys()).map((key) =>
+          key.slice(2)
+        );
+      case SignatureDefinitionBaseType.String:
+        return Array.from(this._intrinscis.string.values.keys()).map((key) =>
+          key.slice(2)
+        );
+      case SignatureDefinitionBaseType.Number:
+        return Array.from(this._intrinscis.number.values.keys()).map((key) =>
+          key.slice(2)
+        );
+      default:
+        const signature = this._container.getTypeSignature(type);
+        if (signature === null) return [];
+        return Object.keys(signature.getDefinitions());
     }
   }
 
