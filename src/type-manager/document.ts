@@ -151,10 +151,10 @@ export class Document implements IDocument {
   }
 
   analyze() {
-    const queue: ASTBaseBlockWithScope[] = [this._root, ...this._root.scopes];
+    const scopes: ASTBaseBlockWithScope[] = [this._root, ...this._root.scopes];
 
-    while (queue.length > 0) {
-      const item = queue.pop();
+    for (let index = 0; index < scopes.length; index++) {
+      const item = scopes[index];
       this.analyzeScope(item);
     }
   }
