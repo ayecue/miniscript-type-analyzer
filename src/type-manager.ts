@@ -1,13 +1,8 @@
 import { ASTChunkAdvanced } from 'greybel-core';
 import { Container } from 'meta-utils';
 import { Document } from './type-manager/document';
-import { CompletionItemKind } from './types/completion';
-import { Entity } from './type-manager/entity';
-import { TextDocumentLike } from './types/type-manager';
+import { TextDocumentLike, TypeManagerOptions } from './types/type-manager';
 
-export interface TypeManagerOptions {
-  container: Container;
-}
 
 export class TypeManager {
   protected _container: Container;
