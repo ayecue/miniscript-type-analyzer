@@ -34,6 +34,7 @@ import {
   isResolveChainItemWithValue,
   ResolveChainItem
 } from '../types/resolve';
+import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { createResolveChain } from '../utils/get-ast-chain';
 import { Entity } from './entity';
 
@@ -136,7 +137,7 @@ export class Aggregator implements IAggregator {
 
     return this.factory(CompletionItemKind.Function)
       .addType(SignatureDefinitionBaseType.Function)
-      .addSignatureType(signature);
+      .addSignatureType(enrichWithMetaInformation(signature));
   }
 
   protected resolveBinaryExpression(item: ASTEvaluationExpression) {
