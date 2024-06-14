@@ -59,6 +59,21 @@ function hashHandler(current: ASTBase): number {
     }
     case ASTType.MemberExpression: {
       const memberExpr = current as ASTMemberExpression;
+      if (memberExpr.base.type === ASTType.Identifier) {
+        const identifier = (memberExpr.base as ASTIdentifier).name;
+
+        if (
+          identifier === 'globals' ||
+          identifier === 'locals' ||
+          identifier === 'outer'
+        ) {
+          result = getStringHashCode(ASTType.Identifier);
+          result ^= getStringHashCode(
+            (memberExpr.identifier as ASTIdentifier).name
+          );
+          return attachCache(current, result);
+        }
+      }
       result ^= hashHandler(memberExpr.base);
       result ^= hashHandler(memberExpr.identifier);
       return attachCache(current, result);
@@ -66,6 +81,22 @@ function hashHandler(current: ASTBase): number {
     case ASTType.IndexExpression: {
       const indexExpr = current as ASTIndexExpression;
       if (indexExpr.index.type === ASTType.StringLiteral) {
+        if (indexExpr.base.type === ASTType.Identifier) {
+          const identifier = (indexExpr.base as ASTIdentifier).name;
+
+          if (
+            identifier === 'globals' ||
+            identifier === 'locals' ||
+            identifier === 'outer'
+          ) {
+            result = getStringHashCode(ASTType.Identifier);
+            result ^= getStringHashCode(
+              (indexExpr.index as ASTLiteral).value.toString()
+            );
+            return attachCache(current, result);
+          }
+        }
+
         result = getStringHashCode(ASTType.MemberExpression);
         result ^= hashHandler(indexExpr.base);
         let identifierHash = getStringHashCode(ASTType.Identifier);
@@ -97,7 +128,8 @@ function hashHandler(current: ASTBase): number {
       return attachCache(current, result);
     }
     case ASTType.Identifier: {
-      result ^= getStringHashCode((current as ASTIdentifier).name);
+      const identifier = current as ASTIdentifier;
+      result ^= getStringHashCode(identifier.name);
       return attachCache(current, result);
     }
     case ASTType.NumericLiteral:
@@ -138,5 +170,6 @@ function hashHandler(current: ASTBase): number {
 }
 
 export function createExpressionHash(item: ASTBase): number {
-  return hashHandler(item);
+  const hash = hashHandler(item);
+  return hash;
 }

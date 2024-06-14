@@ -442,12 +442,18 @@ export class Aggregator implements IAggregator {
   findAssignments(item: ASTBase): ASTAssignmentStatement[] {
     const itemHash = createExpressionHash(item);
     const assignments: ASTAssignmentStatement[] = [];
-    let current: Aggregator | null = this;
-    while (current != null) {
-      const definition = current._definitions.get(itemHash);
+    const aggregators = new Set([
+      this,
+      this._parent,
+      this._document.getRootScopeContext().aggregator
+    ]) as Set<Aggregator>;
+
+    for (const aggregator of aggregators) {
+      if (aggregator == null) continue;
+      const definition = aggregator._definitions.get(itemHash);
       if (definition != null) assignments.push(...definition);
-      current = current._parent;
     }
+
     return assignments;
   }
 
