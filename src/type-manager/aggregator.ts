@@ -5,7 +5,7 @@ import {
 import {
   ASTAssignmentStatement,
   ASTBase,
-  ASTChunk,
+  ASTBaseBlockWithScope,
   ASTComment,
   ASTEvaluationExpression,
   ASTFunctionStatement,
@@ -41,7 +41,7 @@ import { Entity } from './entity';
 export class Aggregator implements IAggregator {
   protected _scope: IScope;
   protected _document: IDocument;
-  protected _root: ASTChunk;
+  protected _root: ASTBaseBlockWithScope;
 
   constructor(options: AggregatorOptions) {
     this._root = options.root;
@@ -56,37 +56,14 @@ export class Aggregator implements IAggregator {
     });
   }
 
-  protected getLastASTItemOfLine(line: number): ASTBase {
-    if (this._root.lines.has(line)) {
-      const items = this._root.lines.get(line);
-
-      if (items.length > 0) {
-        return items[items.length - 1];
-      }
-    }
-
-    return null;
-  }
-
-  protected findASTItemInLine(line: number, type: ASTType): ASTBase {
-    if (this._root.lines.has(line)) {
-      const items = this._root.lines.get(line);
-      const result = items.find((item) => item.type === type);
-
-      if (result) {
-        return result;
-      }
-    }
-
-    return null;
-  }
-
   protected createFunctionDescription(
     item: ASTBase,
     defaultText: string = DEFAULT_CUSTOM_FUNCTION_DESCRIPTION
   ): string | null {
-    const previousItem = this.getLastASTItemOfLine(item.start.line - 1);
-    const currentItem = this.findASTItemInLine(
+    const previousItem = this._document.getLastASTItemOfLine(
+      item.start.line - 1
+    );
+    const currentItem = this._document.findASTItemInLine(
       item.start.line,
       ASTType.Comment
     );
@@ -96,7 +73,7 @@ export class Aggregator implements IAggregator {
       let index = item.start.line - 2;
 
       while (index >= 0) {
-        const item = this.getLastASTItemOfLine(index--);
+        const item = this._document.getLastASTItemOfLine(index--);
 
         if (item instanceof ASTComment) {
           lines.unshift(item.value);
@@ -455,5 +432,19 @@ export class Aggregator implements IAggregator {
     }
 
     return false;
+  }
+
+  analyze() {
+    for (let index = 0; index < this._root.assignments.length; index++) {
+      const item = this._root.assignments[index] as ASTAssignmentStatement;
+      const value =
+        this.resolveType(item.init) ??
+        new Entity({
+          kind: CompletionItemKind.Value,
+          document: this._document
+        }).addType(SignatureDefinitionBaseType.Any);
+
+      this.defineNamespace(item.variable, value);
+    }
   }
 }

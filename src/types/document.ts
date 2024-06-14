@@ -1,5 +1,10 @@
 import { Container, SignatureDefinitionType } from 'meta-utils';
-import { ASTBaseBlockWithScope, ASTChunk } from 'miniscript-core';
+import {
+  ASTBase,
+  ASTBaseBlockWithScope,
+  ASTChunk,
+  ASTType
+} from 'miniscript-core';
 
 import { IAggregator } from './aggregator';
 import { IEntity, IScope } from './object';
@@ -23,6 +28,8 @@ export interface IDocument {
     property: string,
     noInvoke: boolean
   ): IEntity | null;
+  getLastASTItemOfLine(line: number): ASTBase;
+  findASTItemInLine(line: number, type: ASTType): ASTBase;
 }
 
 export interface ScopeContext {

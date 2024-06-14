@@ -5,9 +5,10 @@ import {
   SignatureDefinitionType
 } from 'meta-utils';
 import {
-  ASTAssignmentStatement,
+  ASTBase,
   ASTBaseBlockWithScope,
-  ASTChunk
+  ASTChunk,
+  ASTType
 } from 'miniscript-core';
 
 import { CompletionItemKind } from '../types/completion';
@@ -132,21 +133,11 @@ export class Document implements IDocument {
     });
     const aggregator = new Aggregator({
       scope,
-      root: this._root,
+      root: block,
       document: this
     });
 
-    for (let index = 0; index < block.assignments.length; index++) {
-      const item = block.assignments[index] as ASTAssignmentStatement;
-      const value =
-        aggregator.resolveType(item.init) ??
-        new Entity({
-          kind: CompletionItemKind.Value,
-          document: this
-        }).addType(SignatureDefinitionBaseType.Any);
-
-      aggregator.defineNamespace(item.variable, value);
-    }
+    aggregator.analyze();
 
     this._scopeMapping.set(block, {
       scope,
@@ -293,6 +284,31 @@ export class Document implements IDocument {
 
   getScopeContext(block: ASTBaseBlockWithScope): ScopeContext | null {
     return this._scopeMapping.get(block) ?? null;
+  }
+
+  getLastASTItemOfLine(line: number): ASTBase {
+    if (this._root.lines.has(line)) {
+      const items = this._root.lines.get(line);
+
+      if (items.length > 0) {
+        return items[items.length - 1];
+      }
+    }
+
+    return null;
+  }
+
+  findASTItemInLine(line: number, type: ASTType): ASTBase {
+    if (this._root.lines.has(line)) {
+      const items = this._root.lines.get(line);
+      const result = items.find((item) => item.type === type);
+
+      if (result) {
+        return result;
+      }
+    }
+
+    return null;
   }
 
   merge(...typeDocs: Document[]): Document {
