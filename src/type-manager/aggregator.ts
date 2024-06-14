@@ -40,7 +40,7 @@ import { createResolveChain } from '../utils/get-ast-chain';
 import { Entity } from './entity';
 
 export class Aggregator implements IAggregator {
-  protected _parent: IAggregator | null;
+  protected _parent: Aggregator | null;
   protected _scope: IScope;
   protected _document: IDocument;
   protected _root: ASTBaseBlockWithScope;
@@ -50,7 +50,7 @@ export class Aggregator implements IAggregator {
     this._root = options.root;
     this._scope = options.scope;
     this._document = options.document;
-    this._parent = options.parent ?? null;
+    this._parent = (options.parent as Aggregator) ?? null;
     this._definitions = new Map();
   }
 
@@ -441,7 +441,14 @@ export class Aggregator implements IAggregator {
 
   findAssignments(item: ASTBase): ASTAssignmentStatement[] {
     const itemHash = createExpressionHash(item);
-    return this._definitions.get(itemHash) ?? [];
+    const assignments: ASTAssignmentStatement[] = [];
+    let current: Aggregator | null = this;
+    while (current != null) {
+      const definition = current._definitions.get(itemHash);
+      if (definition != null) assignments.push(...definition);
+      current = current._parent;
+    }
+    return assignments;
   }
 
   analyze() {
