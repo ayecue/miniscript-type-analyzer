@@ -127,9 +127,7 @@ export class Document implements IDocument {
   }
 
   protected analyzeScope(block: ASTBaseBlockWithScope): void {
-    const parentContext = block.scope
-      ? this._scopeMapping.get(block.scope)
-      : null;
+    const parentContext = this._scopeMapping.get(block.scope)!;
     const scope = new Scope({
       document: this,
       parent: parentContext?.scope,
@@ -151,10 +149,26 @@ export class Document implements IDocument {
   }
 
   analyze() {
-    const scopes: ASTBaseBlockWithScope[] = [this._root, ...this._root.scopes];
+    const scope = new Scope({
+      document: this,
+      globals: this._globals,
+      locals: this._globals
+    });
+    const aggregator = new Aggregator({
+      scope,
+      root: this._root,
+      document: this
+    });
 
-    for (let index = 0; index < scopes.length; index++) {
-      const item = scopes[index];
+    aggregator.analyze();
+
+    this._scopeMapping.set(this._root, {
+      scope,
+      aggregator
+    });
+
+    for (let index = 0; index < this._root.scopes.length; index++) {
+      const item = this._root.scopes[index];
       this.analyzeScope(item);
     }
   }

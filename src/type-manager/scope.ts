@@ -89,8 +89,8 @@ export class Scope implements IScope {
       }
       const entity = this._locals.values.get(`i:${property}`);
       return resolveEntity(this._document, entity, noInvoke);
-    } else if (this._parent?.hasProperty(property)) {
-      return this._parent?.resolveProperty(property, noInvoke);
+    } else if (this._parent?.locals.hasProperty(property)) {
+      return this._parent?.locals.resolveProperty(property, noInvoke);
     } else if (this._globals.hasProperty(property)) {
       return this._globals.resolveProperty(property, noInvoke);
     }
