@@ -42,6 +42,7 @@ export interface IDocument {
   getScopeContext(block: ASTBaseBlockWithScope): ScopeContext | null;
   getAllScopeContexts(): ScopeContext[];
   getRootScopeContext(): ScopeContext;
+  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[];
   resolveAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[];
   resolveType(item: ASTBase, noInvoke?: boolean): IEntity;
   resolveNamespace(item: ASTBase, noInvoke?: boolean): IEntity | null;

@@ -410,6 +410,14 @@ export class Document implements IDocument {
     return assignments;
   }
 
+  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[] {
+    return (
+      this._scopeMapping
+        .get(item.scope)
+        ?.aggregator.resolveAvailableAssignments(item) ?? []
+    );
+  }
+
   resolveType(item: ASTBase, noInvoke?: boolean): IEntity {
     return (
       this._scopeMapping
