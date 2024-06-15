@@ -129,6 +129,21 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('output').types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
     });
+
+    test('should return entity from extended intrinsics', () => {
+      const doc = getDocument(`
+        map.test = function(foo=123)
+        end function
+        fn = @{}.test
+        output = {}.test
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+
+      expect(scope.resolveProperty('fn', true).signatureDefinitions.first().getArguments().length).toEqual(1);
+      expect(Array.from(scope.resolveProperty('fn').types)).toEqual(['any']);
+      expect(scope.resolveProperty('output').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
+    });
   });
 
   describe('merged', () => {
@@ -193,6 +208,44 @@ describe('type-manager', () => {
     test('should return next entity', () => {
       const doc = getDocument(`
         foo = @split().join()
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('foo', true).types)).toEqual(['string']);
+    });
+  });
+
+  describe('__isa', () => {
+    test('should return entity', () => {
+      const doc = getDocument(`
+        test = {"foo":123}
+        sub = new test
+        foo = sub.foo
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('foo', true).types)).toEqual(['number']);
+    });
+
+    test('should return entity from 2 layer isa', () => {
+      const doc = getDocument(`
+        test = {"foo":123}
+        test2 = new test
+        sub = new test2
+        foo = sub.foo
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('foo', true).types)).toEqual(['number']);
+    });
+
+    test('should return entity from 2 layer isa with override', () => {
+      const doc = getDocument(`
+        test = {"foo":123}
+        test2 = new test
+        test2.foo = "test"
+        sub = new test2
+        foo = sub.foo
       `);
       const scope = doc.getRootScopeContext().scope;
 
