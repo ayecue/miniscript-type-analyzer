@@ -8,6 +8,7 @@ import {
 export interface ResolveChainItemBase {
   type: ASTType;
   unary: ASTUnaryExpression | null;
+  isInCallExpression: boolean;
 }
 
 export interface ResolveChainItemWithIndex extends ResolveChainItemBase {

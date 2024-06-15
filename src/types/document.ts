@@ -29,7 +29,7 @@ export interface IDocument {
   resolveDefinition(
     types: SignatureDefinitionType[],
     property: string,
-    noInvoke: boolean
+    noInvoke?: boolean
   ): IEntity | null;
 
   // used for function comments mainly

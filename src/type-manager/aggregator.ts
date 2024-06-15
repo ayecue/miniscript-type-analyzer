@@ -217,7 +217,7 @@ export class Aggregator implements IAggregator {
     item: ASTIndexExpression,
     noInvoke: boolean = false
   ): IEntity {
-    const entity = this.resolveNamespace(item);
+    const entity = this.resolveNamespace(item, noInvoke);
 
     if (entity === null) {
       return this.factory(CompletionItemKind.Value).addType(
@@ -232,23 +232,9 @@ export class Aggregator implements IAggregator {
     item: ASTMemberExpression,
     noInvoke: boolean = false
   ): IEntity {
-    const entity = this.resolveNamespace(item);
+    const entity = this.resolveNamespace(item, noInvoke);
 
     if (entity === null) {
-      return this.factory(CompletionItemKind.Value).addType(
-        SignatureDefinitionBaseType.Any
-      );
-    }
-
-    if (entity.isCallable() && !noInvoke) {
-      const returnTypes = entity.getCallableReturnTypes();
-
-      if (returnTypes) {
-        return this.factory(CompletionItemKind.Variable).addType(
-          ...returnTypes
-        );
-      }
-
       return this.factory(CompletionItemKind.Value).addType(
         SignatureDefinitionBaseType.Any
       );
@@ -324,14 +310,19 @@ export class Aggregator implements IAggregator {
     }
   }
 
-  protected resolveChain(chain: ResolveChainItem[]): IEntity | null {
+  protected resolveChain(
+    chain: ResolveChainItem[],
+    noInvoke: boolean = false
+  ): IEntity | null {
     if (chain.length === 0) {
       return null;
     }
 
     let current: IEntity = null;
     const first = chain[0];
-    const firstHasAddressOf = first.unary?.operator === '@';
+    const firstNoInvoke =
+      (first.unary?.operator === '@' && !first.isInCallExpression) ||
+      (noInvoke && chain.length === 1);
 
     if (isResolveChainItemWithIdentifier(first)) {
       if (first.getter.name === 'globals') {
@@ -341,10 +332,7 @@ export class Aggregator implements IAggregator {
       } else if (first.getter.name === 'locals') {
         current = this._scope.outer;
       } else {
-        current = this._scope.resolveProperty(
-          first.getter.name,
-          firstHasAddressOf
-        );
+        current = this._scope.resolveProperty(first.getter.name, firstNoInvoke);
       }
     } else if (isResolveChainItemWithValue(first)) {
       current = this.resolveType(first.value);
@@ -364,19 +352,22 @@ export class Aggregator implements IAggregator {
 
     for (let index = 1; index < length && current !== null; index++) {
       const item = chain[index];
-      const hasAddressOf = item.unary?.operator === '@';
+      const itemNoInvoke =
+        (item.unary?.operator === '@' && !item.isInCallExpression) ||
+        (noInvoke && chain.length - 1 === index);
 
       if (isResolveChainItemWithMember(item)) {
-        current = current.resolveProperty(item.getter.name, hasAddressOf);
+        current = current.resolveProperty(item.getter.name, itemNoInvoke);
       } else if (isResolveChainItemWithIndex(item)) {
+        // index expressions do not get invoked automatically
         if (item.getter.type === ASTType.StringLiteral) {
           current = current.resolveProperty(
             (item.getter as ASTLiteral).value.toString(),
-            hasAddressOf
+            item.isInCallExpression
           );
         } else {
           const index = this.resolveType(item.getter);
-          current = current.resolveProperty(index, hasAddressOf);
+          current = current.resolveProperty(index, item.isInCallExpression);
         }
       } else if (item.type === ASTType.SliceExpression) {
         // while slicing it will remain pretty much as the same value
@@ -397,9 +388,9 @@ export class Aggregator implements IAggregator {
     return current;
   }
 
-  resolveNamespace(item: ASTBase) {
+  resolveNamespace(item: ASTBase, noInvoke: boolean = false): IEntity | null {
     const astChain = createResolveChain(item);
-    return this.resolveChain(astChain);
+    return this.resolveChain(astChain, noInvoke);
   }
 
   defineNamespace(item: ASTBase, container: IEntity): boolean {

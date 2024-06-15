@@ -14,7 +14,8 @@ import { ResolveChainItem } from '../types/resolve';
 function handler(
   current: ASTBase,
   chain: ResolveChainItem[],
-  unary: ASTUnaryExpression | null = null
+  unary: ASTUnaryExpression | null = null,
+  isInCallExpression: boolean = false
 ): void {
   switch (current.type) {
     case ASTType.ParenthesisExpression: {
@@ -28,7 +29,8 @@ function handler(
       chain.push({
         type: current.type,
         getter: memberExpr.identifier as ASTIdentifier,
-        unary
+        unary,
+        isInCallExpression
       });
       return;
     }
@@ -38,17 +40,14 @@ function handler(
       chain.push({
         type: current.type,
         getter: indexExpr.index,
-        unary
+        unary,
+        isInCallExpression
       });
       return;
     }
     case ASTType.CallExpression: {
       const callExpr = current as ASTCallExpression;
-      if (unary?.operator === '@') {
-        handler(callExpr.base, chain, null);
-      } else {
-        handler(callExpr.base, chain, unary);
-      }
+      handler(callExpr.base, chain, unary, true);
       return;
     }
     case ASTType.NegationExpression:
@@ -62,7 +61,8 @@ function handler(
       chain.push({
         type: current.type,
         getter: current as ASTIdentifier,
-        unary
+        unary,
+        isInCallExpression
       });
       return;
     }
@@ -74,14 +74,16 @@ function handler(
       chain.push({
         type: current.type,
         value: current,
-        unary
+        unary,
+        isInCallExpression
       });
       return;
     }
     case ASTType.SliceExpression: {
       chain.push({
         type: current.type,
-        unary
+        unary,
+        isInCallExpression
       });
     }
   }
