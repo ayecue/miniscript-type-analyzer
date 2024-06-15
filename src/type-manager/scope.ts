@@ -140,24 +140,25 @@ export class Scope implements IScope {
     return null;
   }
 
-  getAllIdentifier(): string[] {
+  getAllIdentifier(): Map<string, CompletionItemKind> {
     const localIdentifier = this._locals.getAllIdentifier();
-    const outerIdentifier = this._parent?.locals.getAllIdentifier() ?? [];
+    const outerIdentifier =
+      this._parent?.locals.getAllIdentifier() ?? new Map();
     const globalIdentifier = this._globals.getAllIdentifier();
-    const identifiers = new Set([
-      'globals',
-      'locals',
-      'outer',
-      ...globalIdentifier,
-      ...outerIdentifier,
-      ...localIdentifier
+    const properties = new Map([
+      ['globals', CompletionItemKind.Constant],
+      ['locals', CompletionItemKind.Constant],
+      ['outer', CompletionItemKind.Constant],
+      ...globalIdentifier.entries(),
+      ...outerIdentifier.entries(),
+      ...localIdentifier.entries()
     ]);
 
     if (this._parent != null) {
-      identifiers.add('self');
+      properties.set('self', CompletionItemKind.Constant);
     }
 
-    return Array.from(identifiers);
+    return properties;
   }
 
   toJSON() {

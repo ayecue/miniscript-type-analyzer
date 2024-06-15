@@ -376,10 +376,10 @@ describe('type-manager', () => {
       const entity = scope.resolveProperty('test', true);
       const entityIdentifiers = entity.getAllIdentifier();
 
-      expect(identifiers.length).toEqual(59);
-      expect(identifiers.includes('test')).toEqual(true);
-      expect(entityIdentifiers.length).toEqual(15);
-      expect(entityIdentifiers.includes('hasIndex')).toEqual(true);
+      expect(identifiers.size).toEqual(59);
+      expect(identifiers.has('test')).toEqual(true);
+      expect(entityIdentifiers.size).toEqual(15);
+      expect(entityIdentifiers.has('hasIndex')).toEqual(true);
     });
 
     test('should return all identifiers of one type', () => {
@@ -390,8 +390,8 @@ describe('type-manager', () => {
       const entity = scope.resolveProperty('test', true);
       const entityIdentifiers = entity.getAllIdentifier();
 
-      expect(entityIdentifiers.length).toEqual(25);
-      expect(entityIdentifiers.includes('hasIndex')).toEqual(true);
+      expect(entityIdentifiers.size).toEqual(25);
+      expect(entityIdentifiers.has('hasIndex')).toEqual(true);
     });
 
     test('should return all identifiers of one type and custom intrinsics', () => {
@@ -404,8 +404,8 @@ describe('type-manager', () => {
       const entity = scope.resolveProperty('test', true);
       const entityIdentifiers = entity.getAllIdentifier();
 
-      expect(entityIdentifiers.length).toEqual(26);
-      expect(entityIdentifiers.includes('test')).toEqual(true);
+      expect(entityIdentifiers.size).toEqual(26);
+      expect(entityIdentifiers.has('test')).toEqual(true);
     });
   });
 });

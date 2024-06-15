@@ -8,6 +8,7 @@ import {
 } from 'miniscript-core';
 
 import { IAggregator } from './aggregator';
+import { CompletionItemKind } from './completion';
 import { IEntity, IScope } from './object';
 
 export interface DocumentOptions {
@@ -24,7 +25,9 @@ export interface IDocument {
   globals: IEntity;
 
   // mainly used for the context of resolving types and defintions in entities
-  getPropertiesOfType(type: SignatureDefinitionType): string[];
+  getPropertiesOfType(
+    type: SignatureDefinitionType
+  ): Map<string, CompletionItemKind>;
   hasDefinition(type: SignatureDefinitionType[], property: string): boolean;
   resolveDefinition(
     types: SignatureDefinitionType[],

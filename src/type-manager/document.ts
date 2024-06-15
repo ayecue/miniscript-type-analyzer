@@ -1,5 +1,6 @@
 import {
   Container,
+  Signature,
   SignatureDefinitionBaseType,
   SignatureDefinitionType
 } from 'meta-utils';
@@ -22,6 +23,25 @@ import { IEntity } from '../types/object';
 import { Aggregator } from './aggregator';
 import { Entity, resolveEntity } from './entity';
 import { Scope } from './scope';
+
+const insertSignatureToProperties = (
+  properties: Map<string, CompletionItemKind>,
+  signature: Signature
+) => {
+  const signatureKeys = Object.keys(signature.getDefinitions());
+  for (const property of signatureKeys) {
+    properties.set(property, CompletionItemKind.Function);
+  }
+};
+
+const insertIntrinsicToProperties = (
+  properties: Map<string, CompletionItemKind>,
+  intrinsic: Map<string, IEntity>
+) => {
+  for (const [property, entity] of intrinsic) {
+    properties.set(property.slice(2), entity.kind);
+  }
+};
 
 export class Document implements IDocument {
   protected _root: ASTChunk;
@@ -306,54 +326,71 @@ export class Document implements IDocument {
     return resolveEntity(this, mergedEntity, noInvoke);
   }
 
-  protected getAllProperties(): string[] {
-    return Array.from(
-      new Set([
-        ...[
-          ...this._intrinscis.funcRef.values.keys(),
-          ...this._intrinscis.map.values.keys(),
-          ...this._intrinscis.list.values.keys(),
-          ...this._intrinscis.string.values.keys(),
-          ...this._intrinscis.number.values.keys()
-        ].map((key) => key.slice(2)),
-        ...Array.from(this._container.getTypes().values()).flatMap(
-          (signature) => Object.keys(signature.getDefinitions())
-        )
-      ])
-    );
+  protected getAllProperties(): Map<string, CompletionItemKind> {
+    const properties = new Map();
+
+    for (const signature of this._container.getTypes().values()) {
+      insertSignatureToProperties(properties, signature);
+    }
+
+    const intrinsics = [
+      this._intrinscis.funcRef.values,
+      this._intrinscis.map.values,
+      this._intrinscis.list.values,
+      this._intrinscis.string.values,
+      this._intrinscis.number.values
+    ];
+
+    for (const intrinsic of intrinsics) {
+      insertIntrinsicToProperties(properties, intrinsic);
+    }
+
+    return properties;
   }
 
-  getPropertiesOfType(type: SignatureDefinitionType): string[] {
+  getPropertiesOfType(
+    type: SignatureDefinitionType
+  ): Map<string, CompletionItemKind> {
     if (type === SignatureDefinitionBaseType.Any) {
       return this.getAllProperties();
     }
 
+    const properties = new Map();
+
     switch (type) {
-      case SignatureDefinitionBaseType.Function:
-        return Array.from(this._intrinscis.funcRef.values.keys()).map((key) =>
-          key.slice(2)
+      case SignatureDefinitionBaseType.Function: {
+        insertIntrinsicToProperties(
+          properties,
+          this._intrinscis.funcRef.values
         );
-      case SignatureDefinitionBaseType.Map:
-        return Array.from(this._intrinscis.map.values.keys()).map((key) =>
-          key.slice(2)
-        );
-      case SignatureDefinitionBaseType.List:
-        return Array.from(this._intrinscis.list.values.keys()).map((key) =>
-          key.slice(2)
-        );
-      case SignatureDefinitionBaseType.String:
-        return Array.from(this._intrinscis.string.values.keys()).map((key) =>
-          key.slice(2)
-        );
-      case SignatureDefinitionBaseType.Number:
-        return Array.from(this._intrinscis.number.values.keys()).map((key) =>
-          key.slice(2)
-        );
-      default:
+        break;
+      }
+      case SignatureDefinitionBaseType.Map: {
+        insertIntrinsicToProperties(properties, this._intrinscis.map.values);
+        break;
+      }
+      case SignatureDefinitionBaseType.List: {
+        insertIntrinsicToProperties(properties, this._intrinscis.list.values);
+        break;
+      }
+      case SignatureDefinitionBaseType.String: {
+        insertIntrinsicToProperties(properties, this._intrinscis.string.values);
+        break;
+      }
+      case SignatureDefinitionBaseType.Number: {
+        insertIntrinsicToProperties(properties, this._intrinscis.number.values);
+        break;
+      }
+      default: {
         const signature = this._container.getTypeSignature(type);
-        if (signature === null) return [];
-        return Object.keys(signature.getDefinitions());
+        if (signature !== null) {
+          insertSignatureToProperties(properties, signature);
+        }
+        break;
+      }
     }
+
+    return properties;
   }
 
   getRootScopeContext(): ScopeContext {

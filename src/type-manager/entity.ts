@@ -359,21 +359,21 @@ export class Entity implements IEntity {
     return this;
   }
 
-  getAllIdentifier(): string[] {
-    const identifiers: Set<string> = new Set();
+  getAllIdentifier(): Map<string, CompletionItemKind> {
+    const properties = new Map();
 
     for (const type of this._types) {
-      const keys = this._document.getPropertiesOfType(type);
-      for (const key of keys) identifiers.add(key);
+      const items = this._document.getPropertiesOfType(type);
+      for (const keyPair of items) properties.set(...keyPair);
     }
 
-    for (const item of this._values.keys()) {
-      if (item.startsWith('i:')) {
-        identifiers.add(item.slice(2));
+    for (const [property, entity] of this._values) {
+      if (property.startsWith('i:')) {
+        properties.set(property.slice(2), entity.kind);
       }
     }
 
-    return Array.from(identifiers);
+    return properties;
   }
 
   toJSONInternal(visited = new WeakMap()) {

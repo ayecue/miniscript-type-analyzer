@@ -48,7 +48,7 @@ export interface IEntity {
   insertSignature(signature: Signature): this;
   copy(document?: IDocument): IEntity;
   extend(entity: IEntity): this;
-  getAllIdentifier(): string[];
+  getAllIdentifier(): Map<string, CompletionItemKind>;
   isCallable(): boolean;
   getCallableReturnTypes(): string[] | null;
   setReturnEntity(entitiy: IEntity): this;
