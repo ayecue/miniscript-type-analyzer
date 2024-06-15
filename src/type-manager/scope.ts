@@ -21,6 +21,10 @@ export class Scope implements IScope {
     return null;
   }
 
+  get kind() {
+    return CompletionItemKind.Constant;
+  }
+
   get types(): Set<SignatureDefinitionType> {
     return new Set(SignatureDefinitionBaseType.Map);
   }

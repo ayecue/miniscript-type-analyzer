@@ -34,6 +34,7 @@ export interface IEntityPropertyHandler<T> {
 }
 
 export interface IEntity {
+  kind: CompletionItemKind;
   signatureDefinitions: ObjectSet<SignatureDefinition>;
   types: Set<SignatureDefinitionType>;
   values: Map<string, IEntity>;
