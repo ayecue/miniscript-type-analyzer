@@ -136,17 +136,20 @@ export class Scope implements IScope {
     const localIdentifier = this._locals.getAllIdentifier();
     const outerIdentifier = this._parent?.locals.getAllIdentifier() ?? [];
     const globalIdentifier = this._globals.getAllIdentifier();
+    const identifiers = new Set([
+      'globals',
+      'locals',
+      'outer',
+      ...globalIdentifier,
+      ...outerIdentifier,
+      ...localIdentifier
+    ]);
 
-    return Array.from(
-      new Set([
-        'globals',
-        'locals',
-        'outer',
-        ...globalIdentifier,
-        ...outerIdentifier,
-        ...localIdentifier
-      ])
-    );
+    if (this._parent != null) {
+      identifiers.add('self');
+    }
+
+    return Array.from(identifiers);
   }
 
   toJSON() {

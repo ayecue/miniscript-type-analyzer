@@ -113,4 +113,19 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number', 'string']);
     });
   });
+
+  describe('intrinsics', () => {
+    test('should return argument entity', () => {
+      const doc = getDocument(`
+        map.test = function(foo=123)
+        end function
+        fn = @map.test
+        output = map.test
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+
+      expect(scope.resolveProperty('output').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
+    });
+  });
 });
