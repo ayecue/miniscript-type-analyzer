@@ -50,8 +50,10 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('test').resolveProperty('foo').types.size).toEqual(2);
       expect(Array.from(scope.resolveProperty('test').resolveProperty('foo').types)).toEqual(['number', 'list']);
     });
+  });
 
-    test('should return entity with index', () => {
+  describe('2 level depth property with index', () => {
+    test('should return entity', () => {
       const doc = getDocument(`
         test = {}
         test[222] = "hello"
@@ -68,7 +70,7 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('test').resolveProperty(numberKey).types)).toEqual(['string']);
     });
 
-    test('should return entity with index + multiple types', () => {
+    test('should return entity with multiple types', () => {
       const doc = getDocument(`
         test = {}
         test[222] = "hello"
@@ -84,6 +86,31 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('test').types)).toEqual(['map']);
       expect(scope.resolveProperty('test').resolveProperty(numberKey).types.size).toEqual(2);
       expect(Array.from(scope.resolveProperty('test').resolveProperty(numberKey).types)).toEqual(['string', 'map']);
+    });
+  });
+
+  describe('function', () => {
+    test('should return argument entity', () => {
+      const doc = getDocument(`
+        test = function(foo=123)
+        end function
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+
+      expect(scope.resolveProperty('foo').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number']);
+    });
+
+    test('should return argument entity with multiple types', () => {
+      const doc = getDocument(`
+        test = function(foo=123)
+          foo = "test"
+        end function
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+
+      expect(scope.resolveProperty('foo').types.size).toEqual(2);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number', 'string']);
     });
   });
 });
