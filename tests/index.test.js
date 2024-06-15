@@ -90,7 +90,7 @@ describe('type-manager', () => {
   });
 
   describe('function', () => {
-    test('should return argument entity', () => {
+    test('should return entity', () => {
       const doc = getDocument(`
         test = function(foo=123)
         end function
@@ -101,7 +101,7 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number']);
     });
 
-    test('should return argument entity with multiple types', () => {
+    test('should return entity with multiple types', () => {
       const doc = getDocument(`
         test = function(foo=123)
           foo = "test"
@@ -115,7 +115,7 @@ describe('type-manager', () => {
   });
 
   describe('intrinsics', () => {
-    test('should return argument entity', () => {
+    test('should return entity', () => {
       const doc = getDocument(`
         map.test = function(foo=123)
         end function
@@ -132,7 +132,7 @@ describe('type-manager', () => {
   });
 
   describe('merged', () => {
-    test('should return argument entity', () => {
+    test('should return entity', () => {
       const doc1 = getDocument(`
         map.test = function(foo=123)
         end function
@@ -145,6 +145,27 @@ describe('type-manager', () => {
 
       expect(scope.resolveProperty('foo', true).signatureDefinitions.first().getArguments().length).toEqual(1);
       expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['any']);
+    });
+  });
+
+  describe('comment', () => {
+    test('should return entity', () => {
+      const doc = getDocument(`
+        // Hello world
+        // I am **bold**
+        // @param {string} title - The title of the book.
+        // @param {string|number} author - The author of the book.
+        // @return {crypto} - Some info about return
+        test = function(test, abc)
+        end function
+        output = test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signature = scope.resolveProperty('test', true).signatureDefinitions.first();
+
+      expect(signature.getArguments().length).toEqual(2);
+      expect(signature.getReturns().map((it) => it.type)).toEqual(['crypto']);
+      expect(Array.from(scope.resolveProperty('output').types)).toEqual(['crypto']);
     });
   });
 });
