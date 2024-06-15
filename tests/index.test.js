@@ -338,5 +338,31 @@ describe('type-manager', () => {
       expect(assignments[1].start.line).toEqual(7);
       expect(assignments[2].start.line).toEqual(2);
     })
+
+    test('should return all assignments which match namespace', () => {
+      const doc = getDocument(`
+        tri = "12345"
+        bar = function
+          tri = 123
+
+          foo = function
+            tri = false
+
+            foo = function
+              tri = []
+              tri
+            end function
+          end function
+        end function
+      `);
+      const line = doc.root.lines.get(11);
+      const aggregator = doc.getScopeContext(doc.root.scopes[2]).aggregator;
+      const assignments = aggregator.resolveAvailableAssignments(line[0]);
+
+      expect(assignments.length).toEqual(3);
+      expect(assignments[0].start.line).toEqual(10);
+      expect(assignments[1].start.line).toEqual(7);
+      expect(assignments[2].start.line).toEqual(2);
+    })
   });
 });
