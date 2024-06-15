@@ -21,7 +21,7 @@ import {
 } from '../types/document';
 import { IEntity } from '../types/object';
 import { Aggregator } from './aggregator';
-import { Entity } from './entity';
+import { Entity, resolveEntity } from './entity';
 import { Scope } from './scope';
 
 export class Document implements IDocument {
@@ -236,7 +236,7 @@ export class Document implements IDocument {
     }
 
     if (innerMatchingEntity.types.size > 0) {
-      return innerMatchingEntity;
+      return resolveEntity(this, innerMatchingEntity, noInvoke);
     }
 
     if (signatureDef === null) {

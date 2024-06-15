@@ -122,10 +122,10 @@ describe('type-manager', () => {
         fn = @map.test
         output = map.test
       `);
-      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+      const scope = doc.getRootScopeContext().scope;
 
       expect(scope.resolveProperty('fn', true).signatureDefinitions.first().getArguments().length).toEqual(1);
-      expect(Array.from(scope.resolveProperty('fn').types)).toEqual(['any']);
+      expect(Array.from(scope.resolveProperty('fn', true).types)).toEqual(['function']);
       expect(scope.resolveProperty('output').types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
     });
@@ -137,10 +137,27 @@ describe('type-manager', () => {
         fn = @{}.test
         output = {}.test
       `);
-      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+      const scope = doc.getRootScopeContext().scope;
 
       expect(scope.resolveProperty('fn', true).signatureDefinitions.first().getArguments().length).toEqual(1);
-      expect(Array.from(scope.resolveProperty('fn').types)).toEqual(['any']);
+      expect(Array.from(scope.resolveProperty('fn', true).types)).toEqual(['function']);
+      expect(scope.resolveProperty('output').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
+    });
+
+    test('should return entity from extended intrinsics in resolve chain with method', () => {
+      const doc = getDocument(`
+        list.test = function(foo=123)
+        end function
+        fn = @join.split.test
+        output = join.split.test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+
+
+      expect(scope.resolveProperty('fn', true).signatureDefinitions.first().getArguments().length).toEqual(1);
+      expect(Array.from(scope.resolveProperty('fn', true).types)).toEqual(['function']);
       expect(scope.resolveProperty('output').types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
     });
