@@ -337,7 +337,7 @@ describe('type-manager', () => {
       expect(assignments[0].start.line).toEqual(10);
       expect(assignments[1].start.line).toEqual(7);
       expect(assignments[2].start.line).toEqual(2);
-    })
+    });
 
     test('should return all assignments which match namespace', () => {
       const doc = getDocument(`
@@ -363,6 +363,23 @@ describe('type-manager', () => {
       expect(assignments[0].start.line).toEqual(10);
       expect(assignments[1].start.line).toEqual(7);
       expect(assignments[2].start.line).toEqual(2);
-    })
+    });
+  });
+
+  describe('get identifiers', () => {
+    test('should return all identifiers of one type', () => {
+      const doc = getDocument(`
+        test = []
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const identifiers = scope.getAllIdentifier();
+      const entity = scope.resolveProperty('test', true);
+      const entityIdentifiers = entity.getAllIdentifier();
+
+      expect(identifiers.length).toEqual(59);
+      expect(identifiers.includes('test')).toEqual(true);
+      expect(entityIdentifiers.length).toEqual(15);
+      expect(entityIdentifiers.includes('hasIndex')).toEqual(true);
+    });
   });
 });
