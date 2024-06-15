@@ -168,4 +168,26 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['crypto']);
     });
   });
+
+  describe('addressOf', () => {
+    test('should return entity with signature', () => {
+      const doc = getDocument(`
+        foo = @hasIndex
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signature = scope.resolveProperty('foo', true).signatureDefinitions.first();
+
+      expect(signature.getArguments().length).toEqual(2);
+      expect(signature.getReturns().map((it) => it.type)).toEqual(['number', 'null']);
+    });
+
+    test('should return entity signature return values', () => {
+      const doc = getDocument(`
+        foo = @hasIndex()
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('foo', true).types)).toEqual(['number', 'null']);
+    });
+  });
 });
