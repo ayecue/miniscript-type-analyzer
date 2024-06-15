@@ -141,7 +141,8 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   resolveProperty(
     origin: IEntity,
     document: IDocument,
-    property: Entity
+    property: Entity,
+    noInvoke: boolean = false
   ): IEntity | null {
     if (!isEligibleForProperties(origin)) {
       return new Entity({
@@ -161,7 +162,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
       aggregatedEntity.extend(entity);
     }
 
-    return aggregatedEntity;
+    return resolveEntity(document, aggregatedEntity, noInvoke);
   },
 
   setProperty(
@@ -187,11 +188,20 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 
 export class Entity implements IEntity {
   readonly kind: CompletionItemKind;
+  protected _label: string;
   protected _document: IDocument;
   protected _signatureDefinitions: ObjectSet<SignatureDefinition>;
   protected _returnEntity: IEntity | null;
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
+
+  get label() {
+    return this._label;
+  }
+
+  set label(label: string) {
+    this._label = label;
+  }
 
   get signatureDefinitions() {
     return this._signatureDefinitions;
@@ -207,6 +217,7 @@ export class Entity implements IEntity {
 
   constructor(options: EntityOptions) {
     this.kind = options.kind;
+    this._label = options.label ?? 'anonymous';
     this._signatureDefinitions =
       options.signatureDefinitions ?? new ObjectSet();
     this._types = options.types ?? new Set();
@@ -336,7 +347,8 @@ export class Entity implements IEntity {
     for (const property of properties) {
       const entity = new Entity({
         kind: CompletionItemKind.Property,
-        document: this._document
+        document: this._document,
+        label: property
       });
       const definition = signature.getDefinition(property);
 
@@ -401,6 +413,7 @@ export class Entity implements IEntity {
     return new Entity({
       kind: this.kind,
       document: document ?? this._document,
+      label: this.label,
       signatureDefinitions: new ObjectSet(
         Array.from(this._signatureDefinitions, (value) => value.copy())
       ),

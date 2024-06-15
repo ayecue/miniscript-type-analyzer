@@ -245,7 +245,8 @@ export class Document implements IDocument {
 
     const innerMatchingEntity: IEntity = new Entity({
       kind: CompletionItemKind.Value,
-      document: this
+      document: this,
+      label: property
     });
 
     for (const type of uniqTypes) {
@@ -268,7 +269,8 @@ export class Document implements IDocument {
 
     return new Entity({
       kind: CompletionItemKind.Variable,
-      document: this
+      document: this,
+      label: property
     }).addSignatureType(signatureDef);
   }
 
@@ -286,13 +288,15 @@ export class Document implements IDocument {
     if (innerMatchingEntity === null && externalDefinitionEntity === null) {
       return new Entity({
         kind: CompletionItemKind.Variable,
-        document: this
+        document: this,
+        label: property
       }).addType(SignatureDefinitionBaseType.Any);
     }
 
     const mergedEntity = new Entity({
       kind: CompletionItemKind.Variable,
-      document: this
+      document: this,
+      label: property
     });
 
     if (innerMatchingEntity !== null) mergedEntity.extend(innerMatchingEntity);

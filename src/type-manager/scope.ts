@@ -25,6 +25,10 @@ export class Scope implements IScope {
     return CompletionItemKind.Constant;
   }
 
+  get label() {
+    return 'anonymous';
+  }
+
   get types(): Set<SignatureDefinitionType> {
     return new Set(SignatureDefinitionBaseType.Map);
   }

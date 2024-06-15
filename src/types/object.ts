@@ -12,6 +12,7 @@ export interface EntityOptions {
   kind: CompletionItemKind;
   document: IDocument;
   signatureDefinitions?: ObjectSet<SignatureDefinition>;
+  label?: string;
   types?: Set<SignatureDefinitionType>;
   values?: Map<string, IEntity>;
   returnEntity?: IEntity;
@@ -35,6 +36,7 @@ export interface IEntityPropertyHandler<T> {
 
 export interface IEntity {
   kind: CompletionItemKind;
+  label: string;
   signatureDefinitions: ObjectSet<SignatureDefinition>;
   types: Set<SignatureDefinitionType>;
   values: Map<string, IEntity>;
