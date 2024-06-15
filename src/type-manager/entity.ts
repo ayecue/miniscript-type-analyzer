@@ -156,7 +156,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
     });
 
     for (const type of property.types) {
-      const entity = aggregatedEntity.values.get(`t:${type}`);
+      const entity = origin.values.get(`t:${type}`);
       if (!entity) continue;
       aggregatedEntity.extend(entity);
     }
