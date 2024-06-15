@@ -466,6 +466,30 @@ export class Aggregator implements IAggregator {
     return false;
   }
 
+  resolveAvailableAssignmentsWithQuery(
+    query: string
+  ): ASTAssignmentStatement[] {
+    const assignments: ASTAssignmentStatement[] = [];
+    const aggregators = new Set([
+      this,
+      this._parent,
+      this._document.getRootScopeContext().aggregator
+    ]) as Set<Aggregator>;
+
+    for (const aggregator of aggregators) {
+      const definitions = aggregator.definitions;
+
+      for (const definitionId of definitions.keys()) {
+        if (definitionId.includes(query)) {
+          const definition = definitions.get(definitionId)!;
+          assignments.push(...definition);
+        }
+      }
+    }
+
+    return assignments;
+  }
+
   resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[] {
     const itemId = createExpressionId(item);
     const assignments: ASTAssignmentStatement[] = [];

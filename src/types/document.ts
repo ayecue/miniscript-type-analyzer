@@ -1,5 +1,6 @@
 import { Container, SignatureDefinitionType } from 'meta-utils';
 import {
+  ASTAssignmentStatement,
   ASTBase,
   ASTBaseBlockWithScope,
   ASTChunk,
@@ -22,6 +23,7 @@ export interface IDocument {
   intrinsics: Intrinsics;
   globals: IEntity;
 
+  // mainly used for the context of resolving types and defintions in entities
   getPropertiesOfType(type: SignatureDefinitionType): string[];
   hasDefinition(type: SignatureDefinitionType[], property: string): boolean;
   resolveDefinition(
@@ -29,13 +31,18 @@ export interface IDocument {
     property: string,
     noInvoke: boolean
   ): IEntity | null;
+
+  // used for function comments mainly
   getLastASTItemOfLine(line: number): ASTBase;
   findASTItemInLine(line: number, type: ASTType): ASTBase;
+
+  // for outside use mainly
   analyze(): void;
   merge(...typeDocs: IDocument[]): IDocument;
   getScopeContext(block: ASTBaseBlockWithScope): ScopeContext | null;
   getAllScopeContexts(): ScopeContext[];
   getRootScopeContext(): ScopeContext;
+  resolveAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[];
 }
 
 export interface ScopeContext {

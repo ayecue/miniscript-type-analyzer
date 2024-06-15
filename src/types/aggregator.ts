@@ -21,6 +21,7 @@ export interface IAggregator {
   resolveType(item: ASTBase, noInvoke: boolean): IEntity;
   resolveNamespace(item: ASTBase): IEntity;
   defineNamespace(item: ASTBase, entity: IEntity): boolean;
+  resolveAvailableAssignmentsWithQuery(query: string): ASTAssignmentStatement[];
   resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[];
   analyze(): void;
 }

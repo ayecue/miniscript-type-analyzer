@@ -331,7 +331,7 @@ export class Document implements IDocument {
     return null;
   }
 
-  findAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[] {
+  resolveAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[] {
     const assignments: ASTAssignmentStatement[] = [];
     const scopes = [this._root, ...this._root.scopes];
 
