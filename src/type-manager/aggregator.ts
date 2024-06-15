@@ -331,6 +331,8 @@ export class Aggregator implements IAggregator {
 
     let current: IEntity = null;
     const first = chain[0];
+    const firstHasAddressOf = first.unary?.operator === '@';
+    let start = 1;
 
     if (isResolveChainItemWithIdentifier(first)) {
       if (first.getter.name === 'globals') {
@@ -342,7 +344,7 @@ export class Aggregator implements IAggregator {
       } else {
         current = this._scope.resolveProperty(
           first.getter.name,
-          first.unary?.operator === '@'
+          firstHasAddressOf
         );
       }
     } else if (isResolveChainItemWithValue(first)) {
@@ -359,33 +361,37 @@ export class Aggregator implements IAggregator {
       current = newInstance;
     }
 
+    const second = chain[1];
+
+    // if current is within call expression and addressOf is active we need to get return types
+    // in case current is no callable it will just skip the expression
+    if (firstHasAddressOf && second?.type === ASTType.CallExpression) {
+      if (current.isCallable()) {
+        current = this.factory(CompletionItemKind.Property).addType(
+          ...current.getCallableReturnTypes()
+        );
+      }
+      start++;
+    }
+
     const length = chain.length;
 
-    for (let index = 1; index < length && current !== null; index++) {
+    for (let index = start; index < length && current !== null; index++) {
       const item = chain[index];
+      const hasAddressOf = item.unary?.operator === '@';
 
       if (isResolveChainItemWithMember(item)) {
-        current = current.resolveProperty(
-          item.getter.name,
-          item.unary?.operator === '@'
-        );
+        current = current.resolveProperty(item.getter.name, hasAddressOf);
       } else if (isResolveChainItemWithIndex(item)) {
         if (item.getter.type === ASTType.StringLiteral) {
           current = current.resolveProperty(
             (item.getter as ASTLiteral).value.toString(),
-            item.unary?.operator === '@'
+            hasAddressOf
           );
         } else {
           const index = this.resolveType(item.getter);
-          current = current.resolveProperty(
-            index,
-            item.unary?.operator === '@'
-          );
+          current = current.resolveProperty(index, hasAddressOf);
         }
-      } else if (item.type === ASTType.CallExpression && current.isCallable()) {
-        current = this.factory(CompletionItemKind.Property).addType(
-          ...current.getCallableReturnTypes()
-        );
       } else if (item.type === ASTType.SliceExpression) {
         // while slicing it will remain pretty much as the same value
         current = current.copy();
@@ -399,6 +405,19 @@ export class Aggregator implements IAggregator {
         );
         newInstance.setProperty('__isa', current);
         current = newInstance;
+      }
+
+      const next = chain[index + 1];
+
+      // if current is within call expression and addressOf is active we need to get return types
+      // in case current is no callable it will just skip the expression
+      if (hasAddressOf && next?.type === ASTType.CallExpression) {
+        if (current.isCallable()) {
+          current = this.factory(CompletionItemKind.Property).addType(
+            ...current.getCallableReturnTypes()
+          );
+        }
+        index++;
       }
     }
 

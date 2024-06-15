@@ -44,10 +44,10 @@ function handler(
     }
     case ASTType.CallExpression: {
       const callExpr = current as ASTCallExpression;
-      handler(callExpr.base, chain);
+      handler(callExpr.base, chain, unary);
       chain.push({
         type: current.type,
-        unary
+        unary: null
       });
       return;
     }
