@@ -46,6 +46,14 @@ export class Aggregator implements IAggregator {
   protected _root: ASTBaseBlockWithScope;
   protected _definitions: Map<string, ASTAssignmentStatement[]>;
 
+  get definitions(): Map<string, ASTAssignmentStatement[]> {
+    return this._definitions;
+  }
+
+  get parent(): IAggregator | null {
+    return this._parent;
+  }
+
   constructor(options: AggregatorOptions) {
     this._root = options.root;
     this._scope = options.scope;
@@ -439,11 +447,7 @@ export class Aggregator implements IAggregator {
     return false;
   }
 
-  getDefinitions(): Map<string, ASTAssignmentStatement[]> {
-    return this._definitions;
-  }
-
-  findAssignments(item: ASTBase): ASTAssignmentStatement[] {
+  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[] {
     const itemId = createExpressionId(item);
     const assignments: ASTAssignmentStatement[] = [];
     const aggregators = new Set([

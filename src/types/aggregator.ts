@@ -15,11 +15,13 @@ export interface AggregatorOptions {
 }
 
 export interface IAggregator {
+  definitions: Map<string, ASTAssignmentStatement[]>;
+  parent: IAggregator | null;
+
   resolveType(item: ASTBase, noInvoke: boolean): IEntity;
   resolveNamespace(item: ASTBase): IEntity;
   defineNamespace(item: ASTBase, entity: IEntity): boolean;
-  findAssignments(item: ASTBase): ASTAssignmentStatement[];
-  getDefinitions(): Map<string, ASTAssignmentStatement[]>;
+  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[];
   analyze(): void;
 }
 

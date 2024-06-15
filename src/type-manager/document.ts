@@ -5,6 +5,7 @@ import {
   SignatureDefinitionType
 } from 'meta-utils';
 import {
+  ASTAssignmentStatement,
   ASTBase,
   ASTBaseBlockWithScope,
   ASTChunk,
@@ -328,6 +329,25 @@ export class Document implements IDocument {
     }
 
     return null;
+  }
+
+  findAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[] {
+    const assignments: ASTAssignmentStatement[] = [];
+    const scopes = [this._root, ...this._root.scopes];
+
+    for (let index = 0; index < scopes.length; index++) {
+      const current = this._scopeMapping.get(scopes[index]).aggregator;
+      const definitions = current.definitions;
+
+      for (const definitionId of definitions.keys()) {
+        if (definitionId.includes(query)) {
+          const definition = definitions.get(definitionId)!;
+          assignments.push(...definition);
+        }
+      }
+    }
+
+    return assignments;
   }
 
   merge(...typeDocs: Document[]): Document {
