@@ -130,4 +130,21 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
     });
   });
+
+  describe('merged', () => {
+    test('should return argument entity', () => {
+      const doc1 = getDocument(`
+        map.test = function(foo=123)
+        end function
+      `);
+      const doc2 = getDocument(`
+        foo = @{}.test
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const scope = mergedDoc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('foo', true).signatureDefinitions.first().getArguments().length).toEqual(1);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['any']);
+    });
+  });
 });
