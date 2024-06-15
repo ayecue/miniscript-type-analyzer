@@ -263,7 +263,28 @@ export class Document implements IDocument {
     }).addSignatureType(signatureDef);
   }
 
+  protected getAllProperties(): string[] {
+    return Array.from(
+      new Set([
+        ...[
+          ...this._intrinscis.funcRef.values.keys(),
+          ...this._intrinscis.map.values.keys(),
+          ...this._intrinscis.list.values.keys(),
+          ...this._intrinscis.string.values.keys(),
+          ...this._intrinscis.number.values.keys()
+        ].map((key) => key.slice(2)),
+        ...Array.from(this._container.getTypes().values()).flatMap(
+          (signature) => Object.keys(signature.getDefinitions())
+        )
+      ])
+    );
+  }
+
   getPropertiesOfType(type: SignatureDefinitionType): string[] {
+    if (type === SignatureDefinitionBaseType.Any) {
+      return this.getAllProperties();
+    }
+
     switch (type) {
       case SignatureDefinitionBaseType.Function:
         return Array.from(this._intrinscis.funcRef.values.keys()).map((key) =>

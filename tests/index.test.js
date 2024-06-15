@@ -381,5 +381,17 @@ describe('type-manager', () => {
       expect(entityIdentifiers.length).toEqual(15);
       expect(entityIdentifiers.includes('hasIndex')).toEqual(true);
     });
+
+    test('should return all identifiers of one type', () => {
+      const doc = getDocument(`
+        test = unknown
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const entity = scope.resolveProperty('test', true);
+      const entityIdentifiers = entity.getAllIdentifier();
+
+      expect(entityIdentifiers.length).toEqual(25);
+      expect(entityIdentifiers.includes('hasIndex')).toEqual(true);
+    });
   });
 });
