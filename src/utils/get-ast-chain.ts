@@ -44,11 +44,11 @@ function handler(
     }
     case ASTType.CallExpression: {
       const callExpr = current as ASTCallExpression;
-      handler(callExpr.base, chain, unary);
-      chain.push({
-        type: current.type,
-        unary: null
-      });
+      if (unary?.operator === '@') {
+        handler(callExpr.base, chain, null);
+      } else {
+        handler(callExpr.base, chain, unary);
+      }
       return;
     }
     case ASTType.NegationExpression:
