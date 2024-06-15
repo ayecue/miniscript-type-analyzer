@@ -38,6 +38,10 @@ export class ObjectSet<T extends object> {
     return new ObjectSetIterator(Array.from(this._map.values()));
   }
 
+  first(): T {
+    return this._map.values().next().value;
+  }
+
   add(value: T): this {
     const key = hash(value);
     this._map.set(key, value);

@@ -124,6 +124,8 @@ describe('type-manager', () => {
       `);
       const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
 
+      expect(scope.resolveProperty('fn', true).signatureDefinitions.first().getArguments().length).toEqual(1);
+      expect(Array.from(scope.resolveProperty('fn').types)).toEqual(['any']);
       expect(scope.resolveProperty('output').types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
     });
