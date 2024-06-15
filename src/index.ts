@@ -1,4 +1,5 @@
 export { createExpressionHash } from './utils/create-expression-hash';
+export { createExpressionId } from './utils/create-expression-id';
 export { enrichWithMetaInformation } from './utils/enrich-with-meta-information';
 export { createResolveChain } from './utils/get-ast-chain';
 export { getHashCode, getStringHashCode, rotateBits } from './utils/hash';

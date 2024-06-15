@@ -19,6 +19,7 @@ export interface IAggregator {
   resolveNamespace(item: ASTBase): IEntity;
   defineNamespace(item: ASTBase, entity: IEntity): boolean;
   findAssignments(item: ASTBase): ASTAssignmentStatement[];
+  getDefinitions(): Map<string, ASTAssignmentStatement[]>;
   analyze(): void;
 }
 

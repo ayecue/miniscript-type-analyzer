@@ -16,46 +16,49 @@ import {
   ASTUnaryExpression
 } from 'miniscript-core';
 
-import { getHashCode, getStringHashCode } from './hash';
+const attachCache = (c: any, h: string): string => (c.$$id = h);
+const retreiveCache = (c: any): string | null => c.$$id ?? null;
 
-const attachCache = (c: any, h: number): number => (c.$$hash = h);
-const retreiveCache = (c: any): number | null => c.$$hash ?? null;
-
-function hashHandler(current: ASTBase): number {
+function stringHandler(current: ASTBase): string {
   const cachedHash = retreiveCache(current);
   if (cachedHash !== null) return cachedHash;
-
-  let result = getStringHashCode(current.type);
 
   switch (current.type) {
     case ASTType.BinaryExpression:
     case ASTType.LogicalExpression:
     case ASTType.IsaExpression: {
       const evalExpr = current as ASTEvaluationExpression;
-      result ^= getStringHashCode(evalExpr.operator);
-      result ^= hashHandler(evalExpr.left);
-      result ^= hashHandler(evalExpr.right);
-      return attachCache(current, result);
+      return attachCache(
+        current,
+        stringHandler(evalExpr.left) +
+          evalExpr.operator +
+          stringHandler(evalExpr.right)
+      );
     }
     case ASTType.FunctionDeclaration: {
       const fnStatement = current as ASTFunctionStatement;
-      result ^= getHashCode(fnStatement.parameters.length);
+      let body = 'function';
+      const params: string[] = [];
       for (const parameter of fnStatement.parameters) {
         if (parameter.type === ASTType.Identifier) {
-          result ^= getStringHashCode((parameter as ASTIdentifier).name);
+          params.push((parameter as ASTIdentifier).name);
           continue;
         }
         const assignment = parameter as ASTAssignmentStatement;
-        result ^= getStringHashCode(
-          (assignment.variable as ASTIdentifier).name
+        params.push(
+          (assignment.variable as ASTIdentifier).name +
+            '=' +
+            stringHandler(assignment.init)
         );
-        result ^= hashHandler(assignment.init);
       }
-      return attachCache(current, result);
+      if (params.length > 0) {
+        body += '(' + params.join(',') + ')';
+      }
+      return attachCache(current, body);
     }
     case ASTType.ParenthesisExpression: {
       const parenExpr = current as ASTParenthesisExpression;
-      return hashHandler(parenExpr.expression);
+      return attachCache(current, stringHandler(parenExpr.expression));
     }
     case ASTType.MemberExpression: {
       const memberExpr = current as ASTMemberExpression;
@@ -67,16 +70,18 @@ function hashHandler(current: ASTBase): number {
           identifier === 'locals' ||
           identifier === 'outer'
         ) {
-          result = getStringHashCode(ASTType.Identifier);
-          result ^= getStringHashCode(
+          return attachCache(
+            current,
             (memberExpr.identifier as ASTIdentifier).name
           );
-          return attachCache(current, result);
         }
       }
-      result ^= hashHandler(memberExpr.base);
-      result ^= hashHandler(memberExpr.identifier);
-      return attachCache(current, result);
+      return attachCache(
+        current,
+        stringHandler(memberExpr.base) +
+          '.' +
+          (memberExpr.identifier as ASTIdentifier).name
+      );
     }
     case ASTType.IndexExpression: {
       const indexExpr = current as ASTIndexExpression;
@@ -89,86 +94,103 @@ function hashHandler(current: ASTBase): number {
             identifier === 'locals' ||
             identifier === 'outer'
           ) {
-            result = getStringHashCode(ASTType.Identifier);
-            result ^= getStringHashCode(
+            return attachCache(
+              current,
               (indexExpr.index as ASTLiteral).value.toString()
             );
-            return attachCache(current, result);
           }
         }
 
-        result = getStringHashCode(ASTType.MemberExpression);
-        result ^= hashHandler(indexExpr.base);
-        let identifierHash = getStringHashCode(ASTType.Identifier);
-        identifierHash ^= getStringHashCode(
-          (indexExpr.index as ASTLiteral).value.toString()
+        return attachCache(
+          current,
+          stringHandler(indexExpr.base) +
+            '.' +
+            (indexExpr.index as ASTLiteral).value.toString()
         );
-        result ^= identifierHash;
-      } else {
-        result ^= hashHandler(indexExpr.base);
-        result ^= hashHandler(indexExpr.index);
       }
-      return attachCache(current, result);
+      return attachCache(
+        current,
+        stringHandler(indexExpr.base) +
+          '[' +
+          stringHandler(indexExpr.index) +
+          ']'
+      );
     }
     case ASTType.CallExpression: {
       const callExpr = current as ASTCallExpression;
-      result ^= hashHandler(callExpr.base);
-      result ^= getHashCode(callExpr.arguments.length);
+      let body = stringHandler(callExpr.base);
+      const args: string[] = [];
       for (const arg of callExpr.arguments) {
-        result ^= hashHandler(arg);
+        args.push(stringHandler(arg));
       }
-      return attachCache(current, result);
+      if (args.length > 0) {
+        body += '(' + args.join(',') + ')';
+      }
+      return attachCache(current, body);
     }
     case ASTType.NegationExpression:
     case ASTType.BinaryNegatedExpression:
     case ASTType.UnaryExpression: {
       const unaryExpr = current as ASTUnaryExpression;
-      result ^= unaryExpr.operator ? getStringHashCode(unaryExpr.operator) : 1;
-      result ^= hashHandler(unaryExpr.argument);
-      return attachCache(current, result);
+      if (unaryExpr.operator == null) {
+        return attachCache(current, stringHandler(unaryExpr.argument));
+      } else if (unaryExpr.operator === '@') {
+        return attachCache(
+          current,
+          unaryExpr.operator + stringHandler(unaryExpr.argument)
+        );
+      }
+      return attachCache(
+        current,
+        unaryExpr.operator + ' ' + stringHandler(unaryExpr.argument)
+      );
     }
     case ASTType.Identifier: {
       const identifier = current as ASTIdentifier;
-      result ^= getStringHashCode(identifier.name);
-      return attachCache(current, result);
+      return attachCache(current, identifier.name);
     }
     case ASTType.NumericLiteral:
     case ASTType.StringLiteral:
     case ASTType.NilLiteral: {
-      result ^= getStringHashCode((current as ASTLiteral).value.toString());
-      return attachCache(current, result);
+      return attachCache(current, (current as ASTLiteral).raw.toString());
     }
     case ASTType.MapConstructorExpression: {
       const mapExpr = current as ASTMapConstructorExpression;
-      result ^= getHashCode(mapExpr.fields.length);
+      const fields: string[] = [];
       for (const field of mapExpr.fields) {
-        result ^= hashHandler(field.key);
-        result ^= hashHandler(field.value);
+        fields.push(
+          stringHandler(field.key) + ':' + stringHandler(field.value)
+        );
       }
-      return attachCache(current, result);
+      return attachCache(current, '{' + fields.join(',') + '}');
     }
     case ASTType.ListConstructorExpression: {
       const listExpr = current as ASTListConstructorExpression;
-      result ^= getHashCode(listExpr.fields.length);
+      const fields: string[] = [];
       for (const field of listExpr.fields) {
-        result ^= hashHandler(field.value);
+        fields.push(stringHandler(field.value));
       }
-      return attachCache(current, result);
+      return attachCache(current, '[' + fields.join(',') + ']');
     }
     case ASTType.SliceExpression: {
       const sliceExpr = current as ASTSliceExpression;
-      result ^= hashHandler(sliceExpr.base);
-      result ^= hashHandler(sliceExpr.left);
-      result ^= hashHandler(sliceExpr.right);
-      return attachCache(current, result);
+      return attachCache(
+        current,
+        stringHandler(sliceExpr.base) +
+          '[' +
+          stringHandler(sliceExpr.left) +
+          ':' +
+          stringHandler(sliceExpr.right) +
+          ']'
+      );
     }
   }
 
   console.warn(`Unexpected ast type ${current.type} in hash handler!`);
 
-  return attachCache(current, result);
+  return attachCache(current, '');
 }
 
-export function createExpressionHash(item: ASTBase): number {
-  return hashHandler(item);
+export function createExpressionId(item: ASTBase): string {
+  return stringHandler(item);
 }

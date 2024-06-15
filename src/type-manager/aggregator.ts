@@ -34,7 +34,7 @@ import {
   isResolveChainItemWithValue,
   ResolveChainItem
 } from '../types/resolve';
-import { createExpressionHash } from '../utils/create-expression-hash';
+import { createExpressionId } from '../utils/create-expression-id';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { createResolveChain } from '../utils/get-ast-chain';
 import { Entity } from './entity';
@@ -44,7 +44,7 @@ export class Aggregator implements IAggregator {
   protected _scope: IScope;
   protected _document: IDocument;
   protected _root: ASTBaseBlockWithScope;
-  protected _definitions: Map<number, ASTAssignmentStatement[]>;
+  protected _definitions: Map<string, ASTAssignmentStatement[]>;
 
   constructor(options: AggregatorOptions) {
     this._root = options.root;
@@ -439,8 +439,12 @@ export class Aggregator implements IAggregator {
     return false;
   }
 
+  getDefinitions(): Map<string, ASTAssignmentStatement[]> {
+    return this._definitions;
+  }
+
   findAssignments(item: ASTBase): ASTAssignmentStatement[] {
-    const itemHash = createExpressionHash(item);
+    const itemId = createExpressionId(item);
     const assignments: ASTAssignmentStatement[] = [];
     const aggregators = new Set([
       this,
@@ -450,7 +454,7 @@ export class Aggregator implements IAggregator {
 
     for (const aggregator of aggregators) {
       if (aggregator == null) continue;
-      const definition = aggregator._definitions.get(itemHash);
+      const definition = aggregator._definitions.get(itemId);
       if (definition != null) assignments.push(...definition);
     }
 
@@ -460,7 +464,7 @@ export class Aggregator implements IAggregator {
   analyze() {
     for (let index = 0; index < this._root.assignments.length; index++) {
       const item = this._root.assignments[index] as ASTAssignmentStatement;
-      const variableHash = createExpressionHash(item.variable);
+      const variableId = createExpressionId(item.variable);
       const value =
         this.resolveType(item.init) ??
         new Entity({
@@ -470,12 +474,12 @@ export class Aggregator implements IAggregator {
 
       this.defineNamespace(item.variable, value);
 
-      const definition = this._definitions.get(variableHash);
+      const definition = this._definitions.get(variableId);
 
       if (definition) {
         definition.push(item);
       } else {
-        this._definitions.set(variableHash, [item]);
+        this._definitions.set(variableId, [item]);
       }
     }
   }
