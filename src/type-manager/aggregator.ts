@@ -489,7 +489,7 @@ export class Aggregator implements IAggregator {
       const item = this._root.assignments[index] as ASTAssignmentStatement;
       const variableId = createExpressionId(item.variable);
       const value =
-        this.resolveType(item.init) ??
+        this.resolveType(item.init)?.copy() ??
         new Entity({
           kind: CompletionItemKind.Value,
           document: this._document
