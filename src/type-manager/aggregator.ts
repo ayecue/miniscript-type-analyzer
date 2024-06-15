@@ -365,8 +365,8 @@ export class Aggregator implements IAggregator {
 
     // if current is within call expression and addressOf is active we need to get return types
     // in case current is no callable it will just skip the expression
-    if (firstHasAddressOf && second?.type === ASTType.CallExpression) {
-      if (current.isCallable()) {
+    if (second?.type === ASTType.CallExpression) {
+      if (firstHasAddressOf && current.isCallable()) {
         current = this.factory(CompletionItemKind.Property).addType(
           ...current.getCallableReturnTypes()
         );
@@ -411,8 +411,8 @@ export class Aggregator implements IAggregator {
 
       // if current is within call expression and addressOf is active we need to get return types
       // in case current is no callable it will just skip the expression
-      if (hasAddressOf && next?.type === ASTType.CallExpression) {
-        if (current.isCallable()) {
+      if (next?.type === ASTType.CallExpression) {
+        if (hasAddressOf && current.isCallable()) {
           current = this.factory(CompletionItemKind.Property).addType(
             ...current.getCallableReturnTypes()
           );

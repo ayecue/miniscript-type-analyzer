@@ -189,5 +189,14 @@ describe('type-manager', () => {
 
       expect(Array.from(scope.resolveProperty('foo', true).types)).toEqual(['number', 'null']);
     });
+
+    test('should return next entity', () => {
+      const doc = getDocument(`
+        foo = @split().join()
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('foo', true).types)).toEqual(['string']);
+    });
   });
 });
