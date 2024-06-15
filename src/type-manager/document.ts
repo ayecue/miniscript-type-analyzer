@@ -1,7 +1,6 @@
 import {
   Container,
   SignatureDefinitionBaseType,
-  SignatureDefinitionFunction,
   SignatureDefinitionType
 } from 'meta-utils';
 import {
@@ -193,13 +192,24 @@ export class Document implements IDocument {
   }
 
   hasDefinition(types: SignatureDefinitionType[], property: string): boolean {
-    for (const type of types) {
+    const uniqTypes = new Set(types);
+
+    if (uniqTypes.has(SignatureDefinitionBaseType.Any)) {
+      uniqTypes.add(SignatureDefinitionBaseType.Function);
+      uniqTypes.add(SignatureDefinitionBaseType.Map);
+      uniqTypes.add(SignatureDefinitionBaseType.List);
+      uniqTypes.add(SignatureDefinitionBaseType.String);
+      uniqTypes.add(SignatureDefinitionBaseType.Number);
+    }
+
+    for (const type of uniqTypes) {
       if (this.hasDefinitionEx(type, property)) return true;
     }
+
     return false;
   }
 
-  protected resolveDefinitionEx(
+  protected resolveInnerDefinition(
     type: SignatureDefinitionType,
     property: string
   ): IEntity | null {
@@ -219,48 +229,77 @@ export class Document implements IDocument {
     }
   }
 
-  resolveDefinition(
+  protected resolveInnerDefintions(
     types: SignatureDefinitionType[],
-    property: string,
-    noInvoke: boolean = false
-  ): IEntity {
+    property: string
+  ): IEntity | null {
+    const uniqTypes = new Set(types);
+
+    if (uniqTypes.has(SignatureDefinitionBaseType.Any)) {
+      uniqTypes.add(SignatureDefinitionBaseType.Function);
+      uniqTypes.add(SignatureDefinitionBaseType.Map);
+      uniqTypes.add(SignatureDefinitionBaseType.List);
+      uniqTypes.add(SignatureDefinitionBaseType.String);
+      uniqTypes.add(SignatureDefinitionBaseType.Number);
+    }
+
     const innerMatchingEntity: IEntity = new Entity({
       kind: CompletionItemKind.Value,
       document: this
     });
-    const signatureDef = this._container.getDefinition(types, property);
 
-    for (const type of types) {
-      const item = this.resolveDefinitionEx(type, property);
+    for (const type of uniqTypes) {
+      const item = this.resolveInnerDefinition(type, property);
       if (item !== null) innerMatchingEntity.extend(item);
     }
 
-    if (innerMatchingEntity.types.size > 0) {
-      return resolveEntity(this, innerMatchingEntity, noInvoke);
-    }
+    return innerMatchingEntity.types.size > 0 ? innerMatchingEntity : null;
+  }
+
+  protected resolveExternalDefinitions(
+    types: SignatureDefinitionType[],
+    property: string
+  ): IEntity | null {
+    const signatureDef = this._container.getDefinition(types, property);
 
     if (signatureDef === null) {
-      return new Entity({
-        kind: CompletionItemKind.Variable,
-        document: this
-      }).addType(SignatureDefinitionBaseType.Any);
-    }
-
-    if (
-      signatureDef.getType().type === SignatureDefinitionBaseType.Function &&
-      !noInvoke
-    ) {
-      const fnDef = signatureDef as SignatureDefinitionFunction;
-      return new Entity({
-        kind: CompletionItemKind.Variable,
-        document: this
-      }).addType(...fnDef.getReturns().map((item) => item.type));
+      return null;
     }
 
     return new Entity({
       kind: CompletionItemKind.Variable,
       document: this
     }).addSignatureType(signatureDef);
+  }
+
+  resolveDefinition(
+    types: SignatureDefinitionType[],
+    property: string,
+    noInvoke: boolean = false
+  ): IEntity {
+    const innerMatchingEntity = this.resolveInnerDefintions(types, property);
+    const externalDefinitionEntity = this.resolveExternalDefinitions(
+      types,
+      property
+    );
+
+    if (innerMatchingEntity === null && externalDefinitionEntity === null) {
+      return new Entity({
+        kind: CompletionItemKind.Variable,
+        document: this
+      }).addType(SignatureDefinitionBaseType.Any);
+    }
+
+    const mergedEntity = new Entity({
+      kind: CompletionItemKind.Variable,
+      document: this
+    });
+
+    if (innerMatchingEntity !== null) mergedEntity.extend(innerMatchingEntity);
+    if (externalDefinitionEntity !== null)
+      mergedEntity.extend(externalDefinitionEntity);
+
+    return resolveEntity(this, mergedEntity, noInvoke);
   }
 
   protected getAllProperties(): string[] {

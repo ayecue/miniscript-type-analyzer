@@ -42,6 +42,10 @@ export class ObjectSet<T extends object> {
     return this._map.values().next().value;
   }
 
+  toArray(): T[] {
+    return Array.from(this._map.values());
+  }
+
   add(value: T): this {
     const key = hash(value);
     this._map.set(key, value);
