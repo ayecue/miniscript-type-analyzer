@@ -410,6 +410,26 @@ export class Document implements IDocument {
     return assignments;
   }
 
+  resolveType(item: ASTBase, noInvoke?: boolean): IEntity {
+    return (
+      this._scopeMapping
+        .get(item.scope)
+        ?.aggregator.resolveType(item, noInvoke) ??
+      new Entity({
+        kind: CompletionItemKind.Value,
+        document: this
+      }).addType(SignatureDefinitionBaseType.Any)
+    );
+  }
+
+  resolveNamespace(item: ASTBase, noInvoke: boolean = false): IEntity | null {
+    return (
+      this._scopeMapping
+        .get(item.scope)
+        ?.aggregator.resolveNamespace(item, noInvoke) ?? null
+    );
+  }
+
   merge(...typeDocs: Document[]): Document {
     const newTypeDoc = new Document({
       root: this._root,
