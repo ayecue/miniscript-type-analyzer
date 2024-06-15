@@ -393,5 +393,19 @@ describe('type-manager', () => {
       expect(entityIdentifiers.length).toEqual(25);
       expect(entityIdentifiers.includes('hasIndex')).toEqual(true);
     });
+
+    test('should return all identifiers of one type and custom intrinsics', () => {
+      const doc = getDocument(`
+        map.test = function(foo=123)
+        end function
+        test = unknown
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const entity = scope.resolveProperty('test', true);
+      const entityIdentifiers = entity.getAllIdentifier();
+
+      expect(entityIdentifiers.length).toEqual(26);
+      expect(entityIdentifiers.includes('test')).toEqual(true);
+    });
   });
 });
