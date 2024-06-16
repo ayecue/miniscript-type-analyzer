@@ -62,13 +62,17 @@ export const resolveEntity = (
     if (returnTypes) {
       return new Entity({
         kind: CompletionItemKind.Variable,
-        document
+        document,
+        label: entity.label,
+        context: entity.context
       }).addType(...returnTypes);
     }
 
     return new Entity({
       kind: CompletionItemKind.Variable,
-      document
+      document,
+      label: entity.label,
+      context: entity.context
     }).addType(SignatureDefinitionBaseType.Any);
   }
 
@@ -104,7 +108,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
 
   setProperty(
     origin: IEntity,
-    _document: IDocument,
+    document: IDocument,
     property: string,
     entity: Entity
   ): boolean {
@@ -116,7 +120,14 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
     if (existingEntity) {
       existingEntity.extend(entity);
     } else {
-      origin.values.set(key, entity);
+      origin.values.set(
+        key,
+        entity.copy({
+          document,
+          label: property,
+          context: origin
+        })
+      );
     }
 
     return true;
@@ -147,13 +158,17 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
     if (!isEligibleForProperties(origin)) {
       return new Entity({
         kind: CompletionItemKind.Variable,
-        document
+        document,
+        label: property.label,
+        context: origin
       }).addType(SignatureDefinitionBaseType.Any);
     }
 
     const aggregatedEntity = new Entity({
       kind: CompletionItemKind.Variable,
-      document
+      document,
+      label: property.label,
+      context: origin
     });
 
     for (const type of property.types) {
@@ -167,7 +182,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 
   setProperty(
     origin: IEntity,
-    _document: IDocument,
+    document: IDocument,
     property: Entity,
     entity: Entity
   ): boolean {
@@ -179,7 +194,14 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
       if (existingEntity) {
         existingEntity.extend(entity);
       } else {
-        origin.values.set(key, entity);
+        origin.values.set(
+          key,
+          entity.copy({
+            document,
+            label: type,
+            context: origin
+          })
+        );
       }
     }
     return true;
@@ -187,7 +209,8 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 };
 
 export class Entity implements IEntity {
-  readonly kind: CompletionItemKind;
+  protected _kind: CompletionItemKind;
+  protected _context: IEntity | null;
   protected _label: string;
   protected _document: IDocument;
   protected _signatureDefinitions: ObjectSet<SignatureDefinition>;
@@ -195,8 +218,20 @@ export class Entity implements IEntity {
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
 
+  get kind() {
+    return this._kind;
+  }
+
   get signatureDefinitions() {
     return this._signatureDefinitions;
+  }
+
+  get context() {
+    return this._context;
+  }
+
+  get label() {
+    return this._label;
   }
 
   get types() {
@@ -208,12 +243,13 @@ export class Entity implements IEntity {
   }
 
   constructor(options: EntityOptions) {
-    this.kind = options.kind;
+    this._kind = options.kind;
     this._label = options.label ?? 'anonymous';
     this._signatureDefinitions =
       options.signatureDefinitions ?? new ObjectSet();
     this._types = options.types ?? new Set();
     this._values = options.values ?? new Map();
+    this._context = options.context ?? null;
     this._document = options.document;
     this._returnEntity = options.returnEntity ?? null;
   }
@@ -248,13 +284,19 @@ export class Entity implements IEntity {
     return this._returnEntity;
   }
 
+  setKind(kind: CompletionItemKind): this {
+    this._kind = kind;
+    return this;
+  }
+
   setLabel(label: string): this {
     this._label = label;
     return this;
   }
 
-  getLabel() {
-    return this._label;
+  setContext(context: IEntity): this {
+    this._context = context;
+    return this;
   }
 
   addType(...types: SignatureDefinitionType[]): this {
@@ -332,7 +374,14 @@ export class Entity implements IEntity {
     for (const [key, value] of entity.values) {
       const item = this.values.get(key);
       if (item == null) {
-        this.values.set(key, value.copy(this._document));
+        this.values.set(
+          key,
+          value.copy({
+            document: this._document,
+            label: key,
+            context: this
+          })
+        );
       } else {
         item.extend(value);
       }
@@ -348,8 +397,7 @@ export class Entity implements IEntity {
     for (const property of properties) {
       const entity = new Entity({
         kind: CompletionItemKind.Property,
-        document: this._document,
-        label: property
+        document: this._document
       });
       const definition = signature.getDefinition(property);
 
@@ -410,17 +458,27 @@ export class Entity implements IEntity {
     return this.toJSONInternal();
   }
 
-  copy(document?: IDocument): IEntity {
+  copy(
+    options: Partial<
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+    > = {}
+  ): IEntity {
     return new Entity({
-      kind: this.kind,
-      document: document ?? this._document,
-      label: this._label,
+      kind: options.kind ?? this.kind,
+      document: options.document ?? this._document,
+      label: options.label ?? this._label,
+      context: options.context ?? this._context,
       signatureDefinitions: new ObjectSet(
         Array.from(this._signatureDefinitions, (value) => value.copy())
       ),
       types: new Set(this._types),
       values: new Map(
-        Array.from(this._values, ([key, value]) => [key, value.copy(document)])
+        Array.from(this._values, ([key, value]) => [
+          key,
+          value.copy({
+            document: options.document
+          })
+        ])
       ),
       returnEntity: this._returnEntity
     });

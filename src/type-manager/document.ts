@@ -9,6 +9,7 @@ import {
   ASTBase,
   ASTBaseBlockWithScope,
   ASTChunk,
+  ASTFunctionStatement,
   ASTType
 } from 'miniscript-core';
 
@@ -122,7 +123,8 @@ export class Document implements IDocument {
   protected initGlobals(): IEntity {
     const globals = new Entity({
       kind: CompletionItemKind.Constant,
-      document: this
+      document: this,
+      label: 'globals'
     })
       .addType(SignatureDefinitionBaseType.Map)
       .insertSignature(
@@ -146,7 +148,7 @@ export class Document implements IDocument {
     return globals;
   }
 
-  protected analyzeScope(block: ASTBaseBlockWithScope): void {
+  protected analyzeScope(block: ASTFunctionStatement): void {
     const parentContext = this._scopeMapping.get(block.scope)!;
     const scope = new Scope({
       document: this,
@@ -166,6 +168,19 @@ export class Document implements IDocument {
       scope,
       aggregator
     });
+
+    const fnEntity = this.resolveNamespace(
+      (block.assignment as ASTAssignmentStatement).variable,
+      true
+    );
+    const context = fnEntity?.context;
+
+    if (
+      context !== null &&
+      context.types.has(SignatureDefinitionBaseType.Map)
+    ) {
+      scope.setContext(context);
+    }
   }
 
   analyze() {
@@ -189,7 +204,7 @@ export class Document implements IDocument {
 
     for (let index = 0; index < this._root.scopes.length; index++) {
       const item = this._root.scopes[index];
-      this.analyzeScope(item);
+      this.analyzeScope(item as ASTFunctionStatement);
     }
   }
 
@@ -264,7 +279,7 @@ export class Document implements IDocument {
     }
 
     const innerMatchingEntity: IEntity = new Entity({
-      kind: CompletionItemKind.Value,
+      kind: CompletionItemKind.Variable,
       document: this,
       label: property
     });
@@ -465,7 +480,7 @@ export class Document implements IDocument {
         .get(item.scope)
         ?.aggregator.resolveType(item, noInvoke) ??
       new Entity({
-        kind: CompletionItemKind.Value,
+        kind: CompletionItemKind.Variable,
         document: this
       }).addType(SignatureDefinitionBaseType.Any)
     );

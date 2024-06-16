@@ -7,7 +7,7 @@ import {
 
 import { CompletionItemKind } from '../types/completion';
 import { IDocument } from '../types/document';
-import { IEntity, IScope, ScopeOptions } from '../types/object';
+import { EntityOptions, IEntity, IScope, ScopeOptions } from '../types/object';
 import { ObjectSet } from '../utils/object-set';
 import { Entity, resolveEntity } from './entity';
 
@@ -26,7 +26,11 @@ export class Scope implements IScope {
   }
 
   get label() {
-    return 'anonymous';
+    return this._locals.label;
+  }
+
+  get context() {
+    return this._locals.context;
   }
 
   get types(): Set<SignatureDefinitionType> {
@@ -56,8 +60,9 @@ export class Scope implements IScope {
     this._locals =
       options.locals ??
       new Entity({
-        kind: CompletionItemKind.Value,
-        document: this._document
+        kind: CompletionItemKind.Constant,
+        document: this._document,
+        label: 'locals'
       }).addType(SignatureDefinitionBaseType.Map);
   }
 
@@ -127,12 +132,19 @@ export class Scope implements IScope {
     throw new Error('Scope cannot get return entity!');
   }
 
-  setLabel(): this {
-    throw new Error('Scope cannot set label!');
+  setKind(kind: CompletionItemKind): this {
+    this._locals.setKind(kind);
+    return this;
   }
 
-  getLabel(): string {
-    throw new Error('Scope cannot get label!');
+  setLabel(label: string): this {
+    this._locals.setLabel(label);
+    return this;
+  }
+
+  setContext(context: IEntity): this {
+    this._locals.setContext(context);
+    return this;
   }
 
   insertSignature(signature: Signature): this {
@@ -173,12 +185,20 @@ export class Scope implements IScope {
     return this._locals.toJSON();
   }
 
-  copy(document?: IDocument): IScope {
+  copy(
+    options: Partial<
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+    > = {}
+  ): IScope {
     return new Scope({
-      document: document ?? this._document,
-      parent: this._parent.copy(document),
-      globals: this._globals.copy(document),
-      locals: this._locals.copy(document)
+      document: options.document ?? this._document,
+      parent: this._parent.copy({
+        document: options.document
+      }),
+      globals: this._globals.copy({
+        document: options.document
+      }),
+      locals: this._locals.copy(options)
     });
   }
 }

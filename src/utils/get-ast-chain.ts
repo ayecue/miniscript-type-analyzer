@@ -27,7 +27,7 @@ function handler(
       const memberExpr = current as ASTMemberExpression;
       handler(memberExpr.base, chain);
       chain.push({
-        type: current.type,
+        ref: current,
         getter: memberExpr.identifier as ASTIdentifier,
         unary,
         isInCallExpression
@@ -38,7 +38,7 @@ function handler(
       const indexExpr = current as ASTIndexExpression;
       handler(indexExpr.base, chain);
       chain.push({
-        type: current.type,
+        ref: current,
         getter: indexExpr.index,
         unary,
         isInCallExpression
@@ -59,7 +59,7 @@ function handler(
     }
     case ASTType.Identifier: {
       chain.push({
-        type: current.type,
+        ref: current,
         getter: current as ASTIdentifier,
         unary,
         isInCallExpression
@@ -72,7 +72,7 @@ function handler(
     case ASTType.MapConstructorExpression:
     case ASTType.ListConstructorExpression: {
       chain.push({
-        type: current.type,
+        ref: current,
         value: current,
         unary,
         isInCallExpression
@@ -81,7 +81,7 @@ function handler(
     }
     case ASTType.SliceExpression: {
       chain.push({
-        type: current.type,
+        ref: current,
         unary,
         isInCallExpression
       });

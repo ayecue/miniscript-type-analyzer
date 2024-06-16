@@ -16,6 +16,7 @@ export interface EntityOptions {
   types?: Set<SignatureDefinitionType>;
   values?: Map<string, IEntity>;
   returnEntity?: IEntity;
+  context?: IEntity;
 }
 
 export interface IEntityPropertyHandler<T> {
@@ -39,21 +40,28 @@ export interface IEntity {
   signatureDefinitions: ObjectSet<SignatureDefinition>;
   types: Set<SignatureDefinitionType>;
   values: Map<string, IEntity>;
+  label: string;
+  context: IEntity | null;
   addSignatureType(definition: SignatureDefinition): this;
   hasProperty(name: string | IEntity): boolean;
   resolveProperty(name: string | IEntity, noInvoke?: boolean): IEntity | null;
   setProperty(name: string | IEntity, item: IEntity): boolean;
   addType(...types: SignatureDefinitionType[]): this;
   insertSignature(signature: Signature): this;
-  copy(document?: IDocument): IEntity;
+  copy(
+    options?: Partial<
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+    >
+  ): IEntity;
   extend(entity: IEntity): this;
   getAllIdentifier(): Map<string, CompletionItemKind>;
   isCallable(): boolean;
   getCallableReturnTypes(): string[] | null;
   setReturnEntity(entitiy: IEntity): this;
   getReturnEntity(): IEntity;
+  setKind(kind: CompletionItemKind): this;
   setLabel(label: string): this;
-  getLabel(): string;
+  setContext(context: IEntity): this;
   toJSON(): object;
 }
 
@@ -68,5 +76,9 @@ export interface IScope extends IEntity {
   outer: IEntity;
   globals: IEntity;
   locals: IEntity;
-  copy(document?: IDocument): IScope;
+  copy(
+    options?: Partial<
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+    >
+  ): IScope;
 }
