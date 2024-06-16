@@ -178,6 +178,10 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
       aggregatedEntity.extend(entity);
     }
 
+    if (aggregatedEntity.types.size === 0) {
+      aggregatedEntity.addType(SignatureDefinitionBaseType.Any);
+    }
+
     return resolveEntity(document, aggregatedEntity, noInvoke);
   },
 
