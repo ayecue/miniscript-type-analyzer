@@ -195,14 +195,6 @@ export class Entity implements IEntity {
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
 
-  get label() {
-    return this._label;
-  }
-
-  set label(label: string) {
-    this._label = label;
-  }
-
   get signatureDefinitions() {
     return this._signatureDefinitions;
   }
@@ -254,6 +246,15 @@ export class Entity implements IEntity {
 
   getReturnEntity(): IEntity | null {
     return this._returnEntity;
+  }
+
+  setLabel(label: string): this {
+    this._label = label;
+    return this;
+  }
+
+  getLabel() {
+    return this._label;
   }
 
   addType(...types: SignatureDefinitionType[]): this {
@@ -413,7 +414,7 @@ export class Entity implements IEntity {
     return new Entity({
       kind: this.kind,
       document: document ?? this._document,
-      label: this.label,
+      label: this._label,
       signatureDefinitions: new ObjectSet(
         Array.from(this._signatureDefinitions, (value) => value.copy())
       ),

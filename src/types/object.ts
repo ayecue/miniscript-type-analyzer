@@ -36,7 +36,6 @@ export interface IEntityPropertyHandler<T> {
 
 export interface IEntity {
   kind: CompletionItemKind;
-  label: string;
   signatureDefinitions: ObjectSet<SignatureDefinition>;
   types: Set<SignatureDefinitionType>;
   values: Map<string, IEntity>;
@@ -53,6 +52,8 @@ export interface IEntity {
   getCallableReturnTypes(): string[] | null;
   setReturnEntity(entitiy: IEntity): this;
   getReturnEntity(): IEntity;
+  setLabel(label: string): this;
+  getLabel(): string;
   toJSON(): object;
 }
 

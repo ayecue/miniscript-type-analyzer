@@ -191,7 +191,7 @@ export class Aggregator implements IAggregator {
       }
     }
 
-    return mapEntity;
+    return mapEntity.setLabel('{}');
   }
 
   protected resolveListConstructorExpression(
@@ -210,7 +210,7 @@ export class Aggregator implements IAggregator {
       listEntity.setProperty(key, value);
     }
 
-    return listEntity;
+    return listEntity.setLabel('[]');
   }
 
   protected resolveIndexExpression(
@@ -235,12 +235,12 @@ export class Aggregator implements IAggregator {
     const entity = this.resolveNamespace(item, noInvoke);
 
     if (entity === null) {
-      return this.factory(CompletionItemKind.Value).addType(
-        SignatureDefinitionBaseType.Any
-      );
+      return this.factory(CompletionItemKind.Value)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLabel((item.identifier as ASTIdentifier).name);
     }
 
-    return entity;
+    return entity.setLabel((item.identifier as ASTIdentifier).name);
   }
 
   protected resolveIdentifier(
@@ -249,9 +249,9 @@ export class Aggregator implements IAggregator {
   ): IEntity {
     return (
       this._scope.resolveProperty(item.name, noInvoke) ??
-      this.factory(CompletionItemKind.Value).addType(
-        SignatureDefinitionBaseType.Any
-      )
+      this.factory(CompletionItemKind.Value)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLabel(item.name)
     );
   }
 
@@ -293,16 +293,18 @@ export class Aggregator implements IAggregator {
       case ASTType.UnaryExpression:
         return this.resolveUnaryExpression(item as ASTUnaryExpression);
       case ASTType.NilLiteral:
-        return this.factory(CompletionItemKind.Value).addType('null');
+        return this.factory(CompletionItemKind.Value)
+          .addType('null')
+          .setLabel('literal');
       case ASTType.StringLiteral:
-        return this.factory(CompletionItemKind.Value).addType(
-          SignatureDefinitionBaseType.String
-        );
+        return this.factory(CompletionItemKind.Value)
+          .addType(SignatureDefinitionBaseType.String)
+          .setLabel('literal');
       case ASTType.NumericLiteral:
       case ASTType.BooleanLiteral:
-        return this.factory(CompletionItemKind.Value).addType(
-          SignatureDefinitionBaseType.Number
-        );
+        return this.factory(CompletionItemKind.Value)
+          .addType(SignatureDefinitionBaseType.Number)
+          .setLabel('literal');
       default:
         return this.factory(CompletionItemKind.Value).addType(
           SignatureDefinitionBaseType.Any

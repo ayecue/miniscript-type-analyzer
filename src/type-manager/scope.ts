@@ -127,6 +127,14 @@ export class Scope implements IScope {
     throw new Error('Scope cannot get return entity!');
   }
 
+  setLabel(): this {
+    throw new Error('Scope cannot set label!');
+  }
+
+  getLabel(): string {
+    throw new Error('Scope cannot get label!');
+  }
+
   insertSignature(signature: Signature): this {
     this._locals.insertSignature(signature);
     return this;
