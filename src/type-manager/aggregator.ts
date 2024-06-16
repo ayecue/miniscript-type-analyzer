@@ -245,19 +245,22 @@ export class Aggregator implements IAggregator {
         .setLabel((item.identifier as ASTIdentifier).name);
     }
 
-    return entity.setLabel((item.identifier as ASTIdentifier).name);
+    return entity;
   }
 
   protected resolveIdentifier(
     item: ASTIdentifier,
     noInvoke: boolean = false
   ): IEntity {
-    return (
-      this._scope.resolveProperty(item.name, noInvoke) ??
-      this.factory(CompletionItemKind.Variable)
+    const entity = this.resolveNamespace(item, noInvoke);
+
+    if (entity === null) {
+      return this.factory(CompletionItemKind.Property)
         .addType(SignatureDefinitionBaseType.Any)
-        .setLabel(item.name)
-    );
+        .setLabel(item.name);
+    }
+
+    return entity;
   }
 
   resolveType(item: ASTBase, noInvoke: boolean = false): IEntity {
