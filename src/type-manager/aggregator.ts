@@ -128,7 +128,8 @@ export class Aggregator implements IAggregator {
 
     return this.factory(CompletionItemKind.Function)
       .addType(SignatureDefinitionBaseType.Function)
-      .addSignatureType(enrichWithMetaInformation(signature));
+      .addSignatureType(enrichWithMetaInformation(signature))
+      .setLine(item.start.line);
   }
 
   protected resolveBinaryExpression(item: ASTEvaluationExpression) {
@@ -143,7 +144,7 @@ export class Aggregator implements IAggregator {
       this.factory(CompletionItemKind.Variable).addType(
         SignatureDefinitionBaseType.Any
       );
-    return left.extend(right);
+    return left.extend(right).setLine(item.start.line);
   }
 
   protected resolveLogicalExpression(item: ASTEvaluationExpression) {
@@ -158,19 +159,19 @@ export class Aggregator implements IAggregator {
       this.factory(CompletionItemKind.Variable).addType(
         SignatureDefinitionBaseType.Any
       );
-    return left.extend(right);
+    return left.extend(right).setLine(item.start.line);
   }
 
   protected resolveUnaryExpression(item: ASTUnaryExpression) {
     const entity = this.resolveNamespace(item);
 
     if (entity === null) {
-      return this.factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Any
-      );
+      return this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line);
     }
 
-    return entity;
+    return entity.setLine(item.start.line);
   }
 
   protected resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
@@ -179,7 +180,7 @@ export class Aggregator implements IAggregator {
     );
 
     for (const field of item.fields) {
-      const value = this.resolveType(field.value);
+      const value = this.resolveType(field.value).setLine(field.start.line);
 
       if (field.key.type === ASTType.StringLiteral) {
         mapEntity.setProperty(
@@ -187,12 +188,12 @@ export class Aggregator implements IAggregator {
           value
         );
       } else {
-        const key = this.resolveType(field.key);
+        const key = this.resolveType(field.key).setLine(field.start.line);
         mapEntity.setProperty(key, value);
       }
     }
 
-    return mapEntity.setLabel('{}');
+    return mapEntity.setLabel('{}').setLine(item.start.line);
   }
 
   protected resolveListConstructorExpression(
@@ -203,19 +204,27 @@ export class Aggregator implements IAggregator {
     );
 
     for (const field of item.fields) {
-      const key = this.factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Number
-      );
-      const value = this.resolveType(field.value);
+      const key = this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Number)
+        .setLine(field.start.line);
+      const value = this.resolveType(field.value).setLine(field.start.line);
 
       listEntity.setProperty(key, value);
     }
 
-    return listEntity.setLabel('[]');
+    return listEntity.setLabel('[]').setLine(item.start.line);
   }
 
   protected resolveSliceExpression(item: ASTSliceExpression): IEntity {
-    return this.resolveNamespace(item);
+    const entity = this.resolveNamespace(item).setLine(item.start.line);
+
+    if (entity === null) {
+      return this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line);
+    }
+
+    return entity.setLine(item.start.line);
   }
 
   protected resolveIndexExpression(
@@ -225,12 +234,12 @@ export class Aggregator implements IAggregator {
     const entity = this.resolveNamespace(item, noInvoke);
 
     if (entity === null) {
-      return this.factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Any
-      );
+      return this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line);
     }
 
-    return entity;
+    return entity.setLine(item.start.line);
   }
 
   protected resolveMemberExpression(
@@ -242,10 +251,11 @@ export class Aggregator implements IAggregator {
     if (entity === null) {
       return this.factory(CompletionItemKind.Property)
         .addType(SignatureDefinitionBaseType.Any)
-        .setLabel((item.identifier as ASTIdentifier).name);
+        .setLabel((item.identifier as ASTIdentifier).name)
+        .setLine(item.start.line);
     }
 
-    return entity;
+    return entity.setLine(item.start.line);
   }
 
   protected resolveIdentifier(
@@ -257,10 +267,11 @@ export class Aggregator implements IAggregator {
     if (entity === null) {
       return this.factory(CompletionItemKind.Property)
         .addType(SignatureDefinitionBaseType.Any)
-        .setLabel(item.name);
+        .setLabel(item.name)
+        .setLine(item.start.line);
     }
 
-    return entity;
+    return entity.setLine(item.start.line);
   }
 
   resolveType(item: ASTBase, noInvoke: boolean = false): IEntity {
@@ -305,20 +316,23 @@ export class Aggregator implements IAggregator {
       case ASTType.NilLiteral:
         return this.factory(CompletionItemKind.Literal)
           .addType('null')
-          .setLabel('literal');
+          .setLabel('literal')
+          .setLine(item.start.line);
       case ASTType.StringLiteral:
         return this.factory(CompletionItemKind.Literal)
           .addType(SignatureDefinitionBaseType.String)
-          .setLabel('literal');
+          .setLabel('literal')
+          .setLine(item.start.line);
       case ASTType.NumericLiteral:
       case ASTType.BooleanLiteral:
         return this.factory(CompletionItemKind.Literal)
           .addType(SignatureDefinitionBaseType.Number)
-          .setLabel('literal');
+          .setLabel('literal')
+          .setLine(item.start.line);
       default:
-        return this.factory(CompletionItemKind.Literal).addType(
-          SignatureDefinitionBaseType.Any
-        );
+        return this.factory(CompletionItemKind.Literal)
+          .addType(SignatureDefinitionBaseType.Any)
+          .setLine(item.start.line);
     }
   }
 
@@ -504,11 +518,13 @@ export class Aggregator implements IAggregator {
       const item = this._root.assignments[index] as ASTAssignmentStatement;
       const variableId = createExpressionId(item.variable);
       const value =
-        this.resolveType(item.init)?.copy() ??
+        this.resolveType(item.init)?.copy().setLine(item.start.line) ??
         new Entity({
           kind: CompletionItemKind.Variable,
           document: this._document
-        }).addType(SignatureDefinitionBaseType.Any);
+        })
+          .addType(SignatureDefinitionBaseType.Any)
+          .setLine(item.start.line);
 
       this.defineNamespace(item.variable, value);
 

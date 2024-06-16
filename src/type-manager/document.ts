@@ -13,7 +13,7 @@ import {
   ASTType
 } from 'miniscript-core';
 
-import { CompletionItemKind } from '../types/completion';
+import { CompletionItem, CompletionItemKind } from '../types/completion';
 import {
   DocumentOptions,
   IDocument,
@@ -26,21 +26,27 @@ import { Entity, resolveEntity } from './entity';
 import { Scope } from './scope';
 
 const insertSignatureToProperties = (
-  properties: Map<string, CompletionItemKind>,
+  properties: Map<string, CompletionItem>,
   signature: Signature
 ) => {
   const signatureKeys = Object.keys(signature.getDefinitions());
   for (const property of signatureKeys) {
-    properties.set(property, CompletionItemKind.Function);
+    properties.set(property, {
+      kind: CompletionItemKind.Function,
+      line: -1
+    });
   }
 };
 
 const insertIntrinsicToProperties = (
-  properties: Map<string, CompletionItemKind>,
+  properties: Map<string, CompletionItem>,
   intrinsic: Map<string, IEntity>
 ) => {
   for (const [property, entity] of intrinsic) {
-    properties.set(property.slice(2), entity.kind);
+    properties.set(property.slice(2), {
+      kind: entity.kind,
+      line: entity.line
+    });
   }
 };
 
@@ -303,7 +309,10 @@ export class Document implements IDocument {
     }
 
     return new Entity({
-      kind: CompletionItemKind.Variable,
+      kind:
+        signatureDef.getType().type === SignatureDefinitionBaseType.Function
+          ? CompletionItemKind.Function
+          : CompletionItemKind.Variable,
       document: this,
       label: property
     }).addSignatureType(signatureDef);
@@ -341,7 +350,7 @@ export class Document implements IDocument {
     return resolveEntity(this, mergedEntity, noInvoke);
   }
 
-  protected getAllProperties(): Map<string, CompletionItemKind> {
+  protected getAllProperties(): Map<string, CompletionItem> {
     const properties = new Map();
 
     for (const signature of this._container.getTypes().values()) {
@@ -365,7 +374,7 @@ export class Document implements IDocument {
 
   getPropertiesOfType(
     type: SignatureDefinitionType
-  ): Map<string, CompletionItemKind> {
+  ): Map<string, CompletionItem> {
     if (type === SignatureDefinitionBaseType.Any) {
       return this.getAllProperties();
     }

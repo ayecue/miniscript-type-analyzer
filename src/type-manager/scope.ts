@@ -5,7 +5,7 @@ import {
   SignatureDefinitionType
 } from 'meta-utils';
 
-import { CompletionItemKind } from '../types/completion';
+import { CompletionItem, CompletionItemKind } from '../types/completion';
 import { IDocument } from '../types/document';
 import { EntityOptions, IEntity, IScope, ScopeOptions } from '../types/object';
 import { ObjectSet } from '../utils/object-set';
@@ -23,6 +23,10 @@ export class Scope implements IScope {
 
   get kind() {
     return CompletionItemKind.Constant;
+  }
+
+  get line() {
+    return this._locals.line;
   }
 
   get label() {
@@ -137,6 +141,11 @@ export class Scope implements IScope {
     return this;
   }
 
+  setLine(line: number): this {
+    this._locals.setLine(line);
+    return this;
+  }
+
   setLabel(label: string): this {
     this._locals.setLabel(label);
     return this;
@@ -160,22 +169,46 @@ export class Scope implements IScope {
     return null;
   }
 
-  getAllIdentifier(): Map<string, CompletionItemKind> {
+  getAllIdentifier(): Map<string, CompletionItem> {
     const localIdentifier = this._locals.getAllIdentifier();
     const outerIdentifier =
       this._parent?.locals.getAllIdentifier() ?? new Map();
     const globalIdentifier = this._globals.getAllIdentifier();
     const properties = new Map([
-      ['globals', CompletionItemKind.Constant],
-      ['locals', CompletionItemKind.Constant],
-      ['outer', CompletionItemKind.Constant],
+      [
+        'globals',
+        {
+          kind: CompletionItemKind.Constant,
+          line: -1
+        }
+      ],
+      [
+        'locals',
+        {
+          kind: CompletionItemKind.Constant,
+          line: -1
+        }
+      ],
+      [
+        'outer',
+        {
+          kind: CompletionItemKind.Constant,
+          line: -1
+        }
+      ],
       ...globalIdentifier.entries(),
       ...outerIdentifier.entries(),
       ...localIdentifier.entries()
     ]);
 
-    if (this._parent != null) {
-      properties.set('self', CompletionItemKind.Constant);
+    if (
+      this._locals.context != null &&
+      this._locals.context.types.has(SignatureDefinitionBaseType.Map)
+    ) {
+      properties.set('self', {
+        kind: CompletionItemKind.Constant,
+        line: -1
+      });
     }
 
     return properties;
@@ -187,7 +220,7 @@ export class Scope implements IScope {
 
   copy(
     options: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
     > = {}
   ): IScope {
     return new Scope({

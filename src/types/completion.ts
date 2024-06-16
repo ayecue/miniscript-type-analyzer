@@ -9,3 +9,8 @@ export enum CompletionItemKind {
   Expression = 'expr',
   Unknown = 'unknown'
 }
+
+export interface CompletionItem {
+  kind: CompletionItemKind;
+  line: number;
+}

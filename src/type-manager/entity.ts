@@ -6,7 +6,7 @@ import {
   SignatureDefinitionType
 } from 'meta-utils';
 
-import { CompletionItemKind } from '../types/completion';
+import { CompletionItem, CompletionItemKind } from '../types/completion';
 import { IDocument } from '../types/document';
 import {
   EntityOptions,
@@ -215,6 +215,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 
 export class Entity implements IEntity {
   protected _kind: CompletionItemKind;
+  protected _line: number;
   protected _context: IEntity | null;
   protected _label: string;
   protected _document: IDocument;
@@ -225,6 +226,10 @@ export class Entity implements IEntity {
 
   get kind() {
     return this._kind;
+  }
+
+  get line() {
+    return this._line;
   }
 
   get signatureDefinitions() {
@@ -249,6 +254,7 @@ export class Entity implements IEntity {
 
   constructor(options: EntityOptions) {
     this._kind = options.kind;
+    this._line = options.line ?? -1;
     this._label = options.label ?? 'anonymous';
     this._signatureDefinitions =
       options.signatureDefinitions ?? new ObjectSet();
@@ -291,6 +297,11 @@ export class Entity implements IEntity {
 
   setKind(kind: CompletionItemKind): this {
     this._kind = kind;
+    return this;
+  }
+
+  setLine(line: number): this {
+    this._line = line;
     return this;
   }
 
@@ -400,11 +411,14 @@ export class Entity implements IEntity {
     this.addType(SignatureDefinitionBaseType.Map);
 
     for (const property of properties) {
+      const definition = signature.getDefinition(property);
       const entity = new Entity({
-        kind: CompletionItemKind.Property,
+        kind:
+          definition.getType().type === SignatureDefinitionBaseType.Function
+            ? CompletionItemKind.Function
+            : CompletionItemKind.Property,
         document: this._document
       });
-      const definition = signature.getDefinition(property);
 
       entity.addSignatureType(definition);
       this.setProperty(property, entity);
@@ -413,7 +427,7 @@ export class Entity implements IEntity {
     return this;
   }
 
-  getAllIdentifier(): Map<string, CompletionItemKind> {
+  getAllIdentifier(): Map<string, CompletionItem> {
     const properties = new Map();
 
     for (const type of this._types) {
@@ -423,7 +437,10 @@ export class Entity implements IEntity {
 
     for (const [property, entity] of this._values) {
       if (property.startsWith('i:')) {
-        properties.set(property.slice(2), entity.kind);
+        properties.set(property.slice(2), {
+          kind: entity.kind,
+          line: entity.line
+        });
       }
     }
 
@@ -465,11 +482,12 @@ export class Entity implements IEntity {
 
   copy(
     options: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
     > = {}
   ): IEntity {
     return new Entity({
-      kind: options.kind ?? this.kind,
+      kind: options.kind ?? this._kind,
+      line: options.line ?? this._line,
       document: options.document ?? this._document,
       label: options.label ?? this._label,
       context: options.context ?? this._context,

@@ -5,11 +5,12 @@ import {
 } from 'meta-utils';
 
 import { ObjectSet } from '../utils/object-set';
-import { CompletionItemKind } from './completion';
+import { CompletionItem, CompletionItemKind } from './completion';
 import { IDocument } from './document';
 
 export interface EntityOptions {
   kind: CompletionItemKind;
+  line?: number;
   document: IDocument;
   signatureDefinitions?: ObjectSet<SignatureDefinition>;
   label?: string;
@@ -37,6 +38,7 @@ export interface IEntityPropertyHandler<T> {
 
 export interface IEntity {
   kind: CompletionItemKind;
+  line: number;
   signatureDefinitions: ObjectSet<SignatureDefinition>;
   types: Set<SignatureDefinitionType>;
   values: Map<string, IEntity>;
@@ -50,16 +52,17 @@ export interface IEntity {
   insertSignature(signature: Signature): this;
   copy(
     options?: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
     >
   ): IEntity;
   extend(entity: IEntity): this;
-  getAllIdentifier(): Map<string, CompletionItemKind>;
+  getAllIdentifier(): Map<string, CompletionItem>;
   isCallable(): boolean;
   getCallableReturnTypes(): string[] | null;
   setReturnEntity(entitiy: IEntity): this;
   getReturnEntity(): IEntity;
   setKind(kind: CompletionItemKind): this;
+  setLine(line: number): this;
   setLabel(label: string): this;
   setContext(context: IEntity): this;
   toJSON(): object;
@@ -78,7 +81,7 @@ export interface IScope extends IEntity {
   locals: IEntity;
   copy(
     options?: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context'>
+      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
     >
   ): IScope;
 }
