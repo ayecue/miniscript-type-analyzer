@@ -334,7 +334,7 @@ export class Aggregator implements IAggregator {
         current = this._scope.outer;
         current?.setLabel('outer');
       } else if (first.getter.name === 'locals') {
-        current = this._scope.outer;
+        current = this._scope.locals;
         current?.setLabel('locals');
       } else if (first.getter.name === 'self') {
         current = this.factory(CompletionItemKind.Constant)
