@@ -19,6 +19,7 @@ import { ObjectSet } from '../utils/object-set';
 const isEligibleForProperties = (entity: IEntity) => {
   return (
     entity.types.has(SignatureDefinitionBaseType.Map) ||
+    entity.types.has(SignatureDefinitionBaseType.List) ||
     entity.types.has(SignatureDefinitionBaseType.Any)
   );
 };
