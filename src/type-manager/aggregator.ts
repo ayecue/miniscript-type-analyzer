@@ -15,6 +15,7 @@ import {
   ASTLiteral,
   ASTMapConstructorExpression,
   ASTMemberExpression,
+  ASTSliceExpression,
   ASTType,
   ASTUnaryExpression
 } from 'miniscript-core';
@@ -213,6 +214,10 @@ export class Aggregator implements IAggregator {
     return listEntity.setLabel('[]');
   }
 
+  protected resolveSliceExpression(item: ASTSliceExpression): IEntity {
+    return this.resolveNamespace(item);
+  }
+
   protected resolveIndexExpression(
     item: ASTIndexExpression,
     noInvoke: boolean = false
@@ -268,6 +273,8 @@ export class Aggregator implements IAggregator {
         return this.resolveLogicalExpression(item as ASTEvaluationExpression);
       case ASTType.FunctionDeclaration:
         return this.resolveFunctionStatement(item as ASTFunctionStatement);
+      case ASTType.SliceExpression:
+        return this.resolveSliceExpression(item as ASTSliceExpression);
       case ASTType.IndexExpression:
         return this.resolveIndexExpression(
           item as ASTIndexExpression,

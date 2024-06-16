@@ -5,6 +5,7 @@ import {
   ASTIndexExpression,
   ASTMemberExpression,
   ASTParenthesisExpression,
+  ASTSliceExpression,
   ASTType,
   ASTUnaryExpression
 } from 'miniscript-core';
@@ -80,6 +81,8 @@ function handler(
       return;
     }
     case ASTType.SliceExpression: {
+      const sliceExpr = current as ASTSliceExpression;
+      handler(sliceExpr.base, chain);
       chain.push({
         ref: current,
         unary,
