@@ -8,7 +8,7 @@ import {
 } from 'miniscript-core';
 
 import { IAggregator } from './aggregator';
-import { CompletionItem, CompletionItemKind } from './completion';
+import { CompletionItem } from './completion';
 import { IEntity, IScope } from './object';
 
 export interface DocumentOptions {

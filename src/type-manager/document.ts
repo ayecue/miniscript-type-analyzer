@@ -180,7 +180,7 @@ export class Document implements IDocument {
       const context = fnEntity?.context;
 
       if (
-        context !== null &&
+        context != null &&
         context.types.has(SignatureDefinitionBaseType.Map)
       ) {
         scope.setContext(context);
