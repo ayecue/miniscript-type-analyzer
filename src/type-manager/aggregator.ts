@@ -316,19 +316,25 @@ export class Aggregator implements IAggregator {
       case ASTType.NilLiteral:
         return this.factory(CompletionItemKind.Literal)
           .addType('null')
-          .setLabel('literal')
+          .setLabel('null')
           .setLine(item.start.line);
-      case ASTType.StringLiteral:
+      case ASTType.StringLiteral: {
+        const label = (item as ASTLiteral).value.toString();
         return this.factory(CompletionItemKind.Literal)
           .addType(SignatureDefinitionBaseType.String)
-          .setLabel('literal')
+          .setLabel(
+            `"${label.length > 20 ? label.substr(0, 20) + '...' : label}"`
+          )
           .setLine(item.start.line);
+      }
       case ASTType.NumericLiteral:
-      case ASTType.BooleanLiteral:
+      case ASTType.BooleanLiteral: {
+        const label = (item as ASTLiteral).value.toString();
         return this.factory(CompletionItemKind.Literal)
           .addType(SignatureDefinitionBaseType.Number)
-          .setLabel('literal')
+          .setLabel(label)
           .setLine(item.start.line);
+      }
       default:
         return this.factory(CompletionItemKind.Literal)
           .addType(SignatureDefinitionBaseType.Any)
