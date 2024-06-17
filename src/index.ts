@@ -5,7 +5,7 @@ export { createResolveChain } from './utils/get-ast-chain';
 export { getHashCode, getStringHashCode, rotateBits } from './utils/hash';
 export { ObjectSet, ObjectSetIterator } from './utils/object-set';
 export { AggregatorOptions, IAggregator, DEFAULT_CUSTOM_FUNCTION_DESCRIPTION } from './types/aggregator';
-export { CompletionItemKind } from './types/completion';
+export { CompletionItemKind, CompletionItem } from './types/completion';
 export { DocumentOptions, IDocument, ScopeContext, Intrinsics } from './types/document';
 export { EntityOptions, IEntityPropertyHandler, IEntity, ScopeOptions, IScope } from './types/object';
 export {
