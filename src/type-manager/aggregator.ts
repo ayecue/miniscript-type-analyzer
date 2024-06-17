@@ -274,7 +274,7 @@ export class Aggregator implements IAggregator {
     return entity.setLine(item.start.line);
   }
 
-  resolveType(item: ASTBase, noInvoke: boolean = false): IEntity {
+  resolveType(item: ASTBase, noInvoke: boolean = false): IEntity | null {
     if (item == null) {
       return null;
     }
@@ -336,9 +336,7 @@ export class Aggregator implements IAggregator {
           .setLine(item.start.line);
       }
       default:
-        return this.factory(CompletionItemKind.Literal)
-          .addType(SignatureDefinitionBaseType.Any)
-          .setLine(item.start.line);
+        return null;
     }
   }
 
