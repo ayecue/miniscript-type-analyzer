@@ -394,7 +394,6 @@ export class Entity implements IEntity {
           key,
           value.copy({
             document: this._document,
-            label: key,
             context: this
           })
         );
