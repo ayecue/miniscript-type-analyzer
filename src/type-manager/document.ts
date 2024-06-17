@@ -490,6 +490,12 @@ export class Document implements IDocument {
     );
   }
 
+  resolveTypeWithDefault(item: ASTBase, noInvoke?: boolean): IEntity {
+    return this._scopeMapping
+      .get(item.scope)
+      ?.aggregator.resolveTypeWithDefault(item, noInvoke);
+  }
+
   resolveNamespace(item: ASTBase, noInvoke: boolean = false): IEntity | null {
     return (
       this._scopeMapping

@@ -48,6 +48,7 @@ export interface IDocument {
   resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[];
   resolveAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[];
   resolveType(item: ASTBase, noInvoke?: boolean): IEntity | null;
+  resolveTypeWithDefault(item: ASTBase, noInvoke?: boolean): IEntity;
   resolveNamespace(item: ASTBase, noInvoke?: boolean): IEntity | null;
 }
 

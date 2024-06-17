@@ -120,7 +120,7 @@ export class Aggregator implements IAggregator {
 
         return {
           label: (assignment.variable as ASTIdentifier)?.name ?? 'unknown',
-          types: Array.from(this.resolveType(assignment.init).types)
+          types: Array.from(this.resolveTypeWithDefault(assignment.init).types)
         };
       }),
       returns: ['any']
@@ -134,31 +134,15 @@ export class Aggregator implements IAggregator {
 
   protected resolveBinaryExpression(item: ASTEvaluationExpression) {
     // improve logic
-    const left =
-      this.resolveType(item.left) ??
-      this.factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Any
-      );
-    const right =
-      this.resolveType(item.right) ??
-      this.factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Any
-      );
+    const left = this.resolveTypeWithDefault(item.left);
+    const right = this.resolveTypeWithDefault(item.right);
     return left.extend(right).setLine(item.start.line);
   }
 
   protected resolveLogicalExpression(item: ASTEvaluationExpression) {
     // improve logic
-    const left =
-      this.resolveType(item.left) ??
-      this.factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Any
-      );
-    const right =
-      this.resolveType(item.right) ??
-      this.factory(CompletionItemKind.Variable).addType(
-        SignatureDefinitionBaseType.Any
-      );
+    const left = this.resolveTypeWithDefault(item.left);
+    const right = this.resolveTypeWithDefault(item.right);
     return left.extend(right).setLine(item.start.line);
   }
 
@@ -180,7 +164,9 @@ export class Aggregator implements IAggregator {
     );
 
     for (const field of item.fields) {
-      const value = this.resolveType(field.value).setLine(field.start.line);
+      const value = this.resolveTypeWithDefault(field.value).setLine(
+        field.start.line
+      );
 
       if (field.key.type === ASTType.StringLiteral) {
         mapEntity.setProperty(
@@ -188,7 +174,9 @@ export class Aggregator implements IAggregator {
           value
         );
       } else {
-        const key = this.resolveType(field.key).setLine(field.start.line);
+        const key = this.resolveTypeWithDefault(field.key).setLine(
+          field.start.line
+        );
         mapEntity.setProperty(key, value);
       }
     }
@@ -207,7 +195,9 @@ export class Aggregator implements IAggregator {
       const key = this.factory(CompletionItemKind.Variable)
         .addType(SignatureDefinitionBaseType.Number)
         .setLine(field.start.line);
-      const value = this.resolveType(field.value).setLine(field.start.line);
+      const value = this.resolveTypeWithDefault(field.value).setLine(
+        field.start.line
+      );
 
       listEntity.setProperty(key, value);
     }
@@ -340,6 +330,15 @@ export class Aggregator implements IAggregator {
     }
   }
 
+  resolveTypeWithDefault(item: ASTBase, noInvoke: boolean = false): IEntity {
+    return (
+      this.resolveType(item, noInvoke) ??
+      this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line)
+    );
+  }
+
   protected resolveChain(
     chain: ResolveChainItem[],
     noInvoke: boolean = false
@@ -382,7 +381,7 @@ export class Aggregator implements IAggregator {
         current = this._scope.resolveProperty(first.getter.name, firstNoInvoke);
       }
     } else if (isResolveChainItemWithValue(first)) {
-      current = this.resolveType(first.value, firstNoInvoke);
+      current = this.resolveTypeWithDefault(first.value, firstNoInvoke);
     } else {
       return null;
     }
@@ -411,7 +410,7 @@ export class Aggregator implements IAggregator {
           const name = (item.getter as ASTLiteral).value.toString();
           current = current.resolveProperty(name, item.isInCallExpression);
         } else {
-          const index = this.resolveType(item.getter);
+          const index = this.resolveTypeWithDefault(item.getter);
           current = current.resolveProperty(index, item.isInCallExpression);
         }
       } else if (item.ref.type === ASTType.SliceExpression) {
@@ -458,7 +457,7 @@ export class Aggregator implements IAggregator {
             container
           );
         } else {
-          const index = this.resolveType(last.getter);
+          const index = this.resolveTypeWithDefault(last.getter);
           return resolvedContext.setProperty(index, container);
         }
       }
@@ -523,10 +522,7 @@ export class Aggregator implements IAggregator {
       const variableId = createExpressionId(item.variable);
       const value =
         this.resolveType(item.init)?.copy().setLine(item.start.line) ??
-        new Entity({
-          kind: CompletionItemKind.Variable,
-          document: this._document
-        })
+        this.factory(CompletionItemKind.Variable)
           .addType(SignatureDefinitionBaseType.Any)
           .setLine(item.start.line);
 
