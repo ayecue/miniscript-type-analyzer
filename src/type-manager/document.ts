@@ -175,17 +175,16 @@ export class Document implements IDocument {
       aggregator
     });
 
-    const fnEntity = this.resolveNamespace(
-      (block.assignment as ASTAssignmentStatement).variable,
-      true
-    );
-    const context = fnEntity?.context;
+    if (block.assignment instanceof ASTAssignmentStatement) {
+      const fnEntity = this.resolveNamespace(block.assignment.variable, true);
+      const context = fnEntity?.context;
 
-    if (
-      context !== null &&
-      context.types.has(SignatureDefinitionBaseType.Map)
-    ) {
-      scope.setContext(context);
+      if (
+        context !== null &&
+        context.types.has(SignatureDefinitionBaseType.Map)
+      ) {
+        scope.setContext(context);
+      }
     }
   }
 
