@@ -192,7 +192,8 @@ export class Document implements IDocument {
 
       if (
         context != null &&
-        context.types.has(SignatureDefinitionBaseType.Map)
+        context.types.has(SignatureDefinitionBaseType.Map) &&
+        context !== this._globals
       ) {
         scope.setContext(context);
       }
