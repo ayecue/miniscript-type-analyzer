@@ -366,10 +366,7 @@ export class Aggregator implements IAggregator {
 
         if (context == null) {
           current = this.factory(CompletionItemKind.Constant)
-            .addType(
-              SignatureDefinitionBaseType.Map,
-              SignatureDefinitionBaseType.Any
-            )
+            .addType('null')
             .setLabel('self');
         } else {
           current = context.copy({
