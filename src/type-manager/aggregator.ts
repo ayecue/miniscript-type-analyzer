@@ -377,6 +377,8 @@ export class Aggregator implements IAggregator {
       return null;
     }
 
+    console.log('>>', chain);
+
     let current: IEntity = null;
     const first = chain[0];
     const firstNoInvoke =
@@ -405,7 +407,11 @@ export class Aggregator implements IAggregator {
           });
         }
       } else {
-        current = this._scope.resolveProperty(first.getter.name, firstNoInvoke);
+        current =
+          this._scope.resolveProperty(first.getter.name, firstNoInvoke) ??
+          this.factory(CompletionItemKind.Variable)
+            .addType(SignatureDefinitionBaseType.Any)
+            .setLabel(first.getter.name);
       }
     } else if (isResolveChainItemWithValue(first)) {
       current = this.resolveTypeWithDefault(first.value, firstNoInvoke);
@@ -430,15 +436,27 @@ export class Aggregator implements IAggregator {
         (noInvoke && chain.length - 1 === index);
 
       if (isResolveChainItemWithMember(item)) {
-        current = current.resolveProperty(item.getter.name, itemNoInvoke);
+        current =
+          current.resolveProperty(item.getter.name, itemNoInvoke) ??
+          this.factory(CompletionItemKind.Variable)
+            .addType(SignatureDefinitionBaseType.Any)
+            .setLabel(item.getter.name);
       } else if (isResolveChainItemWithIndex(item)) {
         // index expressions do not get invoked automatically
         if (item.getter.type === ASTType.StringLiteral) {
           const name = (item.getter as ASTLiteral).value.toString();
-          current = current.resolveProperty(name, item.isInCallExpression);
+          current =
+            current.resolveProperty(name, item.isInCallExpression) ??
+            this.factory(CompletionItemKind.Variable)
+              .addType(SignatureDefinitionBaseType.Any)
+              .setLabel(name);
         } else {
           const index = this.resolveTypeWithDefault(item.getter);
-          current = current.resolveProperty(index, item.isInCallExpression);
+          current =
+            current.resolveProperty(index, item.isInCallExpression) ??
+            this.factory(CompletionItemKind.Variable).addType(
+              SignatureDefinitionBaseType.Any
+            );
         }
       } else if (item.ref.type === ASTType.SliceExpression) {
         // while slicing it will remain pretty much as the same value
