@@ -181,11 +181,13 @@ export class Document implements IDocument {
       const fnDef =
         fnEntity.signatureDefinitions.first() as SignatureDefinitionFunction;
 
-      for (const arg of fnDef.getArguments()) {
-        const property = scope.resolveProperty(arg.getLabel(), true);
-        if (property === null) continue;
-        property.types.delete(SignatureDefinitionBaseType.Any);
-        property.addType(...arg.getTypes().map((it) => it.type));
+      if (fnDef != null) {
+        for (const arg of fnDef.getArguments()) {
+          const property = scope.resolveProperty(arg.getLabel(), true);
+          if (property === null) continue;
+          property.types.delete(SignatureDefinitionBaseType.Any);
+          property.addType(...arg.getTypes().map((it) => it.type));
+        }
       }
 
       const context = fnEntity?.context;
