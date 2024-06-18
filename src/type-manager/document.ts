@@ -174,20 +174,13 @@ export class Document implements IDocument {
       aggregator
     });
 
-    if (block.assignment instanceof ASTAssignmentStatement) {
-      const fnEntity = this.resolveNamespace(block.assignment.variable, true);
-      const fnDef =
-        fnEntity.signatureDefinitions.first() as SignatureDefinitionFunction;
+    const fnEntity =
+      block.assignment instanceof ASTAssignmentStatement
+        ? this.resolveNamespace(block.assignment.variable, true)
+        : null;
 
-      if (fnDef != null) {
-        for (const arg of fnDef.getArguments()) {
-          const property = scope.resolveProperty(arg.getLabel(), true);
-          if (property === null) continue;
-          property.types.delete(SignatureDefinitionBaseType.Any);
-          property.addType(...arg.getTypes().map((it) => it.type));
-        }
-      }
-
+    // set context for function block/scope
+    if (fnEntity !== null) {
       const context = fnEntity?.context;
 
       if (
@@ -200,6 +193,21 @@ export class Document implements IDocument {
     }
 
     aggregator.analyze();
+
+    // override argument types if custom
+    if (fnEntity !== null) {
+      const fnDef =
+        fnEntity.signatureDefinitions.first() as SignatureDefinitionFunction;
+
+      if (fnDef != null) {
+        for (const arg of fnDef.getArguments()) {
+          const property = scope.resolveProperty(arg.getLabel(), true);
+          if (property === null) continue;
+          property.types.delete(SignatureDefinitionBaseType.Any);
+          property.addType(...arg.getTypes().map((it) => it.type));
+        }
+      }
+    }
   }
 
   analyze() {
