@@ -428,6 +428,13 @@ export class Entity implements IEntity {
 
   getAllIdentifier(): Map<string, CompletionItem> {
     const properties = new Map();
+    const isaEntity = this._values.get('i:__isa');
+
+    if (isaEntity != null) {
+      for (const keyPair of isaEntity.getAllIdentifier()) {
+        properties.set(...keyPair);
+      }
+    }
 
     for (const type of this._types) {
       const items = this._document.getPropertiesOfType(type);
