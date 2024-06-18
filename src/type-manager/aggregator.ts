@@ -377,8 +377,6 @@ export class Aggregator implements IAggregator {
       return null;
     }
 
-    console.log('>>', chain);
-
     let current: IEntity = null;
     const first = chain[0];
     const firstNoInvoke =
