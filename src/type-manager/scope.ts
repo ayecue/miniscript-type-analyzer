@@ -220,7 +220,10 @@ export class Scope implements IScope {
 
   copy(
     options: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
+      Pick<
+        EntityOptions,
+        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
+      >
     > = {}
   ): IScope {
     return new Scope({

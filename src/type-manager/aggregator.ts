@@ -401,7 +401,8 @@ export class Aggregator implements IAggregator {
         } else {
           current = context.copy({
             kind: CompletionItemKind.Constant,
-            label: 'self'
+            label: 'self',
+            values: context.values
           });
         }
       } else {

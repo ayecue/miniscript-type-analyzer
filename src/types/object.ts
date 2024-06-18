@@ -52,7 +52,10 @@ export interface IEntity {
   insertSignature(signature: Signature): this;
   copy(
     options?: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
+      Pick<
+        EntityOptions,
+        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
+      >
     >
   ): IEntity;
   extend(entity: IEntity): this;
@@ -81,7 +84,10 @@ export interface IScope extends IEntity {
   locals: IEntity;
   copy(
     options?: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
+      Pick<
+        EntityOptions,
+        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
+      >
     >
   ): IScope;
 }

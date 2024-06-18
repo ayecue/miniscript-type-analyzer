@@ -488,7 +488,10 @@ export class Entity implements IEntity {
 
   copy(
     options: Partial<
-      Pick<EntityOptions, 'document' | 'label' | 'kind' | 'context' | 'line'>
+      Pick<
+        EntityOptions,
+        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
+      >
     > = {}
   ): IEntity {
     return new Entity({
@@ -501,14 +504,16 @@ export class Entity implements IEntity {
         Array.from(this._signatureDefinitions, (value) => value.copy())
       ),
       types: new Set(this._types),
-      values: new Map(
-        Array.from(this._values, ([key, value]) => [
-          key,
-          value.copy({
-            document: options.document
-          })
-        ])
-      ),
+      values:
+        options.values ??
+        new Map(
+          Array.from(this._values, ([key, value]) => [
+            key,
+            value.copy({
+              document: options.document
+            })
+          ])
+        ),
       returnEntity: this._returnEntity
     });
   }

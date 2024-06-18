@@ -169,8 +169,6 @@ export class Document implements IDocument {
       parent: parentContext?.aggregator
     });
 
-    aggregator.analyze();
-
     this._scopeMapping.set(block, {
       scope,
       aggregator
@@ -200,6 +198,8 @@ export class Document implements IDocument {
         scope.setContext(context);
       }
     }
+
+    aggregator.analyze();
   }
 
   analyze() {
