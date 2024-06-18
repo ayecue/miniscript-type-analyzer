@@ -6,6 +6,8 @@ import {
   ASTAssignmentStatement,
   ASTBase,
   ASTBaseBlockWithScope,
+  ASTCallExpression,
+  ASTCallStatement,
   ASTComment,
   ASTEvaluationExpression,
   ASTFunctionStatement,
@@ -146,6 +148,30 @@ export class Aggregator implements IAggregator {
     return left.extend(right).setLine(item.start.line);
   }
 
+  protected resolveCallStatement(item: ASTCallStatement) {
+    const entity = this.resolveNamespace(item);
+
+    if (entity === null) {
+      return this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line);
+    }
+
+    return entity.setLine(item.start.line);
+  }
+
+  protected resolveCallExpression(item: ASTCallExpression) {
+    const entity = this.resolveNamespace(item);
+
+    if (entity === null) {
+      return this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line);
+    }
+
+    return entity.setLine(item.start.line);
+  }
+
   protected resolveUnaryExpression(item: ASTUnaryExpression) {
     const entity = this.resolveNamespace(item);
 
@@ -270,6 +296,10 @@ export class Aggregator implements IAggregator {
     }
 
     switch (item.type) {
+      case ASTType.CallStatement:
+        return this.resolveCallStatement(item as ASTCallStatement);
+      case ASTType.CallExpression:
+        return this.resolveCallExpression(item as ASTCallExpression);
       case ASTType.BinaryExpression:
         return this.resolveBinaryExpression(item as ASTEvaluationExpression);
       case ASTType.LogicalExpression:

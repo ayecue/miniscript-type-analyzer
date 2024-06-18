@@ -1,6 +1,7 @@
 import {
   ASTBase,
   ASTCallExpression,
+  ASTCallStatement,
   ASTIdentifier,
   ASTIndexExpression,
   ASTMemberExpression,
@@ -44,6 +45,11 @@ function handler(
         unary,
         isInCallExpression
       });
+      return;
+    }
+    case ASTType.CallStatement: {
+      const callStment = current as ASTCallStatement;
+      handler(callStment.expression, chain, unary, true);
       return;
     }
     case ASTType.CallExpression: {
