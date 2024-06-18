@@ -1,6 +1,5 @@
 import { parse, Spec } from 'comment-parser';
 import {
-  SignatureDefinition,
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction,
   SignaturePayloadDefinitionArg
@@ -10,7 +9,7 @@ function convertSpecToString(it: Spec): string {
   return [it.name, it.description].filter((it) => it !== undefined).join(' ');
 }
 
-export function enrichWithMetaInformation(item: SignatureDefinition) {
+export function enrichWithMetaInformation(item: SignatureDefinitionFunction) {
   const commentDefs = parse(`/**
     ${item.getDescription()}
   */`);
@@ -39,7 +38,18 @@ export function enrichWithMetaInformation(item: SignatureDefinition) {
 
     return SignatureDefinitionFunction.parse({
       type: SignatureDefinitionBaseType.Function,
-      arguments: commentArgs,
+      arguments: item.getArguments().map((item, index) => {
+        const label = item.getLabel();
+        const types = item.getTypes().map((it) => it.toString());
+        const opt = item.isOptional();
+
+        return {
+          types,
+          opt,
+          ...commentArgs[index],
+          label
+        };
+      }),
       returns: commentReturnValues.type.split('|'),
       description: commentDescription,
       example: commentExample

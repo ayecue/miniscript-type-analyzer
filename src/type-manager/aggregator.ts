@@ -126,7 +126,7 @@ export class Aggregator implements IAggregator {
         };
       }),
       returns: ['any']
-    });
+    }) as SignatureDefinitionFunction;
 
     return this.factory(CompletionItemKind.Function)
       .addType(SignatureDefinitionBaseType.Function)

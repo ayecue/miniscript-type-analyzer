@@ -202,9 +202,19 @@ export class Document implements IDocument {
       if (fnDef != null) {
         for (const arg of fnDef.getArguments()) {
           const property = scope.resolveProperty(arg.getLabel(), true);
-          if (property === null) continue;
-          property.types.delete(SignatureDefinitionBaseType.Any);
-          property.addType(...arg.getTypes().map((it) => it.type));
+          const types = arg.getTypes().map((it) => it.type);
+          if (property === null) {
+            scope.setProperty(
+              arg.getLabel(),
+              new Entity({
+                kind: CompletionItemKind.Variable,
+                document: this
+              }).addType(...types)
+            );
+          } else {
+            property.types.delete(SignatureDefinitionBaseType.Any);
+            property.addType(...types);
+          }
         }
       }
     }
