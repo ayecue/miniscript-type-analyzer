@@ -2,6 +2,7 @@ import {
   Container,
   Signature,
   SignatureDefinitionBaseType,
+  SignatureDefinitionFunction,
   SignatureDefinitionType
 } from 'meta-utils';
 import {
@@ -177,6 +178,16 @@ export class Document implements IDocument {
 
     if (block.assignment instanceof ASTAssignmentStatement) {
       const fnEntity = this.resolveNamespace(block.assignment.variable, true);
+      const fnDef =
+        fnEntity.signatureDefinitions.first() as SignatureDefinitionFunction;
+
+      for (const arg of fnDef.getArguments()) {
+        const property = scope.resolveProperty(arg.getLabel(), true);
+        if (property === null) continue;
+        property.types.delete(SignatureDefinitionBaseType.Any);
+        property.addType(...arg.getTypes().map((it) => it.type));
+      }
+
       const context = fnEntity?.context;
 
       if (
