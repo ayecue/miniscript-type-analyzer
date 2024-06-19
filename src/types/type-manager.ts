@@ -5,5 +5,5 @@ export interface TypeManagerOptions {
 }
 
 export interface TextDocumentLike {
-  fileName: string;
+  uri: string;
 }

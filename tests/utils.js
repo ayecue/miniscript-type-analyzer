@@ -14,7 +14,7 @@ const getDocument = (code) => {
     container: miniscriptMeta
   });
 
-  return typeManager.analyze({ fileName: 'test' }, parse(code));
+  return typeManager.analyze({ uri: 'test' }, parse(code));
 }
 
 exports.getDocument = getDocument;

@@ -14,7 +14,7 @@ export class TypeManager {
   }
 
   analyze(document: TextDocumentLike, chunk: ASTChunk): Document {
-    console.time(`Analyzing for ${document.fileName} done within`);
+    console.time(`Analyzing for ${document.uri} done within`);
 
     const typeDoc = new Document({
       container: this._container,
@@ -27,15 +27,15 @@ export class TypeManager {
       console.error(err);
     }
 
-    console.timeEnd(`Analyzing for ${document.fileName} done within`);
+    console.timeEnd(`Analyzing for ${document.uri} done within`);
 
-    const key = document.fileName;
+    const key = document.uri;
     this._types.set(key, typeDoc);
 
     return typeDoc;
   }
 
   get(document: TextDocumentLike): Document | null {
-    return this._types.get(document.fileName) ?? null;
+    return this._types.get(document.uri) ?? null;
   }
 }
