@@ -22,7 +22,7 @@ export {
   isResolveChainItemWithValue
 } from './types/resolve';
 export { isSignatureDefinitionFunction } from './types/signature';
-export { TextDocumentLike, TypeManagerOptions } from './types/type-manager';
+export { TypeManagerOptions } from './types/type-manager';
 export { Entity } from './type-manager/entity';
 export { Scope } from './type-manager/scope';
 export { Aggregator } from './type-manager/aggregator';

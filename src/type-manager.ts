@@ -1,7 +1,7 @@
 import { ASTChunk } from 'miniscript-core';
 import { Container } from 'meta-utils';
 import { Document } from './type-manager/document';
-import { TextDocumentLike, TypeManagerOptions } from './types/type-manager';
+import { TypeManagerOptions } from './types/type-manager';
 
 
 export class TypeManager {
@@ -13,8 +13,8 @@ export class TypeManager {
     this._types = new Map();
   }
 
-  analyze(document: TextDocumentLike, chunk: ASTChunk): Document {
-    console.time(`Analyzing for ${document.uri} done within`);
+  analyze(identifier: string, chunk: ASTChunk): Document {
+    console.time(`Analyzing for ${identifier} done within`);
 
     const typeDoc = new Document({
       container: this._container,
@@ -27,15 +27,14 @@ export class TypeManager {
       console.error(err);
     }
 
-    console.timeEnd(`Analyzing for ${document.uri} done within`);
+    console.timeEnd(`Analyzing for ${identifier} done within`);
 
-    const key = document.uri;
-    this._types.set(key, typeDoc);
+    this._types.set(identifier, typeDoc);
 
     return typeDoc;
   }
 
-  get(document: TextDocumentLike): Document | null {
-    return this._types.get(document.uri) ?? null;
+  get(identifier: string): Document | null {
+    return this._types.get(identifier) ?? null;
   }
 }
