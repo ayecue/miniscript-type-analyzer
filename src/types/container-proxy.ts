@@ -27,6 +27,7 @@ export interface IContainerProxy {
     property: string,
     noInvoke?: boolean
   ): IEntity | null;
+  getGeneralDefinition(property: string, noInvoke?: boolean): IEntity | null;
   getAllIdentifier(
     type: string | SignatureDefinitionType
   ): Map<string, CompletionItem>;

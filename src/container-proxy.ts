@@ -105,6 +105,16 @@ export class ContainerProxy implements IContainerProxy {
     return resolveEntity(this, matches.values().next().value, noInvoke);
   }
 
+  getGeneralDefinition(property: string, noInvoke: boolean = false): IEntity | null {
+    const generalDef = lookupProperty(this._primitives.get(SignatureDefinitionBaseType.General), property);
+
+    if (generalDef == null) {
+      return null;
+    }
+
+    return resolveEntity(this, generalDef, noInvoke);
+  }
+
   getAllIdentifier(type: string | SignatureDefinitionType): Map<string, CompletionItem> {
     const properties = new Map();
 

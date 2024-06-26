@@ -71,6 +71,7 @@ export class Scope implements IScope {
       new Entity({
         kind: CompletionItemKind.Constant,
         container: this._container,
+        isScope: true,
         label: 'locals'
       }).addType(SignatureDefinitionBaseType.Map);
   }
@@ -164,6 +165,14 @@ export class Scope implements IScope {
   insertSignature(signature: Signature): this {
     this._locals.insertSignature(signature);
     return this;
+  }
+
+  isScope(): boolean {
+    return true;
+  }
+
+  hasContext(): boolean {
+    return false;
   }
 
   isCallable(): boolean {

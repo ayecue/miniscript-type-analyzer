@@ -201,6 +201,7 @@ export class Entity implements IEntity {
   protected _returnEntity: IEntity | null;
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
+  protected _isScope: boolean;
 
   get kind() {
     return this._kind;
@@ -231,6 +232,7 @@ export class Entity implements IEntity {
   }
 
   constructor(options: EntityOptions) {
+    this._isScope = options.isScope ?? false;
     this._kind = options.kind;
     this._line = options.line ?? -1;
     this._label = options.label ?? 'anonymous';
@@ -241,6 +243,14 @@ export class Entity implements IEntity {
     this._context = options.context ?? null;
     this._container = options.container;
     this._returnEntity = options.returnEntity ?? null;
+  }
+
+  hasContext() {
+    return this._context != null && !this._context.isScope;
+  }
+
+  isScope() {
+    return this._isScope;
   }
 
   isCallable() {
@@ -463,6 +473,7 @@ export class Entity implements IEntity {
     return new Entity({
       kind: options.kind ?? this._kind,
       line: options.line ?? this._line,
+      isScope: options.isScope ?? this._isScope,
       container: options.container ?? this._container,
       label: options.label ?? this._label,
       context: options.context ?? this._context,

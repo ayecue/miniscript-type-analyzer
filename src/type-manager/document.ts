@@ -74,6 +74,7 @@ export class Document implements IDocument {
   protected initGlobals(): IEntity {
     const globals = this._container.primitives
       .get(SignatureDefinitionBaseType.General)
+      .copy({ isScope: true })
       .setLabel('globals');
 
     globals.resolveProperty('map', true).setReturnEntity(this._intrinscis.map);

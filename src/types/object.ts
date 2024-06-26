@@ -10,6 +10,7 @@ import { IContainerProxy } from './container-proxy';
 
 export interface EntityOptions {
   kind: CompletionItemKind;
+  isScope?: boolean;
   line?: number;
   container: IContainerProxy;
   signatureDefinitions?: ObjectSet<SignatureDefinition>;
@@ -23,7 +24,7 @@ export interface EntityOptions {
 export type EntityCopyOptions = Partial<
   Pick<
     EntityOptions,
-    'container' | 'label' | 'kind' | 'context' | 'line' | 'values'
+    'container' | 'label' | 'kind' | 'context' | 'line' | 'values' | 'isScope'
   >
 >;
 
@@ -65,6 +66,8 @@ export interface IEntity {
   extend(entity: IEntity): this;
   getAllIdentifier(): Map<string, CompletionItem>;
   isCallable(): boolean;
+  isScope(): boolean;
+  hasContext(): boolean;
   getCallableReturnTypes(): string[] | null;
   setReturnEntity(entitiy: IEntity): this;
   getReturnEntity(): IEntity;
