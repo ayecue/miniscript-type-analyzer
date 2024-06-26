@@ -90,11 +90,13 @@ export interface IEntity {
 export interface ScopeOptions {
   container: IContainerProxy;
   globals: IEntity;
+  api: IEntity;
   parent?: IScope;
   locals?: IEntity;
 }
 
 export interface IScope extends IEntity {
+  api: IEntity;
   outer: IEntity;
   globals: IEntity;
   locals: IEntity;

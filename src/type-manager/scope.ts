@@ -20,6 +20,7 @@ export class Scope implements IScope {
   protected _parent: IScope | null;
   protected _globals: IEntity;
   protected _locals: IEntity;
+  protected _api: IEntity;
   protected _container: IContainerProxy;
 
   get signatureDefinitions(): ObjectSet<SignatureDefinition> {
@@ -54,6 +55,10 @@ export class Scope implements IScope {
     return this._globals;
   }
 
+  get api(): IEntity {
+    return this._api;
+  }
+
   get outer(): IEntity | null {
     return this._parent?.locals ?? null;
   }
@@ -64,6 +69,7 @@ export class Scope implements IScope {
 
   constructor(options: ScopeOptions) {
     this._container = options.container;
+    this._api = options.api;
     this._parent = options.parent ?? null;
     this._globals = options.globals;
     this._locals =
@@ -116,6 +122,8 @@ export class Scope implements IScope {
       return this._parent?.locals.resolveProperty(property, noInvoke);
     } else if (this._globals.hasProperty(property)) {
       return this._globals.resolveProperty(property, noInvoke);
+    } else if (this._api.hasProperty(property)) {
+      return this._api.resolveProperty(property, noInvoke);
     }
 
     return null;
@@ -192,6 +200,7 @@ export class Scope implements IScope {
     const outerIdentifier =
       this._parent?.locals.getAllIdentifier() ?? new Map();
     const globalIdentifier = this._globals.getAllIdentifier();
+    const apiIdentifier = this._api.getAllIdentifier();
     const properties = new Map([
       [
         'globals',
@@ -216,7 +225,8 @@ export class Scope implements IScope {
       ],
       ...globalIdentifier.entries(),
       ...outerIdentifier.entries(),
-      ...localIdentifier.entries()
+      ...localIdentifier.entries(),
+      ...apiIdentifier.entries()
     ]);
 
     if (
@@ -240,6 +250,9 @@ export class Scope implements IScope {
     return new Scope({
       container: options.container ?? this._container,
       parent: this._parent.copy({
+        container: options.container
+      }),
+      api: this._api.copy({
         container: options.container
       }),
       globals: this._globals.copy({

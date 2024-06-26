@@ -16,11 +16,13 @@ export interface DocumentOptions {
   scopeMapping?: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
   intrinsics?: Intrinsics;
   globals?: IEntity;
+  api?: IEntity;
 }
 
 export interface IDocument {
   root: ASTChunk;
   intrinsics: Intrinsics;
+  api: IEntity;
   globals: IEntity;
   container: IContainerProxy;
 

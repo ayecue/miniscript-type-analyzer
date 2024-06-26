@@ -62,7 +62,8 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   ): boolean {
     return (
       !!lookupProperty(origin, property) ||
-      !!container.getDefinition(Array.from(origin.types), property, true)
+      (!origin.isScope() &&
+        !!container.getDefinition(Array.from(origin.types), property, true))
     );
   },
 
@@ -74,7 +75,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   ): IEntity | null {
     const entity = lookupProperty(origin, property) ?? null;
 
-    if (entity == null) {
+    if (entity == null && !origin.isScope()) {
       return container.getDefinition(
         Array.from(origin.types),
         property,

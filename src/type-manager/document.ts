@@ -30,6 +30,7 @@ export class Document implements IDocument {
   protected _container: IContainerProxy;
   protected _globals: IEntity;
   protected _intrinscis: Intrinsics;
+  protected _api: IEntity;
 
   get root() {
     return this._root;
@@ -47,12 +48,17 @@ export class Document implements IDocument {
     return this._globals;
   }
 
+  get api() {
+    return this._api;
+  }
+
   constructor(options: DocumentOptions) {
     this._root = options.root;
     this._container = options.container;
     this._scopeMapping = options.scopeMapping ?? new WeakMap();
     this._intrinscis = options.intrinsics ?? this.createIntrinscis();
     this._globals = options.globals ?? this.initGlobals();
+    this._api = options.api ?? this.initApi();
   }
 
   protected createIntrinscis(): Intrinsics {
@@ -71,35 +77,45 @@ export class Document implements IDocument {
     };
   }
 
-  protected initGlobals(): IEntity {
-    const globals = this._container.primitives
+  protected initApi(): IEntity {
+    const general = this._container.primitives
       .get(SignatureDefinitionBaseType.General)
-      .copy({ isScope: true })
-      .setLabel('globals');
+      .copy({ isScope: true });
 
-    globals.resolveProperty('map', true).setReturnEntity(this._intrinscis.map);
-    globals
+    general.resolveProperty('map', true).setReturnEntity(this._intrinscis.map);
+    general
       .resolveProperty('funcRef', true)
       .setReturnEntity(this._intrinscis.funcRef);
-    globals
+    general
       .resolveProperty('number', true)
       .setReturnEntity(this._intrinscis.number);
-    globals
+    general
       .resolveProperty('string', true)
       .setReturnEntity(this._intrinscis.string);
-    globals
+    general
       .resolveProperty('list', true)
       .setReturnEntity(this._intrinscis.list);
 
-    return globals;
+    return general;
+  }
+
+  protected initGlobals(): IEntity {
+    return new Entity({
+      kind: CompletionItemKind.Constant,
+      container: this._container,
+      isScope: true,
+      label: 'globals'
+    }).addType(SignatureDefinitionBaseType.Map);
   }
 
   protected analyzeScope(block: ASTFunctionStatement): void {
     const parentContext = this._scopeMapping.get(block.scope)!;
     const scope = new Scope({
+      api: this._api,
       container: this._container,
       parent: parentContext?.scope,
-      globals: this._globals
+      globals: this._globals,
+      locals: this._globals
     });
     const aggregator = new Aggregator({
       scope,
@@ -161,9 +177,9 @@ export class Document implements IDocument {
 
   analyze() {
     const scope = new Scope({
+      api: this._api,
       container: this._container,
-      globals: this._globals,
-      locals: this._globals
+      globals: this._globals
     });
     const aggregator = new Aggregator({
       scope,
