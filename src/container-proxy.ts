@@ -3,8 +3,8 @@ import { ContainerProxyOptions, IContainerProxy } from "./types/container-proxy"
 import { IEntity } from "./types/object";
 import { Entity, resolveEntity } from "./type-manager/entity";
 import { CompletionItem, CompletionItemKind } from "./types/completion";
-import { injectIdentifers } from "./type-manager/utils/inject-identifiers";
-import { lookupProperty } from "./type-manager/utils/lookup-property";
+import { injectIdentifers } from "./utils/inject-identifiers";
+import { lookupProperty } from "./utils/lookup-property";
 
 export class ContainerProxy implements IContainerProxy {
   protected _container: Container;

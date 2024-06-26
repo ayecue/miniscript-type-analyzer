@@ -24,9 +24,9 @@ export {
 } from './types/resolve';
 export { isSignatureDefinitionFunction } from './types/signature';
 export { TypeManagerOptions } from './types/type-manager';
-export { injectIdentifers } from './type-manager/utils/inject-identifiers';
-export { isEligibleForProperties } from './type-manager/utils/is-eligible-for-properties';
-export { lookupProperty } from './type-manager/utils/lookup-property';
+export { injectIdentifers } from './utils/inject-identifiers';
+export { isEligibleForProperties } from './utils/is-eligible-for-properties';
+export { lookupProperty } from './utils/lookup-property';
 export { Entity } from './type-manager/entity';
 export { Scope } from './type-manager/scope';
 export { Aggregator } from './type-manager/aggregator';
