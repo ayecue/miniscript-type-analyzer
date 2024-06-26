@@ -75,12 +75,16 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   ): IEntity | null {
     const entity = lookupProperty(origin, property) ?? null;
 
-    if (entity == null && !origin.isScope()) {
-      return container.getDefinition(
-        Array.from(origin.types),
-        property,
-        noInvoke
-      );
+    if (entity == null) {
+      if (!origin.isScope()) {
+        return container.getDefinition(
+          Array.from(origin.types),
+          property,
+          noInvoke
+        );
+      }
+
+      return null;
     }
 
     return resolveEntity(container, entity, noInvoke);
