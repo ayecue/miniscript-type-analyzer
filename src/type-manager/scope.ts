@@ -6,8 +6,13 @@ import {
 } from 'meta-utils';
 
 import { CompletionItem, CompletionItemKind } from '../types/completion';
-import { IDocument } from '../types/document';
-import { EntityOptions, IEntity, IScope, ScopeOptions } from '../types/object';
+import { IContainerProxy } from '../types/container-proxy';
+import {
+  EntityCopyOptions,
+  IEntity,
+  IScope,
+  ScopeOptions
+} from '../types/object';
 import { ObjectSet } from '../utils/object-set';
 import { Entity, resolveEntity } from './entity';
 
@@ -15,7 +20,7 @@ export class Scope implements IScope {
   protected _parent: IScope | null;
   protected _globals: IEntity;
   protected _locals: IEntity;
-  protected _document: IDocument;
+  protected _container: IContainerProxy;
 
   get signatureDefinitions(): ObjectSet<SignatureDefinition> {
     return null;
@@ -58,14 +63,14 @@ export class Scope implements IScope {
   }
 
   constructor(options: ScopeOptions) {
-    this._document = options.document;
+    this._container = options.container;
     this._parent = options.parent ?? null;
     this._globals = options.globals;
     this._locals =
       options.locals ??
       new Entity({
         kind: CompletionItemKind.Constant,
-        document: this._document,
+        container: this._container,
         label: 'locals'
       }).addType(SignatureDefinitionBaseType.Map);
   }
@@ -105,7 +110,7 @@ export class Scope implements IScope {
         return this._globals;
       }
       const entity = this._locals.values.get(`i:${property}`);
-      return resolveEntity(this._document, entity, noInvoke);
+      return resolveEntity(this._container, entity, noInvoke);
     } else if (this._parent?.locals.hasProperty(property)) {
       return this._parent?.locals.resolveProperty(property, noInvoke);
     } else if (this._globals.hasProperty(property)) {
@@ -218,21 +223,14 @@ export class Scope implements IScope {
     return this._locals.toJSON();
   }
 
-  copy(
-    options: Partial<
-      Pick<
-        EntityOptions,
-        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
-      >
-    > = {}
-  ): IScope {
+  copy(options: EntityCopyOptions = {}): IScope {
     return new Scope({
-      document: options.document ?? this._document,
+      container: options.container ?? this._container,
       parent: this._parent.copy({
-        document: options.document
+        container: options.container
       }),
       globals: this._globals.copy({
-        document: options.document
+        container: options.container
       }),
       locals: this._locals.copy(options)
     });

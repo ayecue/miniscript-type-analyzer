@@ -6,12 +6,12 @@ import {
 
 import { ObjectSet } from '../utils/object-set';
 import { CompletionItem, CompletionItemKind } from './completion';
-import { IDocument } from './document';
+import { IContainerProxy } from './container-proxy';
 
 export interface EntityOptions {
   kind: CompletionItemKind;
   line?: number;
-  document: IDocument;
+  container: IContainerProxy;
   signatureDefinitions?: ObjectSet<SignatureDefinition>;
   label?: string;
   types?: Set<SignatureDefinitionType>;
@@ -20,17 +20,28 @@ export interface EntityOptions {
   context?: IEntity;
 }
 
+export type EntityCopyOptions = Partial<
+  Pick<
+    EntityOptions,
+    'container' | 'label' | 'kind' | 'context' | 'line' | 'values'
+  >
+>;
+
 export interface IEntityPropertyHandler<T> {
-  hasProperty(origin: IEntity, document: IDocument, property: T): boolean;
+  hasProperty(
+    origin: IEntity,
+    container: IContainerProxy,
+    property: T
+  ): boolean;
   resolveProperty(
     origin: IEntity,
-    document: IDocument,
+    container: IContainerProxy,
     property: T,
     noInvoke?: boolean
   ): IEntity | null;
   setProperty(
     origin: IEntity,
-    document: IDocument,
+    container: IContainerProxy,
     property: T,
     item: IEntity
   ): boolean;
@@ -50,14 +61,7 @@ export interface IEntity {
   setProperty(name: string | IEntity, item: IEntity): boolean;
   addType(...types: SignatureDefinitionType[]): this;
   insertSignature(signature: Signature): this;
-  copy(
-    options?: Partial<
-      Pick<
-        EntityOptions,
-        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
-      >
-    >
-  ): IEntity;
+  copy(options?: EntityCopyOptions): IEntity;
   extend(entity: IEntity): this;
   getAllIdentifier(): Map<string, CompletionItem>;
   isCallable(): boolean;
@@ -72,7 +76,7 @@ export interface IEntity {
 }
 
 export interface ScopeOptions {
-  document: IDocument;
+  container: IContainerProxy;
   globals: IEntity;
   parent?: IScope;
   locals?: IEntity;
@@ -82,12 +86,5 @@ export interface IScope extends IEntity {
   outer: IEntity;
   globals: IEntity;
   locals: IEntity;
-  copy(
-    options?: Partial<
-      Pick<
-        EntityOptions,
-        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
-      >
-    >
-  ): IScope;
+  copy(options?: EntityCopyOptions): IScope;
 }
