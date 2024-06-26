@@ -29,9 +29,21 @@ export class ObjectSetIterator<T extends object> implements Iterator<T> {
 
 export class ObjectSet<T extends object> {
   private _map: Map<number, T>;
+  private _first: number | null;
+  private _last: number | null;
 
   constructor(values?: readonly T[] | null) {
-    this._map = new Map(values?.map((value) => [hash(value), value]));
+    const items = values ? Array.from(values) : [];
+    const entries: [number, T][] = items.map((value) => [hash(value), value]);
+
+    this._map = new Map(entries);
+    this._first = null;
+    this._last = null;
+
+    if (entries.length > 0) {
+      this._first = entries[0][0]!;
+      this._last = entries[entries.length - 1][0]!;
+    }
   }
 
   [Symbol.iterator](): ObjectSetIterator<T> {
@@ -39,13 +51,11 @@ export class ObjectSet<T extends object> {
   }
 
   first(): T {
-    return this._map.values().next().value ?? null;
+    return (this._first != null && this._map.get(this._first)) ?? null;
   }
 
   last(): T {
-    const values = Array.from(this._map.values());
-    if (values.length === 0) return null;
-    return values[values.length - 1];
+    return (this._last != null && this._map.get(this._last)) ?? null;
   }
 
   toArray(): T[] {
@@ -55,6 +65,8 @@ export class ObjectSet<T extends object> {
   add(value: T): this {
     const key = hash(value);
     this._map.set(key, value);
+    this._first ??= key;
+    this._last = key;
     return this;
   }
 
@@ -64,8 +76,10 @@ export class ObjectSet<T extends object> {
   }
 
   extend(value: ObjectSet<T>): this {
-    for (const keyPair of value._map) {
-      this._map.set(...keyPair);
+    for (const [h, v] of value._map) {
+      this._map.set(h, v);
+      this._first ??= h;
+      this._last = h;
     }
     return this;
   }
