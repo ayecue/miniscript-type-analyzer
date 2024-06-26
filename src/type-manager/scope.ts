@@ -175,6 +175,10 @@ export class Scope implements IScope {
     return false;
   }
 
+  isFromSignature(): boolean {
+    return false;
+  }
+
   isCallable(): boolean {
     return false;
   }

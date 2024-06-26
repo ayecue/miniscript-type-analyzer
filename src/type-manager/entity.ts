@@ -89,11 +89,22 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
     origin: IEntity,
     container: IContainerProxy,
     property: string,
-    entity: Entity
+    entity: IEntity
   ): boolean {
     if (!isEligibleForProperties(origin)) return false;
 
     const key = `i:${property}`;
+
+    // make sure it receives the global intrinsic if no context is given
+    if (origin.isScope() && entity.isFromSignature()) {
+      const generalEntity = container.getGeneralDefinition(entity.label, true);
+
+      // could be cases where there is nothing available
+      if (generalEntity != null) {
+        entity = generalEntity;
+      }
+    }
+
     const existingEntity = origin.values.get(key);
 
     if (existingEntity) {
@@ -117,7 +128,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   hasProperty(
     origin: IEntity,
     _container: IContainerProxy,
-    property: Entity
+    property: IEntity
   ): boolean {
     if (!isEligibleForProperties(origin)) return false;
     for (const type of property.types) {
@@ -131,7 +142,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   resolveProperty(
     origin: IEntity,
     container: IContainerProxy,
-    property: Entity,
+    property: IEntity,
     noInvoke: boolean = false
   ): IEntity | null {
     if (!isEligibleForProperties(origin)) {
@@ -166,8 +177,8 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   setProperty(
     origin: IEntity,
     container: IContainerProxy,
-    property: Entity,
-    entity: Entity
+    property: IEntity,
+    entity: IEntity
   ): boolean {
     if (!isEligibleForProperties(origin)) return false;
     for (const type of property.types) {
@@ -202,6 +213,7 @@ export class Entity implements IEntity {
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
   protected _isScope: boolean;
+  protected _isFromSignature: boolean;
 
   get kind() {
     return this._kind;
@@ -233,6 +245,7 @@ export class Entity implements IEntity {
 
   constructor(options: EntityOptions) {
     this._isScope = options.isScope ?? false;
+    this._isFromSignature = options.isFromSignature ?? false;
     this._kind = options.kind;
     this._line = options.line ?? -1;
     this._label = options.label ?? 'anonymous';
@@ -243,6 +256,10 @@ export class Entity implements IEntity {
     this._context = options.context ?? null;
     this._container = options.container;
     this._returnEntity = options.returnEntity ?? null;
+  }
+
+  isFromSignature(): boolean {
+    return this._isFromSignature;
   }
 
   hasContext() {
@@ -405,7 +422,8 @@ export class Entity implements IEntity {
           definition.getType().type === SignatureDefinitionBaseType.Function
             ? CompletionItemKind.Function
             : CompletionItemKind.Property,
-        container: this._container
+        container: this._container,
+        isFromSignature: true
       });
 
       entity.addSignatureType(definition);
@@ -474,6 +492,7 @@ export class Entity implements IEntity {
     return new Entity({
       kind: options.kind ?? this._kind,
       line: options.line ?? this._line,
+      isFromSignature: options.isFromSignature ?? this._isFromSignature,
       isScope: options.isScope ?? this._isScope,
       container: options.container ?? this._container,
       label: options.label ?? this._label,
