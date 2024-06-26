@@ -114,8 +114,7 @@ export class Document implements IDocument {
       api: this._api,
       container: this._container,
       parent: parentContext?.scope,
-      globals: this._globals,
-      locals: this._globals
+      globals: this._globals
     });
     const aggregator = new Aggregator({
       scope,
@@ -179,7 +178,8 @@ export class Document implements IDocument {
     const scope = new Scope({
       api: this._api,
       container: this._container,
-      globals: this._globals
+      globals: this._globals,
+      locals: this._globals
     });
     const aggregator = new Aggregator({
       scope,
