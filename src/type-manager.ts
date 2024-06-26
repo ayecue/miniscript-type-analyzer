@@ -19,7 +19,7 @@ export class TypeManager {
     console.time(`Analyzing for ${identifier} done within`);
 
     const typeDoc = new Document({
-      container: this._container,
+      container: this._container.copy(),
       root: chunk
     });
 

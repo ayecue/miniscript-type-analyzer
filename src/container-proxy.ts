@@ -134,15 +134,7 @@ export class ContainerProxy implements IContainerProxy {
 
   copy() {
     return new ContainerProxy({
-      container: this._container,
-      primitives: Array.from(this._primitives).reduce((result, [key, value]) => {
-        result.set(key, value.copy());
-        return result;
-      }, new Map()),
-      types: Array.from(this._types).reduce((result, [key, value]) => {
-        result.set(key, value.copy());
-        return result;
-      }, new Map())
-    })
+      container: this._container
+    });
   }
 }
