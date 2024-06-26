@@ -16,39 +16,9 @@ import {
 } from '../types/object';
 import { isSignatureDefinitionFunction } from '../types/signature';
 import { ObjectSet } from '../utils/object-set';
-
-const isEligibleForProperties = (entity: IEntity) => {
-  return (
-    entity.types.has(SignatureDefinitionBaseType.Map) ||
-    entity.types.has(SignatureDefinitionBaseType.List) ||
-    entity.types.has(SignatureDefinitionBaseType.Any)
-  );
-};
-
-export const lookupProperty = (
-  entity: IEntity,
-  property: string
-): IEntity | null => {
-  let current = entity;
-
-  while (isEligibleForProperties(current)) {
-    const item = current.values.get(`i:${property}`);
-
-    if (item != null) {
-      return item;
-    }
-
-    const isa = current.values.get('i:__isa');
-
-    if (isa == null) {
-      break;
-    }
-
-    current = isa;
-  }
-
-  return null;
-};
+import { injectIdentifers } from './utils/inject-identifiers';
+import { isEligibleForProperties } from './utils/is-eligible-for-properties';
+import { lookupProperty } from './utils/lookup-property';
 
 export const resolveEntity = (
   container: IContainerProxy,
@@ -451,14 +421,7 @@ export class Entity implements IEntity {
       }
     }
 
-    for (const [property, entity] of this._values) {
-      if (property.startsWith('i:')) {
-        properties.set(property.slice(2), {
-          kind: entity.kind,
-          line: entity.line
-        });
-      }
-    }
+    injectIdentifers(properties, this);
 
     return properties;
   }

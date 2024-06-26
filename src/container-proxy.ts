@@ -1,8 +1,10 @@
 import { Container, SignatureDefinitionBaseType, SignatureDefinitionType } from "meta-utils";
 import { ContainerProxyOptions, IContainerProxy } from "./types/container-proxy";
 import { IEntity } from "./types/object";
-import { Entity, lookupProperty, resolveEntity } from "./type-manager/entity";
+import { Entity, resolveEntity } from "./type-manager/entity";
 import { CompletionItem, CompletionItemKind } from "./types/completion";
+import { injectIdentifers } from "./type-manager/utils/inject-identifiers";
+import { lookupProperty } from "./type-manager/utils/lookup-property";
 
 export class ContainerProxy implements IContainerProxy {
   protected _container: Container;
@@ -108,26 +110,13 @@ export class ContainerProxy implements IContainerProxy {
 
     if (type === SignatureDefinitionBaseType.Any) {
       for (const type of this._container.getAllVisibleTypes()) {
-        const items = this.getTypeSignature(type).values;
-        for (const [property, entity] of items) {
-          properties.set(property.slice(2), {
-            kind: entity.kind,
-            line: entity.line
-          });
-        }
+        injectIdentifers(properties, this.getTypeSignature(type));
       }
 
       return properties;
     }
 
-    const items = this.getTypeSignature(type).values;
-
-    for (const [property, entity] of items) {
-      properties.set(property.slice(2), {
-        kind: entity.kind,
-        line: entity.line
-      });
-    }
+    injectIdentifers(properties, this.getTypeSignature(type));
 
     return properties;
   }
