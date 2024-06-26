@@ -51,11 +51,13 @@ export class ObjectSet<T extends object> {
   }
 
   first(): T {
-    return (this._first != null && this._map.get(this._first)) ?? null;
+    if (this._first != null) return this._map.get(this._first) ?? null;
+    return null;
   }
 
   last(): T {
-    return (this._last != null && this._map.get(this._last)) ?? null;
+    if (this._last != null) return this._map.get(this._last) ?? null;
+    return null;
   }
 
   toArray(): T[] {
