@@ -17,6 +17,7 @@ import {
   ASTLiteral,
   ASTMapConstructorExpression,
   ASTMemberExpression,
+  ASTParenthesisExpression,
   ASTSliceExpression,
   ASTType,
   ASTUnaryExpression
@@ -132,6 +133,10 @@ export class Aggregator implements IAggregator {
       .addType(SignatureDefinitionBaseType.Function)
       .addSignatureType(enrichWithMetaInformation(signature))
       .setLine(item.start.line);
+  }
+
+  protected resolveParenthesisExpression(item: ASTParenthesisExpression) {
+    return this.resolveTypeWithDefault(item.expression);
   }
 
   protected resolveBinaryExpression(item: ASTEvaluationExpression) {
@@ -296,6 +301,10 @@ export class Aggregator implements IAggregator {
     }
 
     switch (item.type) {
+      case ASTType.ParenthesisExpression:
+        return this.resolveParenthesisExpression(
+          item as ASTParenthesisExpression
+        );
       case ASTType.CallStatement:
         return this.resolveCallStatement(item as ASTCallStatement);
       case ASTType.CallExpression:
