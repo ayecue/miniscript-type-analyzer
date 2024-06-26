@@ -143,14 +143,14 @@ export class Aggregator implements IAggregator {
     // improve logic
     const left = this.resolveTypeWithDefault(item.left);
     const right = this.resolveTypeWithDefault(item.right);
-    return left.extend(right).setLine(item.start.line);
+    return left.extend(right);
   }
 
   protected resolveLogicalExpression(item: ASTEvaluationExpression) {
     // improve logic
     const left = this.resolveTypeWithDefault(item.left);
     const right = this.resolveTypeWithDefault(item.right);
-    return left.extend(right).setLine(item.start.line);
+    return left.extend(right);
   }
 
   protected resolveCallStatement(item: ASTCallStatement) {
@@ -162,7 +162,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity.setLine(item.start.line);
+    return entity;
   }
 
   protected resolveCallExpression(item: ASTCallExpression) {
@@ -174,7 +174,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity.setLine(item.start.line);
+    return entity;
   }
 
   protected resolveUnaryExpression(item: ASTUnaryExpression) {
@@ -186,7 +186,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity.setLine(item.start.line);
+    return entity;
   }
 
   protected resolveMapConstructorExpression(item: ASTMapConstructorExpression) {
@@ -245,7 +245,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity.setLine(item.start.line);
+    return entity;
   }
 
   protected resolveIndexExpression(
@@ -260,7 +260,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity.setLine(item.start.line);
+    return entity;
   }
 
   protected resolveMemberExpression(
@@ -276,7 +276,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity.setLine(item.start.line);
+    return entity;
   }
 
   protected resolveIdentifier(
@@ -292,7 +292,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity.setLine(item.start.line);
+    return entity;
   }
 
   resolveType(item: ASTBase, noInvoke: boolean = false): IEntity | null {
