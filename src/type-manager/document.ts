@@ -1,9 +1,6 @@
 import {
-  Container,
-  Signature,
   SignatureDefinitionBaseType,
-  SignatureDefinitionFunction,
-  SignatureDefinitionType
+  SignatureDefinitionFunction
 } from 'meta-utils';
 import {
   ASTAssignmentStatement,
@@ -14,7 +11,8 @@ import {
   ASTType
 } from 'miniscript-core';
 
-import { CompletionItem, CompletionItemKind } from '../types/completion';
+import { CompletionItemKind } from '../types/completion';
+import { IContainerProxy } from '../types/container-proxy';
 import {
   DocumentOptions,
   IDocument,
@@ -23,38 +21,13 @@ import {
 } from '../types/document';
 import { IEntity } from '../types/object';
 import { Aggregator } from './aggregator';
-import { Entity, resolveEntity } from './entity';
+import { Entity } from './entity';
 import { Scope } from './scope';
-
-const insertSignatureToProperties = (
-  properties: Map<string, CompletionItem>,
-  signature: Signature
-) => {
-  const signatureKeys = Object.keys(signature.getDefinitions());
-  for (const property of signatureKeys) {
-    properties.set(property, {
-      kind: CompletionItemKind.Function,
-      line: -1
-    });
-  }
-};
-
-const insertIntrinsicToProperties = (
-  properties: Map<string, CompletionItem>,
-  intrinsic: Map<string, IEntity>
-) => {
-  for (const [property, entity] of intrinsic) {
-    properties.set(property.slice(2), {
-      kind: entity.kind,
-      line: entity.line
-    });
-  }
-};
 
 export class Document implements IDocument {
   protected _root: ASTChunk;
   protected _scopeMapping: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
-  protected _container: Container;
+  protected _container: IContainerProxy;
   protected _globals: IEntity;
   protected _intrinscis: Intrinsics;
 
@@ -84,59 +57,25 @@ export class Document implements IDocument {
 
   protected createIntrinscis(): Intrinsics {
     return {
-      map: new Entity({
-        kind: CompletionItemKind.Constant,
-        document: this
-      })
-        .addType(SignatureDefinitionBaseType.Map)
-        .insertSignature(
-          this._container.getTypeSignature(SignatureDefinitionBaseType.Map)
-        ),
-      funcRef: new Entity({
-        kind: CompletionItemKind.Constant,
-        document: this
-      })
-        .addType(SignatureDefinitionBaseType.Map)
-        .insertSignature(
-          this._container.getTypeSignature(SignatureDefinitionBaseType.Function)
-        ),
-      number: new Entity({
-        kind: CompletionItemKind.Constant,
-        document: this
-      })
-        .addType(SignatureDefinitionBaseType.Map)
-        .insertSignature(
-          this._container.getTypeSignature(SignatureDefinitionBaseType.Number)
-        ),
-      string: new Entity({
-        kind: CompletionItemKind.Constant,
-        document: this
-      })
-        .addType(SignatureDefinitionBaseType.Map)
-        .insertSignature(
-          this._container.getTypeSignature(SignatureDefinitionBaseType.String)
-        ),
-      list: new Entity({
-        kind: CompletionItemKind.Constant,
-        document: this
-      })
-        .addType(SignatureDefinitionBaseType.Map)
-        .insertSignature(
-          this._container.getTypeSignature(SignatureDefinitionBaseType.List)
-        )
+      map: this._container.primitives.get(SignatureDefinitionBaseType.Map),
+      funcRef: this._container.primitives.get(
+        SignatureDefinitionBaseType.Function
+      ),
+      number: this._container.primitives.get(
+        SignatureDefinitionBaseType.Number
+      ),
+      string: this._container.primitives.get(
+        SignatureDefinitionBaseType.String
+      ),
+      list: this._container.primitives.get(SignatureDefinitionBaseType.List)
     };
   }
 
   protected initGlobals(): IEntity {
-    const globals = new Entity({
-      kind: CompletionItemKind.Constant,
-      document: this,
-      label: 'globals'
-    })
-      .addType(SignatureDefinitionBaseType.Map)
-      .insertSignature(
-        this._container.getTypeSignature(SignatureDefinitionBaseType.General)
-      );
+    const globals = this._container.primitives
+      .get(SignatureDefinitionBaseType.General)
+      .copy({ isScope: true })
+      .setLabel('globals');
 
     globals.resolveProperty('map', true).setReturnEntity(this._intrinscis.map);
     globals
@@ -158,7 +97,7 @@ export class Document implements IDocument {
   protected analyzeScope(block: ASTFunctionStatement): void {
     const parentContext = this._scopeMapping.get(block.scope)!;
     const scope = new Scope({
-      document: this,
+      container: this._container,
       parent: parentContext?.scope,
       globals: this._globals
     });
@@ -197,7 +136,7 @@ export class Document implements IDocument {
     // override argument types if custom
     if (fnEntity !== null) {
       const fnDef =
-        fnEntity.signatureDefinitions.first() as SignatureDefinitionFunction;
+        fnEntity.signatureDefinitions.last() as SignatureDefinitionFunction;
 
       if (fnDef != null) {
         for (const arg of fnDef.getArguments()) {
@@ -208,7 +147,7 @@ export class Document implements IDocument {
               arg.getLabel(),
               new Entity({
                 kind: CompletionItemKind.Variable,
-                document: this
+                container: this._container
               }).addType(...types)
             );
           } else {
@@ -222,7 +161,7 @@ export class Document implements IDocument {
 
   analyze() {
     const scope = new Scope({
-      document: this,
+      container: this._container,
       globals: this._globals,
       locals: this._globals
     });
@@ -243,209 +182,6 @@ export class Document implements IDocument {
       const item = this._root.scopes[index];
       this.analyzeScope(item as ASTFunctionStatement);
     }
-  }
-
-  protected hasDefinitionEx(type: SignatureDefinitionType, property: string) {
-    switch (type) {
-      case SignatureDefinitionBaseType.Function:
-        return this._intrinscis.funcRef.values.has(`i:${property}`);
-      case SignatureDefinitionBaseType.Map:
-        return this._intrinscis.map.values.has(`i:${property}`);
-      case SignatureDefinitionBaseType.List:
-        return this._intrinscis.list.values.has(`i:${property}`);
-      case SignatureDefinitionBaseType.String:
-        return this._intrinscis.string.values.has(`i:${property}`);
-      case SignatureDefinitionBaseType.Number:
-        return this._intrinscis.number.values.has(`i:${property}`);
-      default:
-        const signature = this._container.getTypeSignature(type);
-        return signature !== null && !!signature.getDefinitions()[property];
-    }
-  }
-
-  hasDefinition(types: SignatureDefinitionType[], property: string): boolean {
-    const uniqTypes = new Set(types);
-
-    if (uniqTypes.has(SignatureDefinitionBaseType.Any)) {
-      uniqTypes.add(SignatureDefinitionBaseType.Function);
-      uniqTypes.add(SignatureDefinitionBaseType.Map);
-      uniqTypes.add(SignatureDefinitionBaseType.List);
-      uniqTypes.add(SignatureDefinitionBaseType.String);
-      uniqTypes.add(SignatureDefinitionBaseType.Number);
-    }
-
-    for (const type of uniqTypes) {
-      if (this.hasDefinitionEx(type, property)) return true;
-    }
-
-    return false;
-  }
-
-  protected resolveInnerDefinition(
-    type: SignatureDefinitionType,
-    property: string
-  ): IEntity | null {
-    switch (type) {
-      case SignatureDefinitionBaseType.Function:
-        return this._intrinscis.funcRef.values.get(`i:${property}`) ?? null;
-      case SignatureDefinitionBaseType.Map:
-        return this._intrinscis.map.values.get(`i:${property}`) ?? null;
-      case SignatureDefinitionBaseType.List:
-        return this._intrinscis.list.values.get(`i:${property}`) ?? null;
-      case SignatureDefinitionBaseType.String:
-        return this._intrinscis.string.values.get(`i:${property}`) ?? null;
-      case SignatureDefinitionBaseType.Number:
-        return this._intrinscis.number.values.get(`i:${property}`) ?? null;
-      default:
-        return null;
-    }
-  }
-
-  protected resolveInnerDefintions(
-    types: SignatureDefinitionType[],
-    property: string
-  ): IEntity | null {
-    const uniqTypes = new Set(types);
-
-    if (uniqTypes.has(SignatureDefinitionBaseType.Any)) {
-      uniqTypes.add(SignatureDefinitionBaseType.Function);
-      uniqTypes.add(SignatureDefinitionBaseType.Map);
-      uniqTypes.add(SignatureDefinitionBaseType.List);
-      uniqTypes.add(SignatureDefinitionBaseType.String);
-      uniqTypes.add(SignatureDefinitionBaseType.Number);
-    }
-
-    const innerMatchingEntity: IEntity = new Entity({
-      kind: CompletionItemKind.Variable,
-      document: this,
-      label: property
-    });
-
-    for (const type of uniqTypes) {
-      const item = this.resolveInnerDefinition(type, property);
-      if (item !== null) innerMatchingEntity.extend(item);
-    }
-
-    return innerMatchingEntity.types.size > 0 ? innerMatchingEntity : null;
-  }
-
-  protected resolveExternalDefinitions(
-    types: SignatureDefinitionType[],
-    property: string
-  ): IEntity | null {
-    const signatureDef = this._container.getDefinition(types, property);
-
-    if (signatureDef === null) {
-      return null;
-    }
-
-    return new Entity({
-      kind:
-        signatureDef.getType().type === SignatureDefinitionBaseType.Function
-          ? CompletionItemKind.Function
-          : CompletionItemKind.Variable,
-      document: this,
-      label: property
-    }).addSignatureType(signatureDef);
-  }
-
-  resolveDefinition(
-    types: SignatureDefinitionType[],
-    property: string,
-    noInvoke: boolean = false
-  ): IEntity {
-    const innerMatchingEntity = this.resolveInnerDefintions(types, property);
-    const externalDefinitionEntity = this.resolveExternalDefinitions(
-      types,
-      property
-    );
-
-    if (innerMatchingEntity === null && externalDefinitionEntity === null) {
-      return new Entity({
-        kind: CompletionItemKind.Variable,
-        document: this,
-        label: property
-      }).addType(SignatureDefinitionBaseType.Any);
-    }
-
-    const mergedEntity = new Entity({
-      kind: CompletionItemKind.Variable,
-      document: this,
-      label: property
-    });
-
-    if (innerMatchingEntity !== null) mergedEntity.extend(innerMatchingEntity);
-    if (externalDefinitionEntity !== null)
-      mergedEntity.extend(externalDefinitionEntity);
-
-    return resolveEntity(this, mergedEntity, noInvoke);
-  }
-
-  protected getAllProperties(): Map<string, CompletionItem> {
-    const properties = new Map();
-
-    for (const signature of this._container.getTypes().values()) {
-      insertSignatureToProperties(properties, signature);
-    }
-
-    const intrinsics = [
-      this._intrinscis.funcRef.values,
-      this._intrinscis.map.values,
-      this._intrinscis.list.values,
-      this._intrinscis.string.values,
-      this._intrinscis.number.values
-    ];
-
-    for (const intrinsic of intrinsics) {
-      insertIntrinsicToProperties(properties, intrinsic);
-    }
-
-    return properties;
-  }
-
-  getPropertiesOfType(
-    type: SignatureDefinitionType
-  ): Map<string, CompletionItem> {
-    if (type === SignatureDefinitionBaseType.Any) {
-      return this.getAllProperties();
-    }
-
-    const properties = new Map();
-
-    switch (type) {
-      case SignatureDefinitionBaseType.Function: {
-        insertIntrinsicToProperties(
-          properties,
-          this._intrinscis.funcRef.values
-        );
-        break;
-      }
-      case SignatureDefinitionBaseType.Map: {
-        insertIntrinsicToProperties(properties, this._intrinscis.map.values);
-        break;
-      }
-      case SignatureDefinitionBaseType.List: {
-        insertIntrinsicToProperties(properties, this._intrinscis.list.values);
-        break;
-      }
-      case SignatureDefinitionBaseType.String: {
-        insertIntrinsicToProperties(properties, this._intrinscis.string.values);
-        break;
-      }
-      case SignatureDefinitionBaseType.Number: {
-        insertIntrinsicToProperties(properties, this._intrinscis.number.values);
-        break;
-      }
-      default: {
-        const signature = this._container.getTypeSignature(type);
-        if (signature !== null) {
-          insertSignatureToProperties(properties, signature);
-        }
-        break;
-      }
-    }
-
-    return properties;
   }
 
   getRootScopeContext(): ScopeContext {

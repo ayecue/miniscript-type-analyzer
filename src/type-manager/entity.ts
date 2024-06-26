@@ -7,47 +7,21 @@ import {
 } from 'meta-utils';
 
 import { CompletionItem, CompletionItemKind } from '../types/completion';
-import { IDocument } from '../types/document';
+import { IContainerProxy } from '../types/container-proxy';
 import {
+  EntityCopyOptions,
   EntityOptions,
   IEntity,
   IEntityPropertyHandler
 } from '../types/object';
 import { isSignatureDefinitionFunction } from '../types/signature';
+import { injectIdentifers } from '../utils/inject-identifiers';
+import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
+import { lookupProperty } from '../utils/lookup-property';
 import { ObjectSet } from '../utils/object-set';
 
-const isEligibleForProperties = (entity: IEntity) => {
-  return (
-    entity.types.has(SignatureDefinitionBaseType.Map) ||
-    entity.types.has(SignatureDefinitionBaseType.List) ||
-    entity.types.has(SignatureDefinitionBaseType.Any)
-  );
-};
-
-const lookupProperty = (entity: IEntity, property: string): IEntity | null => {
-  let current = entity;
-
-  while (isEligibleForProperties(current)) {
-    const item = current.values.get(`i:${property}`);
-
-    if (item != null) {
-      return item;
-    }
-
-    const isa = current.values.get('i:__isa');
-
-    if (isa == null) {
-      break;
-    }
-
-    current = isa;
-  }
-
-  return null;
-};
-
 export const resolveEntity = (
-  document: IDocument,
+  container: IContainerProxy,
   entity: IEntity,
   noInvoke: boolean = false
 ) => {
@@ -63,7 +37,7 @@ export const resolveEntity = (
     if (returnTypes) {
       return new Entity({
         kind: CompletionItemKind.Variable,
-        document,
+        container,
         label: entity.label,
         context: entity.context
       }).addType(...returnTypes);
@@ -71,7 +45,7 @@ export const resolveEntity = (
 
     return new Entity({
       kind: CompletionItemKind.Variable,
-      document,
+      container,
       label: entity.label,
       context: entity.context
     }).addType(SignatureDefinitionBaseType.Any);
@@ -81,41 +55,56 @@ export const resolveEntity = (
 };
 
 const identifierPropertyHandler: IEntityPropertyHandler<string> = {
-  hasProperty(origin: IEntity, document: IDocument, property: string): boolean {
+  hasProperty(
+    origin: IEntity,
+    container: IContainerProxy,
+    property: string
+  ): boolean {
     return (
       !!lookupProperty(origin, property) ||
-      document.hasDefinition(Array.from(origin.types), property)
+      !!container.getDefinition(Array.from(origin.types), property, true)
     );
   },
 
   resolveProperty(
     origin: IEntity,
-    document: IDocument,
+    container: IContainerProxy,
     property: string,
     noInvoke: boolean = false
   ): IEntity | null {
     const entity = lookupProperty(origin, property) ?? null;
 
     if (entity == null) {
-      return document.resolveDefinition(
+      return container.getDefinition(
         Array.from(origin.types),
         property,
         noInvoke
       );
     }
 
-    return resolveEntity(document, entity, noInvoke);
+    return resolveEntity(container, entity, noInvoke);
   },
 
   setProperty(
     origin: IEntity,
-    document: IDocument,
+    container: IContainerProxy,
     property: string,
-    entity: Entity
+    entity: IEntity
   ): boolean {
     if (!isEligibleForProperties(origin)) return false;
 
     const key = `i:${property}`;
+
+    // make sure it receives the global intrinsic if no context is given
+    if (origin.isScope() && entity.isFromSignature()) {
+      const generalEntity = container.getGeneralDefinition(entity.label, true);
+
+      // could be cases where there is nothing available
+      if (generalEntity != null) {
+        entity = generalEntity;
+      }
+    }
+
     const existingEntity = origin.values.get(key);
 
     if (existingEntity) {
@@ -124,7 +113,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
       origin.values.set(
         key,
         entity.copy({
-          document,
+          container,
           label: property,
           context: origin
         })
@@ -138,8 +127,8 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
 const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   hasProperty(
     origin: IEntity,
-    _document: IDocument,
-    property: Entity
+    _container: IContainerProxy,
+    property: IEntity
   ): boolean {
     if (!isEligibleForProperties(origin)) return false;
     for (const type of property.types) {
@@ -152,14 +141,14 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 
   resolveProperty(
     origin: IEntity,
-    document: IDocument,
-    property: Entity,
+    container: IContainerProxy,
+    property: IEntity,
     noInvoke: boolean = false
   ): IEntity | null {
     if (!isEligibleForProperties(origin)) {
       return new Entity({
         kind: CompletionItemKind.Variable,
-        document,
+        container,
         label: property.label,
         context: origin
       }).addType(SignatureDefinitionBaseType.Any);
@@ -167,7 +156,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 
     const aggregatedEntity = new Entity({
       kind: CompletionItemKind.Variable,
-      document,
+      container,
       label: property.label,
       context: origin
     });
@@ -182,14 +171,14 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
       aggregatedEntity.addType(SignatureDefinitionBaseType.Any);
     }
 
-    return resolveEntity(document, aggregatedEntity, noInvoke);
+    return resolveEntity(container, aggregatedEntity, noInvoke);
   },
 
   setProperty(
     origin: IEntity,
-    document: IDocument,
-    property: Entity,
-    entity: Entity
+    container: IContainerProxy,
+    property: IEntity,
+    entity: IEntity
   ): boolean {
     if (!isEligibleForProperties(origin)) return false;
     for (const type of property.types) {
@@ -202,7 +191,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
         origin.values.set(
           key,
           entity.copy({
-            document,
+            container,
             label: type,
             context: origin
           })
@@ -218,11 +207,13 @@ export class Entity implements IEntity {
   protected _line: number;
   protected _context: IEntity | null;
   protected _label: string;
-  protected _document: IDocument;
+  protected _container: IContainerProxy;
   protected _signatureDefinitions: ObjectSet<SignatureDefinition>;
   protected _returnEntity: IEntity | null;
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
+  protected _isScope: boolean;
+  protected _isFromSignature: boolean;
 
   get kind() {
     return this._kind;
@@ -253,6 +244,8 @@ export class Entity implements IEntity {
   }
 
   constructor(options: EntityOptions) {
+    this._isScope = options.isScope ?? false;
+    this._isFromSignature = options.isFromSignature ?? false;
     this._kind = options.kind;
     this._line = options.line ?? -1;
     this._label = options.label ?? 'anonymous';
@@ -261,8 +254,20 @@ export class Entity implements IEntity {
     this._types = options.types ?? new Set();
     this._values = options.values ?? new Map();
     this._context = options.context ?? null;
-    this._document = options.document;
+    this._container = options.container;
     this._returnEntity = options.returnEntity ?? null;
+  }
+
+  isFromSignature(): boolean {
+    return this._isFromSignature;
+  }
+
+  hasContext() {
+    return this._context != null && !this._context.isScope;
+  }
+
+  isScope() {
+    return this._isScope;
   }
 
   isCallable() {
@@ -325,14 +330,14 @@ export class Entity implements IEntity {
       case 'object': {
         return entityPropertyHandler.hasProperty(
           this,
-          this._document,
+          this._container,
           property as IEntity
         );
       }
       default: {
         return identifierPropertyHandler.hasProperty(
           this,
-          this._document,
+          this._container,
           property
         );
       }
@@ -347,7 +352,7 @@ export class Entity implements IEntity {
       case 'object': {
         return entityPropertyHandler.resolveProperty(
           this,
-          this._document,
+          this._container,
           property as IEntity,
           noInvoke
         );
@@ -355,7 +360,7 @@ export class Entity implements IEntity {
       default: {
         return identifierPropertyHandler.resolveProperty(
           this,
-          this._document,
+          this._container,
           property,
           noInvoke
         );
@@ -368,7 +373,7 @@ export class Entity implements IEntity {
       case 'object': {
         return entityPropertyHandler.setProperty(
           this,
-          this._document,
+          this._container,
           property as IEntity,
           entity
         );
@@ -376,7 +381,7 @@ export class Entity implements IEntity {
       default: {
         return identifierPropertyHandler.setProperty(
           this,
-          this._document,
+          this._container,
           property,
           entity
         );
@@ -385,6 +390,7 @@ export class Entity implements IEntity {
   }
 
   extend(entity: IEntity): this {
+    this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
     this.addType(...entity.types);
     for (const [key, value] of entity.values) {
@@ -393,7 +399,7 @@ export class Entity implements IEntity {
         this.values.set(
           key,
           value.copy({
-            document: this._document,
+            container: this._container,
             context: this
           })
         );
@@ -412,11 +418,13 @@ export class Entity implements IEntity {
     for (const property of properties) {
       const definition = signature.getDefinition(property);
       const entity = new Entity({
+        label: property,
         kind:
           definition.getType().type === SignatureDefinitionBaseType.Function
             ? CompletionItemKind.Function
             : CompletionItemKind.Property,
-        document: this._document
+        container: this._container,
+        isFromSignature: true
       });
 
       entity.addSignatureType(definition);
@@ -437,18 +445,13 @@ export class Entity implements IEntity {
     }
 
     for (const type of this._types) {
-      const items = this._document.getPropertiesOfType(type);
-      for (const keyPair of items) properties.set(...keyPair);
-    }
-
-    for (const [property, entity] of this._values) {
-      if (property.startsWith('i:')) {
-        properties.set(property.slice(2), {
-          kind: entity.kind,
-          line: entity.line
-        });
+      const items = this._container.getAllIdentifier(type);
+      for (const keyPair of items) {
+        properties.set(...keyPair);
       }
     }
+
+    injectIdentifers(properties, this);
 
     return properties;
   }
@@ -486,18 +489,13 @@ export class Entity implements IEntity {
     return this.toJSONInternal();
   }
 
-  copy(
-    options: Partial<
-      Pick<
-        EntityOptions,
-        'document' | 'label' | 'kind' | 'context' | 'line' | 'values'
-      >
-    > = {}
-  ): IEntity {
+  copy(options: EntityCopyOptions = {}): IEntity {
     return new Entity({
       kind: options.kind ?? this._kind,
       line: options.line ?? this._line,
-      document: options.document ?? this._document,
+      isFromSignature: options.isFromSignature ?? this._isFromSignature,
+      isScope: options.isScope ?? this._isScope,
+      container: options.container ?? this._container,
       label: options.label ?? this._label,
       context: options.context ?? this._context,
       signatureDefinitions: new ObjectSet(
@@ -510,7 +508,7 @@ export class Entity implements IEntity {
           Array.from(this._values, ([key, value]) => [
             key,
             value.copy({
-              document: options.document
+              container: options.container
             })
           ])
         ),

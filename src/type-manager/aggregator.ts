@@ -68,7 +68,7 @@ export class Aggregator implements IAggregator {
   protected factory(kind: CompletionItemKind): IEntity {
     return new Entity({
       kind,
-      document: this._document
+      container: this._document.container
     });
   }
 

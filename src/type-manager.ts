@@ -1,15 +1,17 @@
 import { ASTChunk } from 'miniscript-core';
-import { Container } from 'meta-utils';
 import { Document } from './type-manager/document';
 import { TypeManagerOptions } from './types/type-manager';
+import { ContainerProxy } from './container-proxy';
 
 
 export class TypeManager {
-  protected _container: Container;
+  protected _container: ContainerProxy;
   protected _types: Map<string, Document>;
 
   constructor(options: TypeManagerOptions) {
-    this._container = options.container;
+    this._container = new ContainerProxy({
+      container: options.container
+    });
     this._types = new Map();
   }
 

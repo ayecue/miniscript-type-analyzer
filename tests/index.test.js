@@ -170,6 +170,44 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('output').types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
     });
+
+    test('should return entity depending on if there is a context or not', () => {
+      const doc = getDocument(`
+        bar = {}
+        test = @bar.hasIndex
+        foo = @unknown.hasIndex
+        
+        bar.foo = @unknown.hasIndex
+        bar.test = @bar.hasIndex
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const entity = scope.resolveProperty('test', true);
+      const entity2 = scope.resolveProperty('foo', true);
+      const entity3 = scope.resolveProperty('bar', true).resolveProperty('foo', true);
+      const entity4 = scope.resolveProperty('bar', true).resolveProperty('test', true);
+
+      expect(entity.signatureDefinitions.first().getArguments().length).toEqual(2);
+      expect(entity2.signatureDefinitions.first().getArguments().length).toEqual(2);
+      expect(entity3.signatureDefinitions.first().getArguments().length).toEqual(1);
+      expect(entity4.signatureDefinitions.first().getArguments().length).toEqual(1);
+    });
+
+    test('should return entity with custom definition', () => {
+      const doc = getDocument(`
+        map.hasIndex = function(a,b,c)
+        end function
+
+        bar = {}
+        test = @bar.hasIndex
+        bar.test = @bar.hasIndex
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const entity = scope.resolveProperty('test', true);
+      const entity2 = scope.resolveProperty('bar', true).resolveProperty('test', true);
+
+      expect(entity.signatureDefinitions.last().getArguments().length).toEqual(3);
+      expect(entity2.signatureDefinitions.last().getArguments().length).toEqual(3);
+    });
   });
 
   describe('merged', () => {
@@ -190,12 +228,12 @@ describe('type-manager', () => {
   });
 
   describe('comment', () => {
-    test('should return entity', () => {
+    test('should return entity of return value', () => {
       const doc = getDocument(`
         // Hello world
         // I am **bold**
-        // @param {string} title - The title of the book.
-        // @param {string|number} author - The author of the book.
+        // @param {string} test - The title of the book.
+        // @param {string|number} abc - The author of the book.
         // @return {crypto} - Some info about return
         test = function(test, abc)
         end function
@@ -207,6 +245,71 @@ describe('type-manager', () => {
       expect(signature.getArguments().length).toEqual(2);
       expect(signature.getReturns().map((it) => it.type)).toEqual(['crypto']);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['crypto']);
+    });
+
+    test('should return entities from arguments', () => {
+      const doc = getDocument(`
+        // Hello world
+        // I am **bold**
+        // @param {string} test - The title of the book.
+        // @param {string|number} abc - The author of the book.
+        // @return {crypto} - Some info about return
+        test = function(test, abc)
+        end function
+        output = test
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+      const firstArg = scope.resolveProperty('test', true);
+      const secondArg = scope.resolveProperty('abc', true);
+
+      expect(Array.from(firstArg.types)).toEqual(['string']);
+      expect(Array.from(secondArg.types)).toEqual(['string', 'number']);
+    });
+
+    test('should return entity from arguments which has extended its type', () => {
+      const doc = getDocument(`
+        // Hello world
+        // @return {string}
+        map.bar = function
+
+        end function
+
+        // Hello world
+        // @param {map} abc
+        // @return {number}
+        test = function(abc)
+        end function
+        output = test
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[1]).scope;
+      const arg = scope.resolveProperty('abc', true);
+
+      expect(Array.from(arg.types)).toEqual(['map']);
+      expect(Array.from(arg.resolveProperty('bar').types)).toEqual(['string']);
+    });
+
+    test('should return entity from arguments which has extended its type by merged doc', () => {
+      const doc1 = getDocument(`
+        // Hello world
+        // @return {string}
+        map.bar = function
+
+        end function
+      `);
+      const doc2 = getDocument(`
+        // Hello world
+        // @param {map} abc
+        // @return {number}
+        test = function(abc)
+        end function
+        output = test
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const scope = mergedDoc.getScopeContext(mergedDoc.root.scopes[0]).scope;
+      const arg = scope.resolveProperty('abc', true);
+
+      expect(Array.from(arg.types)).toEqual(['map']);
+      expect(Array.from(arg.resolveProperty('bar').types)).toEqual(['string']);
     });
   });
 

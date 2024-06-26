@@ -1,4 +1,3 @@
-import { Container, SignatureDefinitionType } from 'meta-utils';
 import {
   ASTAssignmentStatement,
   ASTBase,
@@ -8,12 +7,12 @@ import {
 } from 'miniscript-core';
 
 import { IAggregator } from './aggregator';
-import { CompletionItem } from './completion';
+import { IContainerProxy } from './container-proxy';
 import { IEntity, IScope } from './object';
 
 export interface DocumentOptions {
   root: ASTChunk;
-  container: Container;
+  container: IContainerProxy;
   scopeMapping?: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
   intrinsics?: Intrinsics;
   globals?: IEntity;
@@ -23,17 +22,7 @@ export interface IDocument {
   root: ASTChunk;
   intrinsics: Intrinsics;
   globals: IEntity;
-
-  // mainly used for the context of resolving types and defintions in entities
-  getPropertiesOfType(
-    type: SignatureDefinitionType
-  ): Map<string, CompletionItem>;
-  hasDefinition(type: SignatureDefinitionType[], property: string): boolean;
-  resolveDefinition(
-    types: SignatureDefinitionType[],
-    property: string,
-    noInvoke?: boolean
-  ): IEntity | null;
+  container: IContainerProxy;
 
   // used for function comments mainly
   getLastASTItemOfLine(line: number): ASTBase;
