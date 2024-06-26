@@ -275,16 +275,26 @@ export class Document implements IDocument {
   merge(...typeDocs: Document[]): Document {
     const newTypeDoc = new Document({
       root: this._root,
-      container: this._container
+      container: this._container.copy()
     });
 
     for (const typeDoc of typeDocs) {
-      newTypeDoc._globals.extend(typeDoc._globals);
-      newTypeDoc._intrinscis.map.extend(typeDoc._intrinscis.map);
-      newTypeDoc._intrinscis.funcRef.extend(typeDoc._intrinscis.funcRef);
-      newTypeDoc._intrinscis.number.extend(typeDoc._intrinscis.number);
-      newTypeDoc._intrinscis.string.extend(typeDoc._intrinscis.string);
-      newTypeDoc._intrinscis.list.extend(typeDoc._intrinscis.list);
+      newTypeDoc._globals.extend(typeDoc._globals.copy({ line: -1 }));
+      newTypeDoc._intrinscis.map.extend(
+        typeDoc._intrinscis.map.copy({ line: -1 })
+      );
+      newTypeDoc._intrinscis.funcRef.extend(
+        typeDoc._intrinscis.funcRef.copy({ line: -1 })
+      );
+      newTypeDoc._intrinscis.number.extend(
+        typeDoc._intrinscis.number.copy({ line: -1 })
+      );
+      newTypeDoc._intrinscis.string.extend(
+        typeDoc._intrinscis.string.copy({ line: -1 })
+      );
+      newTypeDoc._intrinscis.list.extend(
+        typeDoc._intrinscis.list.copy({ line: -1 })
+      );
     }
 
     newTypeDoc.analyze();

@@ -508,7 +508,8 @@ export class Entity implements IEntity {
           Array.from(this._values, ([key, value]) => [
             key,
             value.copy({
-              container: options.container
+              container: options.container,
+              line: options.line
             })
           ])
         ),
