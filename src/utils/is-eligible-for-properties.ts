@@ -1,5 +1,6 @@
-import { SignatureDefinitionBaseType } from "meta-utils";
-import { IEntity } from "../types/object";
+import { SignatureDefinitionBaseType } from 'meta-utils';
+
+import { IEntity } from '../types/object';
 
 export const isEligibleForProperties = (entity: IEntity) => {
   return (

@@ -15,10 +15,10 @@ import {
   IEntityPropertyHandler
 } from '../types/object';
 import { isSignatureDefinitionFunction } from '../types/signature';
-import { ObjectSet } from '../utils/object-set';
 import { injectIdentifers } from '../utils/inject-identifiers';
 import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
 import { lookupProperty } from '../utils/lookup-property';
+import { ObjectSet } from '../utils/object-set';
 
 export const resolveEntity = (
   container: IContainerProxy,

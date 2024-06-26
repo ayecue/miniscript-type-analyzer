@@ -249,6 +249,30 @@ describe('type-manager', () => {
       expect(Array.from(arg.types)).toEqual(['map']);
       expect(Array.from(arg.resolveProperty('bar').types)).toEqual(['string']);
     });
+
+    test('should return entity from arguments which has extended its type by merged doc', () => {
+      const doc1 = getDocument(`
+        // Hello world
+        // @return {string}
+        map.bar = function
+
+        end function
+      `);
+      const doc2 = getDocument(`
+        // Hello world
+        // @param {map} abc
+        // @return {number}
+        test = function(abc)
+        end function
+        output = test
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const scope = mergedDoc.getScopeContext(mergedDoc.root.scopes[0]).scope;
+      const arg = scope.resolveProperty('abc', true);
+
+      expect(Array.from(arg.types)).toEqual(['map']);
+      expect(Array.from(arg.resolveProperty('bar').types)).toEqual(['string']);
+    });
   });
 
   describe('addressOf', () => {

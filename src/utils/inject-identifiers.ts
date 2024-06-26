@@ -1,7 +1,10 @@
-import { CompletionItem } from "../types/completion";
-import { IEntity } from "../types/object";
+import { CompletionItem } from '../types/completion';
+import { IEntity } from '../types/object';
 
-export const injectIdentifers = (properties: Map<string, CompletionItem>, source: IEntity) => {
+export const injectIdentifers = (
+  properties: Map<string, CompletionItem>,
+  source: IEntity
+) => {
   for (const [property, entity] of source.values) {
     if (property.startsWith('i:')) {
       properties.set(property.slice(2), {
@@ -10,4 +13,4 @@ export const injectIdentifers = (properties: Map<string, CompletionItem>, source
       });
     }
   }
-}
+};
