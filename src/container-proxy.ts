@@ -121,13 +121,15 @@ export class ContainerProxy implements IContainerProxy {
 
     if (type === SignatureDefinitionBaseType.Any) {
       for (const type of this._container.getAllVisibleTypes()) {
-        injectIdentifers(properties, this.getTypeSignature(type));
+        const signature = this.getTypeSignature(type);
+        if (signature != null) injectIdentifers(properties, signature);
       }
 
       return properties;
     }
 
-    injectIdentifers(properties, this.getTypeSignature(type));
+    const signature = this.getTypeSignature(type);
+    if (signature != null) injectIdentifers(properties, signature);
 
     return properties;
   }
