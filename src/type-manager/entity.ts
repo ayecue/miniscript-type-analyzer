@@ -390,6 +390,7 @@ export class Entity implements IEntity {
   }
 
   extend(entity: IEntity): this {
+    this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
     this.addType(...entity.types);
     for (const [key, value] of entity.values) {

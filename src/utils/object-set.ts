@@ -39,7 +39,13 @@ export class ObjectSet<T extends object> {
   }
 
   first(): T {
-    return this._map.values().next().value;
+    return this._map.values().next().value ?? null;
+  }
+
+  last(): T {
+    const values = Array.from(this._map.values());
+    if (values.length === 0) return null;
+    return values[values.length - 1];
   }
 
   toArray(): T[] {

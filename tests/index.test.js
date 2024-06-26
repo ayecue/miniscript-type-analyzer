@@ -191,6 +191,23 @@ describe('type-manager', () => {
       expect(entity3.signatureDefinitions.first().getArguments().length).toEqual(1);
       expect(entity4.signatureDefinitions.first().getArguments().length).toEqual(1);
     });
+
+    test('should return entity with custom definition', () => {
+      const doc = getDocument(`
+        map.hasIndex = function(a,b,c)
+        end function
+
+        bar = {}
+        test = @bar.hasIndex
+        bar.test = @bar.hasIndex
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const entity = scope.resolveProperty('test', true);
+      const entity2 = scope.resolveProperty('bar', true).resolveProperty('test', true);
+
+      expect(entity.signatureDefinitions.last().getArguments().length).toEqual(3);
+      expect(entity2.signatureDefinitions.last().getArguments().length).toEqual(3);
+    });
   });
 
   describe('merged', () => {

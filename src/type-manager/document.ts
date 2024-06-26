@@ -136,7 +136,7 @@ export class Document implements IDocument {
     // override argument types if custom
     if (fnEntity !== null) {
       const fnDef =
-        fnEntity.signatureDefinitions.first() as SignatureDefinitionFunction;
+        fnEntity.signatureDefinitions.last() as SignatureDefinitionFunction;
 
       if (fnDef != null) {
         for (const arg of fnDef.getArguments()) {
