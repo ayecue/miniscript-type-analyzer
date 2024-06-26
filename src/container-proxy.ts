@@ -70,6 +70,7 @@ export class ContainerProxy implements IContainerProxy {
 
     for (const type of typesSet) {
       const current = this.getTypeSignature(type);
+      if (current === null) continue;
       const match = lookupProperty(current, property);
       if (match === null) continue;
       matches.set(type, match);
