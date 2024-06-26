@@ -190,12 +190,12 @@ describe('type-manager', () => {
   });
 
   describe('comment', () => {
-    test('should return entity', () => {
+    test('should return entity of return value', () => {
       const doc = getDocument(`
         // Hello world
         // I am **bold**
-        // @param {string} title - The title of the book.
-        // @param {string|number} author - The author of the book.
+        // @param {string} test - The title of the book.
+        // @param {string|number} abc - The author of the book.
         // @return {crypto} - Some info about return
         test = function(test, abc)
         end function
@@ -207,6 +207,47 @@ describe('type-manager', () => {
       expect(signature.getArguments().length).toEqual(2);
       expect(signature.getReturns().map((it) => it.type)).toEqual(['crypto']);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['crypto']);
+    });
+
+    test('should return entities from arguments', () => {
+      const doc = getDocument(`
+        // Hello world
+        // I am **bold**
+        // @param {string} test - The title of the book.
+        // @param {string|number} abc - The author of the book.
+        // @return {crypto} - Some info about return
+        test = function(test, abc)
+        end function
+        output = test
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+      const firstArg = scope.resolveProperty('test', true);
+      const secondArg = scope.resolveProperty('abc', true);
+
+      expect(Array.from(firstArg.types)).toEqual(['string']);
+      expect(Array.from(secondArg.types)).toEqual(['string', 'number']);
+    });
+
+    test('should return entity from arguments which has extended its type', () => {
+      const doc = getDocument(`
+        // Hello world
+        // @return {string}
+        map.bar = function
+
+        end function
+
+        // Hello world
+        // @param {map} abc
+        // @return {number}
+        test = function(abc)
+        end function
+        output = test
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[1]).scope;
+      const arg = scope.resolveProperty('abc', true);
+
+      expect(Array.from(arg.types)).toEqual(['map']);
+      expect(Array.from(arg.resolveProperty('bar').types)).toEqual(['string']);
     });
   });
 
