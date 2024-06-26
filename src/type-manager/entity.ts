@@ -400,6 +400,7 @@ export class Entity implements IEntity {
     for (const property of properties) {
       const definition = signature.getDefinition(property);
       const entity = new Entity({
+        label: property,
         kind:
           definition.getType().type === SignatureDefinitionBaseType.Function
             ? CompletionItemKind.Function
