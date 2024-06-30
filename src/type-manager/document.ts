@@ -58,7 +58,8 @@ export class Document implements IDocument {
     this._scopeMapping = options.scopeMapping ?? new WeakMap();
     this._intrinscis = options.intrinsics ?? this.createIntrinscis();
     this._globals = options.globals ?? this.initGlobals();
-    this._api = options.api ?? this.initApi();
+
+    this.initApi();
   }
 
   protected createIntrinscis(): Intrinsics {
@@ -77,10 +78,10 @@ export class Document implements IDocument {
     };
   }
 
-  protected initApi(): IEntity {
-    const general = this._container.primitives
-      .get(SignatureDefinitionBaseType.General)
-      .copy({ isScope: true });
+  protected initApi() {
+    const general = this._container.primitives.get(
+      SignatureDefinitionBaseType.General
+    );
 
     general.resolveProperty('map', true).setReturnEntity(this._intrinscis.map);
     general
@@ -95,15 +96,12 @@ export class Document implements IDocument {
     general
       .resolveProperty('list', true)
       .setReturnEntity(this._intrinscis.list);
-
-    return general;
   }
 
   protected initGlobals(): IEntity {
     return new Entity({
       kind: CompletionItemKind.Constant,
       container: this._container,
-      isScope: true,
       label: 'globals'
     }).addType(SignatureDefinitionBaseType.Map);
   }
@@ -111,7 +109,6 @@ export class Document implements IDocument {
   protected analyzeScope(block: ASTFunctionStatement): void {
     const parentContext = this._scopeMapping.get(block.scope)!;
     const scope = new Scope({
-      api: this._api,
       container: this._container,
       parent: parentContext?.scope,
       globals: this._globals
@@ -176,7 +173,6 @@ export class Document implements IDocument {
 
   analyze() {
     const scope = new Scope({
-      api: this._api,
       container: this._container,
       globals: this._globals,
       locals: this._globals

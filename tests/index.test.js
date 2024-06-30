@@ -100,6 +100,21 @@ describe('type-manager', () => {
     });
   });
 
+  describe('globals', () => {
+    test('should return entity from either global or api', () => {
+      const doc = getDocument(`
+        globals.remove
+        remove
+      `);
+      const lineA = doc.root.lines.get(2)[0];
+      const lineB = doc.root.lines.get(3)[0];
+      const aggregator = doc.getRootScopeContext().aggregator;
+
+      expect(aggregator.resolveNamespace(lineA, true).signatureDefinitions.first().getArguments().length).toEqual(1);
+      expect(aggregator.resolveNamespace(lineB, true).signatureDefinitions.first().getArguments().length).toEqual(2);
+    });
+  });
+
   describe('function', () => {
     test('should return entity', () => {
       const doc = getDocument(`
@@ -169,27 +184,6 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('fn', true).types)).toEqual(['function']);
       expect(scope.resolveProperty('output').types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['any']);
-    });
-
-    test('should return entity depending on if there is a context or not', () => {
-      const doc = getDocument(`
-        bar = {}
-        test = @bar.hasIndex
-        foo = @unknown.hasIndex
-        
-        bar.foo = @unknown.hasIndex
-        bar.test = @bar.hasIndex
-      `);
-      const scope = doc.getRootScopeContext().scope;
-      const entity = scope.resolveProperty('test', true);
-      const entity2 = scope.resolveProperty('foo', true);
-      const entity3 = scope.resolveProperty('bar', true).resolveProperty('foo', true);
-      const entity4 = scope.resolveProperty('bar', true).resolveProperty('test', true);
-
-      expect(entity.signatureDefinitions.first().getArguments().length).toEqual(2);
-      expect(entity2.signatureDefinitions.first().getArguments().length).toEqual(2);
-      expect(entity3.signatureDefinitions.first().getArguments().length).toEqual(1);
-      expect(entity4.signatureDefinitions.first().getArguments().length).toEqual(1);
     });
 
     test('should return entity with custom definition', () => {

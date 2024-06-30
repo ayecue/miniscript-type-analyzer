@@ -62,7 +62,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
   ): boolean {
     return (
       !!lookupProperty(origin, property) ||
-      (!origin.isScope() &&
+      (!origin.isAPI() &&
         !!container.getDefinition(Array.from(origin.types), property, true))
     );
   },
@@ -76,7 +76,7 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
     const entity = lookupProperty(origin, property) ?? null;
 
     if (entity == null) {
-      if (!origin.isScope()) {
+      if (!origin.isAPI()) {
         return container.getDefinition(
           Array.from(origin.types),
           property,
@@ -99,17 +99,6 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
     if (!isEligibleForProperties(origin)) return false;
 
     const key = `i:${property}`;
-
-    // make sure it receives the global intrinsic if no context is given
-    if (origin.isScope() && entity.isFromSignature()) {
-      const generalEntity = container.getGeneralDefinition(entity.label, true);
-
-      // could be cases where there is nothing available
-      if (generalEntity != null) {
-        entity = generalEntity;
-      }
-    }
-
     const existingEntity = origin.values.get(key);
 
     if (existingEntity) {
@@ -217,7 +206,7 @@ export class Entity implements IEntity {
   protected _returnEntity: IEntity | null;
   protected _types: Set<SignatureDefinitionType>;
   protected _values: Map<string, IEntity>;
-  protected _isScope: boolean;
+  protected _isAPI: boolean;
   protected _isFromSignature: boolean;
 
   get kind() {
@@ -249,7 +238,7 @@ export class Entity implements IEntity {
   }
 
   constructor(options: EntityOptions) {
-    this._isScope = options.isScope ?? false;
+    this._isAPI = options.isAPI ?? false;
     this._isFromSignature = options.isFromSignature ?? false;
     this._kind = options.kind;
     this._line = options.line ?? -1;
@@ -268,11 +257,11 @@ export class Entity implements IEntity {
   }
 
   hasContext() {
-    return this._context != null && !this._context.isScope;
+    return this._context != null && !this._context.isAPI;
   }
 
-  isScope() {
-    return this._isScope;
+  isAPI() {
+    return this._isAPI;
   }
 
   isCallable() {
@@ -499,7 +488,7 @@ export class Entity implements IEntity {
       kind: options.kind ?? this._kind,
       line: options.line ?? this._line,
       isFromSignature: options.isFromSignature ?? this._isFromSignature,
-      isScope: options.isScope ?? this._isScope,
+      isAPI: options.isAPI ?? this._isAPI,
       container: options.container ?? this._container,
       label: options.label ?? this._label,
       context: options.context ?? this._context,
