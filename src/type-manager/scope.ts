@@ -20,7 +20,6 @@ export class Scope implements IScope {
   protected _parent: IScope | null;
   protected _globals: IEntity;
   protected _locals: IEntity;
-  protected _api: IEntity;
   protected _container: IContainerProxy;
 
   get signatureDefinitions(): ObjectSet<SignatureDefinition> {
@@ -55,10 +54,6 @@ export class Scope implements IScope {
     return this._globals;
   }
 
-  get api(): IEntity {
-    return this._api;
-  }
-
   get outer(): IEntity | null {
     return this._parent?.locals ?? null;
   }
@@ -69,7 +64,6 @@ export class Scope implements IScope {
 
   constructor(options: ScopeOptions) {
     this._container = options.container;
-    this._api = options.api;
     this._parent = options.parent ?? null;
     this._globals = options.globals;
     this._locals =
@@ -77,7 +71,6 @@ export class Scope implements IScope {
       new Entity({
         kind: CompletionItemKind.Constant,
         container: this._container,
-        isScope: true,
         label: 'locals'
       }).addType(SignatureDefinitionBaseType.Map);
   }
@@ -86,21 +79,15 @@ export class Scope implements IScope {
     throw new Error('Cannot add signature type to scope!');
   }
 
-  hasProperty(property: string | IEntity): boolean {
-    if (typeof property !== 'string') {
-      throw new Error('Invalid property type for scope!');
-    }
-    if (
-      property === 'locals' ||
-      property === 'globals' ||
-      property === 'outer'
-    ) {
-      return true;
-    }
-    return this._locals.values.has(`i:${property}`);
+  hasProperty(name: string | IEntity): boolean {
+    return this._locals.hasProperty(name);
   }
 
-  resolveProperty(
+  resolveProperty(name: string | IEntity, noInvoke?: boolean): IEntity {
+    return this._locals.resolveProperty(name, noInvoke);
+  }
+
+  resolveNamespace(
     property: string | IEntity,
     noInvoke: boolean = false
   ): IEntity | null {
@@ -108,25 +95,26 @@ export class Scope implements IScope {
       throw new Error('Invalid property type for scope!');
     }
 
-    if (this.hasProperty(property)) {
-      if (property === 'locals') {
-        return this._locals;
-      } else if (property === 'outer') {
-        return this._parent?.locals ?? this._globals;
-      } else if (property === 'globals') {
-        return this._globals;
-      }
-      const entity = this._locals.values.get(`i:${property}`);
-      return resolveEntity(this._container, entity, noInvoke);
-    } else if (this._parent?.locals.hasProperty(property)) {
-      return this._parent?.locals.resolveProperty(property, noInvoke);
-    } else if (this._globals.hasProperty(property)) {
-      return this._globals.resolveProperty(property, noInvoke);
-    } else if (this._api.hasProperty(property)) {
-      return this._api.resolveProperty(property, noInvoke);
+    if (property === 'locals') {
+      return this._locals;
+    } else if (property === 'outer') {
+      return this._parent?.locals ?? this._globals;
+    } else if (property === 'globals') {
+      return this._globals;
     }
 
-    return null;
+    if (this._locals.values.has(`i:${property}`)) {
+      const entity = this._locals.values.get(`i:${property}`);
+      return resolveEntity(this._container, entity, noInvoke);
+    } else if (this._parent?.locals.values.has(`i:${property}`)) {
+      const entity = this._parent.locals.values.get(`i:${property}`);
+      return resolveEntity(this._container, entity, noInvoke);
+    } else if (this._globals.values.has(`i:${property}`)) {
+      const entity = this._globals.values.get(`i:${property}`);
+      return resolveEntity(this._container, entity, noInvoke);
+    }
+
+    return this._container.getGeneralDefinition(property, noInvoke);
   }
 
   setProperty(name: string | IEntity, container: Entity): boolean {
@@ -175,8 +163,8 @@ export class Scope implements IScope {
     return this;
   }
 
-  isScope(): boolean {
-    return true;
+  isAPI(): boolean {
+    return false;
   }
 
   hasContext(): boolean {
@@ -200,7 +188,9 @@ export class Scope implements IScope {
     const outerIdentifier =
       this._parent?.locals.getAllIdentifier() ?? new Map();
     const globalIdentifier = this._globals.getAllIdentifier();
-    const apiIdentifier = this._api.getAllIdentifier();
+    const apiIdentifier = this._container.getAllIdentifier(
+      SignatureDefinitionBaseType.General
+    );
     const properties = new Map([
       [
         'globals',
@@ -223,10 +213,10 @@ export class Scope implements IScope {
           line: -1
         }
       ],
-      ...globalIdentifier.entries(),
-      ...outerIdentifier.entries(),
-      ...localIdentifier.entries(),
-      ...apiIdentifier.entries()
+      ...globalIdentifier,
+      ...outerIdentifier,
+      ...localIdentifier,
+      ...apiIdentifier
     ]);
 
     if (
@@ -257,9 +247,6 @@ export class Scope implements IScope {
     return new Scope({
       container: options.container ?? this._container,
       parent: this._parent.copy({
-        container: options.container
-      }),
-      api: this._api.copy({
         container: options.container
       }),
       globals: this._globals.copy({

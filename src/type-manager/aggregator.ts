@@ -432,7 +432,7 @@ export class Aggregator implements IAggregator {
         }
       } else {
         current =
-          this._scope.resolveProperty(first.getter.name, firstNoInvoke) ??
+          this._scope.resolveNamespace(first.getter.name, firstNoInvoke) ??
           this.factory(CompletionItemKind.Variable)
             .addType(SignatureDefinitionBaseType.Any)
             .setLabel(first.getter.name);

@@ -31,7 +31,8 @@ export class ContainerProxy implements IContainerProxy {
     for (const [type, signature] of this._container.getPrimitives()) {
       const signatureEntity = new Entity({
         kind: CompletionItemKind.Constant,
-        container: this
+        container: this,
+        isAPI: type === SignatureDefinitionBaseType.General
       })
         .addType(SignatureDefinitionBaseType.Map)
         .insertSignature(signature);

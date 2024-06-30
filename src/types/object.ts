@@ -11,7 +11,7 @@ import { IContainerProxy } from './container-proxy';
 export interface EntityOptions {
   kind: CompletionItemKind;
   isFromSignature?: boolean;
-  isScope?: boolean;
+  isAPI?: boolean;
   line?: number;
   container: IContainerProxy;
   signatureDefinitions?: ObjectSet<SignatureDefinition>;
@@ -31,7 +31,7 @@ export type EntityCopyOptions = Partial<
     | 'context'
     | 'line'
     | 'values'
-    | 'isScope'
+    | 'isAPI'
     | 'isFromSignature'
   >
 >;
@@ -74,7 +74,7 @@ export interface IEntity {
   extend(entity: IEntity): this;
   getAllIdentifier(): Map<string, CompletionItem>;
   isCallable(): boolean;
-  isScope(): boolean;
+  isAPI(): boolean;
   isFromSignature(): boolean;
   hasContext(): boolean;
   getCallableReturnTypes(): string[] | null;
@@ -90,15 +90,14 @@ export interface IEntity {
 export interface ScopeOptions {
   container: IContainerProxy;
   globals: IEntity;
-  api: IEntity;
   parent?: IScope;
   locals?: IEntity;
 }
 
 export interface IScope extends IEntity {
-  api: IEntity;
   outer: IEntity;
   globals: IEntity;
   locals: IEntity;
+  resolveNamespace(name: string | IEntity, noInvoke?: boolean): IEntity | null;
   copy(options?: EntityCopyOptions): IScope;
 }
