@@ -473,7 +473,7 @@ export class Aggregator implements IAggregator {
         return null;
       }
 
-      if (first.unary?.operator === 'new' && current !== null) {
+      if (item.unary?.operator === 'new' && current !== null) {
         const newInstance = this.factory(CompletionItemKind.Property)
           .addType(SignatureDefinitionBaseType.Map)
           .setLabel(current.label);

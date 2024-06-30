@@ -389,6 +389,20 @@ describe('type-manager', () => {
 
       expect(Array.from(scope.resolveProperty('foo', true).types)).toEqual(['string']);
     });
+
+    test('should return entity from isa property', () => {
+      const doc = getDocument(`
+        test = {}
+        test.foo = function(a, b, c)
+        
+        end function
+        
+        bar = @(new test).foo
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('bar', true).signatureDefinitions.first().getArguments().length).toEqual(3);
+    });
   });
 
   describe('resolve all assignments', () => {
