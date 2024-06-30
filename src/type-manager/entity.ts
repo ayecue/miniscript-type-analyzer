@@ -495,7 +495,7 @@ export class Entity implements IEntity {
   }
 
   copy(options: EntityCopyOptions = {}): IEntity {
-    return new Entity({
+    const newCopy = new Entity({
       kind: options.kind ?? this._kind,
       line: options.line ?? this._line,
       isFromSignature: options.isFromSignature ?? this._isFromSignature,
@@ -507,18 +507,25 @@ export class Entity implements IEntity {
         Array.from(this._signatureDefinitions, (value) => value.copy())
       ),
       types: new Set(this._types),
-      values:
-        options.values ??
-        new Map(
-          Array.from(this._values, ([key, value]) => [
-            key,
-            value.copy({
-              container: options.container,
-              line: options.line
-            })
-          ])
-        ),
       returnEntity: this._returnEntity
     });
+
+    if (options.values) {
+      newCopy._values = options.values;
+    } else {
+      newCopy._values = new Map(
+        Array.from(this._values, ([key, value]) => [
+          key,
+          value.copy({
+            container: options.container,
+            line: options.line,
+            context: newCopy,
+            values: value.values
+          })
+        ])
+      );
+    }
+
+    return newCopy;
   }
 }

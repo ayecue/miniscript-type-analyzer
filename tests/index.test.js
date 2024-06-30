@@ -403,6 +403,100 @@ describe('type-manager', () => {
 
       expect(scope.resolveProperty('bar', true).signatureDefinitions.first().getArguments().length).toEqual(3);
     });
+
+    test('should return entity from circular references', () => {
+      const doc = getDocument(`
+        globals.Test = {"value":"test"}
+        Test.A = {
+          "__isa": Test,
+          "subvalue": "val a",
+        }
+        Test.B = {
+          "__isa": Test,
+          "subvalue": "val b",
+        }
+        Test.C = {
+          "__isa": Test,
+          "subvalue": "val c",
+        }
+        Test.D = {
+          "__isa": Test,
+          "subvalue": "val d",
+        }
+        Test.E = {
+          "__isa": Test,
+          "subvalue": "val e",
+        }
+        Test.F = {
+          "__isa": Test,
+          "subvalue": "val f",
+        }
+        Test.G = {
+          "__isa": Test,
+          "subvalue": "val g",
+        }
+        Test.H = {
+          "__isa": Test,
+          "subvalue": "val h",
+        }
+        Test.I = {
+          "__isa": Test,
+          "subvalue": "val i",
+        }
+        Test.J = {
+          "__isa": Test,
+          "subvalue": "val j",
+        }
+        Test.K = {
+          "__isa": Test,
+          "subvalue": "val k",
+        }
+        Test.L = {
+          "__isa": Test,
+          "subvalue": "val l",
+        }
+        Test.M = {
+          "__isa": Test,
+          "subvalue": "val m",
+        }
+        Test.N = {
+          "__isa": Test,
+          "subvalue": "val n",
+        }
+        Test.T = {
+          "__isa": Test,
+          "subvalue": "val t",
+        }
+        Test.U = {
+          "__isa": Test,
+          "subvalue": "val u",
+        }
+        Test.V = {
+          "__isa": Test,
+          "subvalue": "val v",
+        }
+        Test.X = {
+          "__isa": Test,
+          "subvalue": "val x",
+        }
+        Test.Y = {
+          "__isa": Test,
+          "subvalue": "val y",
+        }
+        Test.Z = {
+          "__isa": Test,
+          "subvalue": "val z",
+        }
+        Test.Q = {
+          "__isa": Test,
+          "subvalue": "val q",
+        }
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('Test').resolveProperty('Q').resolveProperty('subvalue').types)).toEqual(['string']);
+      expect(Array.from(scope.resolveProperty('Test').resolveProperty('Q').resolveProperty('value').types)).toEqual(['string']);
+    });
   });
 
   describe('super', () => {
