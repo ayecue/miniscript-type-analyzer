@@ -237,6 +237,13 @@ export class Scope implements IScope {
         kind: CompletionItemKind.Constant,
         line: -1
       });
+
+      if (this._locals.context.hasProperty('__isa')) {
+        properties.set('super', {
+          kind: CompletionItemKind.Constant,
+          line: -1
+        });
+      }
     }
 
     return properties;

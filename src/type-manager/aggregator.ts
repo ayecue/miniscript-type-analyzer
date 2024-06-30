@@ -399,6 +399,22 @@ export class Aggregator implements IAggregator {
         current = this._scope.outer;
       } else if (first.getter.name === 'locals') {
         current = this._scope.locals;
+      } else if (first.getter.name === 'super') {
+        const context = this._document
+          .getScopeContext(first.ref.scope)
+          ?.scope.context?.values.get('i:__isa');
+
+        if (context == null) {
+          current = this.factory(CompletionItemKind.Constant)
+            .addType('null')
+            .setLabel('super');
+        } else {
+          current = context.copy({
+            kind: CompletionItemKind.Constant,
+            label: 'super',
+            values: context.values
+          });
+        }
       } else if (first.getter.name === 'self') {
         const context = this._document.getScopeContext(first.ref.scope)?.scope
           .context;
@@ -473,7 +489,7 @@ export class Aggregator implements IAggregator {
         return null;
       }
 
-      if (first.unary?.operator === 'new' && current !== null) {
+      if (item.unary?.operator === 'new' && current !== null) {
         const newInstance = this.factory(CompletionItemKind.Property)
           .addType(SignatureDefinitionBaseType.Map)
           .setLabel(current.label);
