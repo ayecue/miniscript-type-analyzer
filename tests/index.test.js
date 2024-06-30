@@ -100,6 +100,21 @@ describe('type-manager', () => {
     });
   });
 
+  describe('globals', () => {
+    test('should return entity from either global or api', () => {
+      const doc = getDocument(`
+        globals.remove
+        remove
+      `);
+      const lineA = doc.root.lines.get(2)[0];
+      const lineB = doc.root.lines.get(3)[0];
+      const aggregator = doc.getRootScopeContext().aggregator;
+
+      expect(aggregator.resolveNamespace(lineA, true).signatureDefinitions.first().getArguments().length).toEqual(1);
+      expect(aggregator.resolveNamespace(lineB, true).signatureDefinitions.first().getArguments().length).toEqual(2);
+    });
+  });
+
   describe('function', () => {
     test('should return entity', () => {
       const doc = getDocument(`
