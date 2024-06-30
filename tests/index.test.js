@@ -405,6 +405,29 @@ describe('type-manager', () => {
     });
   });
 
+  describe('super', () => {
+    test('should return entity from __isa', () => {
+      const doc = getDocument(`
+        test = {}
+        test.foo = function(a, b, c)
+          super
+        end function
+
+        foo = new test
+        foo.bar = function(a)
+          super
+        end function
+      `);
+      const lineA = doc.root.lines.get(4)[0];
+      const aggregatorA = doc.getScopeContext(doc.root.scopes[0]).aggregator;
+      const lineB = doc.root.lines.get(9)[0];
+      const aggregatorB = doc.getScopeContext(doc.root.scopes[1]).aggregator;
+
+      expect(Array.from(aggregatorA.resolveNamespace(lineA).types)).toEqual(['null']);
+      expect(Array.from(aggregatorB.resolveNamespace(lineB).types)).toEqual(['map']);
+    });
+  });
+
   describe('resolve all assignments', () => {
     test('should return all assignments which match query', () => {
       const doc = getDocument(`
