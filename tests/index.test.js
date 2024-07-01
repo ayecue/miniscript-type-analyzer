@@ -635,5 +635,12 @@ describe('type-manager', () => {
       expect(entityIdentifiers.size).toEqual(26);
       expect(entityIdentifiers.has('test')).toEqual(true);
     });
+
+    test('should return all identifiers of api', () => {
+      const doc = getDocument(``);
+      const identifiers = doc.api.getAllIdentifier();
+
+      expect(identifiers.size).toEqual(55);
+    });
   });
 });

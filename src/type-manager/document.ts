@@ -57,9 +57,8 @@ export class Document implements IDocument {
     this._container = options.container;
     this._scopeMapping = options.scopeMapping ?? new WeakMap();
     this._intrinscis = options.intrinsics ?? this.createIntrinscis();
+    this._api = options.api ?? this.initApi();
     this._globals = options.globals ?? this.initGlobals();
-
-    this.initApi();
   }
 
   protected createIntrinscis(): Intrinsics {
@@ -96,6 +95,8 @@ export class Document implements IDocument {
     general
       .resolveProperty('list', true)
       .setReturnEntity(this._intrinscis.list);
+
+    return general;
   }
 
   protected initGlobals(): IEntity {
