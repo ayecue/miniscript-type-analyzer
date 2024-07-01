@@ -98,6 +98,8 @@ export interface IScope extends IEntity {
   outer: IEntity;
   globals: IEntity;
   locals: IEntity;
+  isSelfAvailable(): boolean;
+  isSuperAvailable(): boolean;
   resolveNamespace(name: string | IEntity, noInvoke?: boolean): IEntity | null;
   copy(options?: EntityCopyOptions): IScope;
 }

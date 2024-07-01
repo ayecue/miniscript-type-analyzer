@@ -219,24 +219,32 @@ export class Scope implements IScope {
       ...apiIdentifier
     ]);
 
-    if (
-      this._locals.context != null &&
-      this._locals.context.types.has(SignatureDefinitionBaseType.Map)
-    ) {
+    if (this.isSelfAvailable()) {
       properties.set('self', {
         kind: CompletionItemKind.Constant,
         line: -1
       });
+    }
 
-      if (this._locals.context.hasProperty('__isa')) {
-        properties.set('super', {
-          kind: CompletionItemKind.Constant,
-          line: -1
-        });
-      }
+    if (this.isSuperAvailable()) {
+      properties.set('super', {
+        kind: CompletionItemKind.Constant,
+        line: -1
+      });
     }
 
     return properties;
+  }
+
+  isSelfAvailable() {
+    return (
+      this._locals.context != null &&
+      this._locals.context.types.has(SignatureDefinitionBaseType.Map)
+    );
+  }
+
+  isSuperAvailable() {
+    return this.isSelfAvailable() && this._locals.context.hasProperty('__isa');
   }
 
   toJSON() {
