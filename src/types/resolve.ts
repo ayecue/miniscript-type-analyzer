@@ -24,7 +24,7 @@ export interface ResolveChainItemWithIndex extends ResolveChainItemBase {
 export const isResolveChainItemWithIndex = (
   item: ResolveChainItemBase
 ): item is ResolveChainItemWithIndex => {
-  return item.ref.type === ASTType.IndexExpression;
+  return item != null && item.ref.type === ASTType.IndexExpression;
 };
 
 export interface ResolveChainItemWithMember extends ResolveChainItemBase {
@@ -35,7 +35,7 @@ export interface ResolveChainItemWithMember extends ResolveChainItemBase {
 export const isResolveChainItemWithMember = (
   item: ResolveChainItemBase
 ): item is ResolveChainItemWithMember => {
-  return item.ref.type === ASTType.MemberExpression;
+  return item != null && item.ref.type === ASTType.MemberExpression;
 };
 
 export interface ResolveChainItemWithIdentifier extends ResolveChainItemBase {
@@ -46,7 +46,7 @@ export interface ResolveChainItemWithIdentifier extends ResolveChainItemBase {
 export const isResolveChainItemWithIdentifier = (
   item: ResolveChainItemBase
 ): item is ResolveChainItemWithIdentifier => {
-  return item.ref.type === ASTType.Identifier;
+  return item != null && item.ref.type === ASTType.Identifier;
 };
 
 export interface ResolveChainItemWithValue extends ResolveChainItemBase {
@@ -58,11 +58,12 @@ export const isResolveChainItemWithValue = (
   item: ResolveChainItemBase
 ): item is ResolveChainItemWithValue => {
   return (
-    item.ref.type === ASTType.NumericLiteral ||
-    item.ref.type === ASTType.StringLiteral ||
-    item.ref.type === ASTType.NilLiteral ||
-    item.ref.type === ASTType.MapConstructorExpression ||
-    item.ref.type === ASTType.ListConstructorExpression
+    item != null &&
+    (item.ref.type === ASTType.NumericLiteral ||
+      item.ref.type === ASTType.StringLiteral ||
+      item.ref.type === ASTType.NilLiteral ||
+      item.ref.type === ASTType.MapConstructorExpression ||
+      item.ref.type === ASTType.ListConstructorExpression)
   );
 };
 
