@@ -184,12 +184,12 @@ export class Document implements IDocument {
       document: this
     });
 
-    aggregator.analyze();
-
     this._scopeMapping.set(this._root, {
       scope,
       aggregator
     });
+
+    aggregator.analyze();
 
     for (let index = 0; index < this._root.scopes.length; index++) {
       const item = this._root.scopes[index];

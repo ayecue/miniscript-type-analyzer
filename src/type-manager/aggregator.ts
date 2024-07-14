@@ -568,12 +568,26 @@ export class Aggregator implements IAggregator {
   }
 
   resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[] {
-    const itemId = createExpressionId(item);
+    let itemId = createExpressionId(item);
+    let aggregator: Aggregator = this;
+
+    if (itemId.startsWith('globals.')) {
+      aggregator = this._document.getRootScopeContext()
+        .aggregator as Aggregator;
+      itemId = itemId.slice(8);
+    } else if (itemId.startsWith('locals.')) {
+      aggregator = this;
+      itemId = itemId.slice(7);
+    } else if (itemId.startsWith('outer.')) {
+      aggregator = this.parent as Aggregator;
+      itemId = itemId.slice(6);
+    }
+
     const assignments: ASTAssignmentStatement[] = [];
     const aggregators = new Set([
-      this,
-      this._parent,
-      this._document.getRootScopeContext().aggregator
+      aggregator,
+      aggregator._parent,
+      aggregator._document.getRootScopeContext().aggregator
     ]) as Set<Aggregator>;
 
     for (const aggregator of aggregators) {
@@ -588,7 +602,6 @@ export class Aggregator implements IAggregator {
   analyze() {
     for (let index = 0; index < this._root.assignments.length; index++) {
       const item = this._root.assignments[index] as ASTAssignmentStatement;
-      const variableId = createExpressionId(item.variable);
       const value =
         this.resolveType(item.init)?.copy().setLine(item.start.line) ??
         this.factory(CompletionItemKind.Variable)
@@ -597,12 +610,27 @@ export class Aggregator implements IAggregator {
 
       this.defineNamespace(item.variable, value);
 
-      const definition = this._definitions.get(variableId);
+      let variableId = createExpressionId(item.variable);
+      let definitions = this._definitions;
+
+      if (variableId.startsWith('globals.')) {
+        definitions =
+          this._document.getRootScopeContext().aggregator.definitions;
+        variableId = variableId.slice(8);
+      } else if (variableId.startsWith('locals.')) {
+        definitions = this._definitions;
+        variableId = variableId.slice(7);
+      } else if (variableId.startsWith('outer.')) {
+        definitions = this.parent.definitions;
+        variableId = variableId.slice(6);
+      }
+
+      const definition = definitions.get(variableId);
 
       if (definition) {
         definition.push(item);
       } else {
-        this._definitions.set(variableId, [item]);
+        definitions.set(variableId, [item]);
       }
     }
   }

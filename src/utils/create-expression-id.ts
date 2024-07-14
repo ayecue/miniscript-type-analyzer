@@ -62,20 +62,6 @@ function stringHandler(current: ASTBase): string {
     }
     case ASTType.MemberExpression: {
       const memberExpr = current as ASTMemberExpression;
-      if (memberExpr.base.type === ASTType.Identifier) {
-        const identifier = (memberExpr.base as ASTIdentifier).name;
-
-        if (
-          identifier === 'globals' ||
-          identifier === 'locals' ||
-          identifier === 'outer'
-        ) {
-          return attachCache(
-            current,
-            (memberExpr.identifier as ASTIdentifier).name
-          );
-        }
-      }
       return attachCache(
         current,
         stringHandler(memberExpr.base) +
@@ -86,21 +72,6 @@ function stringHandler(current: ASTBase): string {
     case ASTType.IndexExpression: {
       const indexExpr = current as ASTIndexExpression;
       if (indexExpr.index.type === ASTType.StringLiteral) {
-        if (indexExpr.base.type === ASTType.Identifier) {
-          const identifier = (indexExpr.base as ASTIdentifier).name;
-
-          if (
-            identifier === 'globals' ||
-            identifier === 'locals' ||
-            identifier === 'outer'
-          ) {
-            return attachCache(
-              current,
-              (indexExpr.index as ASTLiteral).value.toString()
-            );
-          }
-        }
-
         return attachCache(
           current,
           stringHandler(indexExpr.base) +
