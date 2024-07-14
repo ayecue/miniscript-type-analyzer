@@ -13,6 +13,7 @@ import {
   IScope,
   ScopeOptions
 } from '../types/object';
+import { injectIdentifers } from '../utils/inject-identifiers';
 import { ObjectSet } from '../utils/object-set';
 import { Entity, resolveEntity } from './entity';
 
@@ -184,13 +185,6 @@ export class Scope implements IScope {
   }
 
   getAllIdentifier(): Map<string, CompletionItem> {
-    const localIdentifier = this._locals.getAllIdentifier();
-    const outerIdentifier =
-      this._parent?.locals.getAllIdentifier() ?? new Map();
-    const globalIdentifier = this._globals.getAllIdentifier();
-    const apiIdentifier = this._container.getAllIdentifier(
-      SignatureDefinitionBaseType.General
-    );
     const properties = new Map([
       [
         'globals',
@@ -213,11 +207,13 @@ export class Scope implements IScope {
           line: -1
         }
       ],
-      ...globalIdentifier,
-      ...outerIdentifier,
-      ...localIdentifier,
-      ...apiIdentifier
+      ...this._container.getAllIdentifier(SignatureDefinitionBaseType.General)
     ]);
+
+    if (this._locals !== this._globals)
+      injectIdentifers(properties, this._globals);
+    if (this._parent) injectIdentifers(properties, this._parent.locals);
+    injectIdentifers(properties, this._locals);
 
     if (this.isSelfAvailable()) {
       properties.set('self', {

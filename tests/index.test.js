@@ -610,6 +610,22 @@ describe('type-manager', () => {
       expect(entityIdentifiers.has('hasIndex')).toEqual(true);
     });
 
+    test('should return all available identifiers in global scope', () => {
+      const doc = getDocument(`
+        map.test = function
+          foo = "test"
+        end function
+        bar = 123
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const identifiers = scope.getAllIdentifier();
+
+      expect(identifiers.size).toEqual(59);
+      expect(identifiers.has('bar')).toEqual(true);
+      expect(identifiers.has('test')).toEqual(false);
+      expect(identifiers.has('foo')).toEqual(false);
+    });
+
     test('should return all identifiers of one type', () => {
       const doc = getDocument(`
         test = unknown
