@@ -15,6 +15,7 @@ import {
   ASTType,
   ASTUnaryExpression
 } from 'miniscript-core';
+
 import { isValidIdentifierLiteral } from './is-valid-identifier-literal';
 
 const attachCache = (c: any, h: string): string => (c.$$id = h);
@@ -32,8 +33,8 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(evalExpr.left) +
-        evalExpr.operator +
-        stringHandler(evalExpr.right)
+          evalExpr.operator +
+          stringHandler(evalExpr.right)
       );
     }
     case ASTType.FunctionDeclaration: {
@@ -48,8 +49,8 @@ function stringHandler(current: ASTBase): string {
         const assignment = parameter as ASTAssignmentStatement;
         params.push(
           (assignment.variable as ASTIdentifier).name +
-          '=' +
-          stringHandler(assignment.init)
+            '=' +
+            stringHandler(assignment.init)
         );
       }
       if (params.length > 0) {
@@ -66,8 +67,8 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(memberExpr.base) +
-        '.' +
-        (memberExpr.identifier as ASTIdentifier).name
+          '.' +
+          (memberExpr.identifier as ASTIdentifier).name
       );
     }
     case ASTType.IndexExpression: {
@@ -75,17 +76,15 @@ function stringHandler(current: ASTBase): string {
       if (isValidIdentifierLiteral(indexExpr.index)) {
         return attachCache(
           current,
-          stringHandler(indexExpr.base) +
-          '.' +
-          indexExpr.index.value.toString()
+          stringHandler(indexExpr.base) + '.' + indexExpr.index.value.toString()
         );
       }
       return attachCache(
         current,
         stringHandler(indexExpr.base) +
-        '[' +
-        stringHandler(indexExpr.index) +
-        ']'
+          '[' +
+          stringHandler(indexExpr.index) +
+          ']'
       );
     }
     case ASTType.CallExpression: {
@@ -149,11 +148,11 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(sliceExpr.base) +
-        '[' +
-        stringHandler(sliceExpr.left) +
-        ':' +
-        stringHandler(sliceExpr.right) +
-        ']'
+          '[' +
+          stringHandler(sliceExpr.left) +
+          ':' +
+          stringHandler(sliceExpr.right) +
+          ']'
       );
     }
   }

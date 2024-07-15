@@ -41,8 +41,8 @@ import {
 import { createExpressionId } from '../utils/create-expression-id';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { createResolveChain } from '../utils/get-ast-chain';
-import { Entity } from './entity';
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
+import { Entity } from './entity';
 
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;

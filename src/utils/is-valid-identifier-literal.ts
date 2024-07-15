@@ -1,4 +1,4 @@
-import { ASTBase, ASTLiteral, ASTType } from "miniscript-core";
+import { ASTBase, ASTLiteral, ASTType } from 'miniscript-core';
 
 export const isValidIdentifierLiteral = (item: ASTBase): item is ASTLiteral => {
   if (item.type !== ASTType.StringLiteral) return false;

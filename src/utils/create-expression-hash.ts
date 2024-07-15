@@ -91,9 +91,7 @@ function hashHandler(current: ASTBase): number {
             identifier === 'outer'
           ) {
             result = getStringHashCode(ASTType.Identifier);
-            result ^= getStringHashCode(
-              indexExpr.index.value.toString()
-            );
+            result ^= getStringHashCode(indexExpr.index.value.toString());
             return attachCache(current, result);
           }
         }
