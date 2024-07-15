@@ -1,3 +1,4 @@
+export { isValidIdentifierLiteral } from './utils/is-valid-identifier-literal';
 export { createExpressionHash } from './utils/create-expression-hash';
 export { createExpressionId } from './utils/create-expression-id';
 export { enrichWithMetaInformation } from './utils/enrich-with-meta-information';

@@ -42,6 +42,7 @@ import { createExpressionId } from '../utils/create-expression-id';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { createResolveChain } from '../utils/get-ast-chain';
 import { Entity } from './entity';
+import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;
@@ -467,8 +468,8 @@ export class Aggregator implements IAggregator {
             .setLabel(item.getter.name);
       } else if (isResolveChainItemWithIndex(item)) {
         // index expressions do not get invoked automatically
-        if (item.getter.type === ASTType.StringLiteral) {
-          const name = (item.getter as ASTLiteral).value.toString();
+        if (isValidIdentifierLiteral(item.getter)) {
+          const name = item.getter.value.toString();
           current =
             current.resolveProperty(name, item.isInCallExpression) ??
             this.factory(CompletionItemKind.Variable)
@@ -520,9 +521,9 @@ export class Aggregator implements IAggregator {
       if (isResolveChainItemWithMember(last)) {
         return resolvedContext.setProperty(last.getter.name, container);
       } else if (isResolveChainItemWithIndex(last)) {
-        if (last.getter.type === ASTType.StringLiteral) {
+        if (isValidIdentifierLiteral(last.getter)) {
           return resolvedContext.setProperty(
-            (last.getter as ASTLiteral).value.toString(),
+            last.getter.value.toString(),
             container
           );
         } else {
