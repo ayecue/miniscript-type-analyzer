@@ -98,6 +98,25 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('test').resolveProperty(numberKey).types.size).toEqual(2);
       expect(Array.from(scope.resolveProperty('test').resolveProperty(numberKey).types)).toEqual(['string', 'map']);
     });
+
+    test('should return entity from key of type string', () => {
+      const doc = getDocument(`
+        test = {}
+        test["foo"] = "hello"
+        test["foo bar"] = "world"
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const stringKey = new Entity({
+        kind: -1,
+        document: doc
+      }).addType('string');
+
+      expect(scope.resolveProperty('test').resolveProperty('foo').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('test').resolveProperty('foo').types)).toEqual(['string']);
+      expect(scope.resolveProperty('test').resolveProperty('foo bar')).toBeNull();
+      expect(scope.resolveProperty('test').resolveProperty(stringKey).types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('test').resolveProperty(stringKey).types)).toEqual(['string']);
+    });
   });
 
   describe('globals', () => {

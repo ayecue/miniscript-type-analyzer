@@ -16,6 +16,8 @@ import {
   ASTUnaryExpression
 } from 'miniscript-core';
 
+import { isValidIdentifierLiteral } from './is-valid-identifier-literal';
+
 const attachCache = (c: any, h: string): string => (c.$$id = h);
 const retreiveCache = (c: any): string | null => c.$$id ?? null;
 
@@ -71,12 +73,10 @@ function stringHandler(current: ASTBase): string {
     }
     case ASTType.IndexExpression: {
       const indexExpr = current as ASTIndexExpression;
-      if (indexExpr.index.type === ASTType.StringLiteral) {
+      if (isValidIdentifierLiteral(indexExpr.index)) {
         return attachCache(
           current,
-          stringHandler(indexExpr.base) +
-            '.' +
-            (indexExpr.index as ASTLiteral).value.toString()
+          stringHandler(indexExpr.base) + '.' + indexExpr.index.value.toString()
         );
       }
       return attachCache(

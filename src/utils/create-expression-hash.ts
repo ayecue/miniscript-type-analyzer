@@ -17,6 +17,7 @@ import {
 } from 'miniscript-core';
 
 import { getHashCode, getStringHashCode } from './hash';
+import { isValidIdentifierLiteral } from './is-valid-identifier-literal';
 
 const attachCache = (c: any, h: number): number => (c.$$hash = h);
 const retreiveCache = (c: any): number | null => c.$$hash ?? null;
@@ -80,7 +81,7 @@ function hashHandler(current: ASTBase): number {
     }
     case ASTType.IndexExpression: {
       const indexExpr = current as ASTIndexExpression;
-      if (indexExpr.index.type === ASTType.StringLiteral) {
+      if (isValidIdentifierLiteral(indexExpr.index)) {
         if (indexExpr.base.type === ASTType.Identifier) {
           const identifier = (indexExpr.base as ASTIdentifier).name;
 
@@ -90,9 +91,7 @@ function hashHandler(current: ASTBase): number {
             identifier === 'outer'
           ) {
             result = getStringHashCode(ASTType.Identifier);
-            result ^= getStringHashCode(
-              (indexExpr.index as ASTLiteral).value.toString()
-            );
+            result ^= getStringHashCode(indexExpr.index.value.toString());
             return attachCache(current, result);
           }
         }
