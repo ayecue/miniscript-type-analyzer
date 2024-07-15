@@ -154,6 +154,12 @@ export class Aggregator implements IAggregator {
     return left.extend(right);
   }
 
+  protected resolveIsaExpression(item: ASTEvaluationExpression) {
+    return this.factory(CompletionItemKind.Expression)
+      .addType(SignatureDefinitionBaseType.Number)
+      .setLine(item.start.line);
+  }
+
   protected resolveCallStatement(item: ASTCallStatement) {
     const entity = this.resolveNamespace(item);
 
@@ -313,8 +319,9 @@ export class Aggregator implements IAggregator {
       case ASTType.BinaryExpression:
         return this.resolveBinaryExpression(item as ASTEvaluationExpression);
       case ASTType.LogicalExpression:
-      case ASTType.IsaExpression:
         return this.resolveLogicalExpression(item as ASTEvaluationExpression);
+      case ASTType.IsaExpression:
+        return this.resolveIsaExpression(item as ASTEvaluationExpression);
       case ASTType.FunctionDeclaration:
         return this.resolveFunctionStatement(item as ASTFunctionStatement);
       case ASTType.SliceExpression:

@@ -134,6 +134,18 @@ describe('type-manager', () => {
     });
   });
 
+  describe('expression', () => {
+    test('should return entity from isa', () => {
+      const doc = getDocument(`
+        test = "123" isa string
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('test').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('test').types)).toEqual(['number']);
+    });
+  });
+
   describe('function', () => {
     test('should return entity', () => {
       const doc = getDocument(`
