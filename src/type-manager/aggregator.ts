@@ -141,21 +141,29 @@ export class Aggregator implements IAggregator {
   }
 
   protected resolveBinaryExpression(item: ASTEvaluationExpression) {
-    // improve logic
+    const binaryExpr = this.factory(CompletionItemKind.Expression)
+      .setLabel('Binary Expr')
+      .setLine(item.start.line);
     const left = this.resolveTypeWithDefault(item.left);
     const right = this.resolveTypeWithDefault(item.right);
-    return left.extend(right);
+
+    // improve logic
+    binaryExpr.extend(left);
+    binaryExpr.extend(right);
+
+    return binaryExpr;
   }
 
   protected resolveLogicalExpression(item: ASTEvaluationExpression) {
-    // improve logic
-    const left = this.resolveTypeWithDefault(item.left);
-    const right = this.resolveTypeWithDefault(item.right);
-    return left.extend(right);
+    return this.factory(CompletionItemKind.Expression)
+      .setLabel('Logical Expr')
+      .addType(SignatureDefinitionBaseType.Number)
+      .setLine(item.start.line);
   }
 
   protected resolveIsaExpression(item: ASTEvaluationExpression) {
     return this.factory(CompletionItemKind.Expression)
+      .setLabel('Isa Expr')
       .addType(SignatureDefinitionBaseType.Number)
       .setLine(item.start.line);
   }
