@@ -87,13 +87,17 @@ export class Aggregator implements IAggregator {
     );
 
     if (previousItem instanceof ASTComment) {
-      const lines = [previousItem.value];
-      let index = item.start.line - 2;
+      const visited: Set<ASTBase> = new Set();
+      const lines = [];
+      let index = item.start.line - 1;
 
       while (index >= 0) {
         const item = this._document.getLastASTItemOfLine(index--);
 
+        if (visited.has(item)) continue;
+
         if (item instanceof ASTComment) {
+          visited.add(item);
           lines.unshift(item.value);
         } else {
           break;
