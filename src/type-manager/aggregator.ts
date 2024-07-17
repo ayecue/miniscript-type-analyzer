@@ -1,3 +1,4 @@
+import { ASTType as GreybelASTType } from 'greybel-core';
 import {
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction
@@ -87,13 +88,17 @@ export class Aggregator implements IAggregator {
     );
 
     if (previousItem instanceof ASTComment) {
-      const lines = [previousItem.value];
-      let index = item.start.line - 2;
+      const visited: Set<ASTBase> = new Set();
+      const lines = [];
+      let index = item.start.line - 1;
 
       while (index >= 0) {
         const item = this._document.getLastASTItemOfLine(index--);
 
+        if (visited.has(item)) continue;
+
         if (item instanceof ASTComment) {
+          visited.add(item);
           lines.unshift(item.value);
         } else {
           break;
@@ -380,6 +385,21 @@ export class Aggregator implements IAggregator {
           .setLabel(label)
           .setLine(item.start.line);
       }
+      case GreybelASTType.FeatureFileExpression:
+        return this.factory(CompletionItemKind.Expression)
+          .addType(SignatureDefinitionBaseType.String)
+          .setLabel('File Expr')
+          .setLine(item.start.line);
+      case GreybelASTType.FeatureLineExpression:
+        return this.factory(CompletionItemKind.Expression)
+          .addType(SignatureDefinitionBaseType.Number)
+          .setLabel('Line Expr')
+          .setLine(item.start.line);
+      case GreybelASTType.FeatureEnvarExpression:
+        return this.factory(CompletionItemKind.Expression)
+          .addType(SignatureDefinitionBaseType.String)
+          .setLabel('Envar Expr')
+          .setLine(item.start.line);
       default:
         return null;
     }
