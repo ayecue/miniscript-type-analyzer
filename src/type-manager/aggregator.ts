@@ -400,6 +400,11 @@ export class Aggregator implements IAggregator {
           .addType(SignatureDefinitionBaseType.String)
           .setLabel('Envar Expr')
           .setLine(item.start.line);
+      case GreybelASTType.FeatureInjectExpression:
+        return this.factory(CompletionItemKind.Expression)
+          .addType(SignatureDefinitionBaseType.String)
+          .setLabel('Inject Expr')
+          .setLine(item.start.line);
       default:
         return null;
     }
