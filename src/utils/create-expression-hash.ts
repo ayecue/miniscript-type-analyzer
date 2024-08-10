@@ -1,13 +1,16 @@
 import {
   ASTAssignmentStatement,
   ASTBase,
+  ASTBinaryExpression,
   ASTCallExpression,
-  ASTEvaluationExpression,
+  ASTComparisonGroupExpression,
   ASTFunctionStatement,
   ASTIdentifier,
   ASTIndexExpression,
+  ASTIsaExpression,
   ASTListConstructorExpression,
   ASTLiteral,
+  ASTLogicalExpression,
   ASTMapConstructorExpression,
   ASTMemberExpression,
   ASTParenthesisExpression,
@@ -29,19 +32,53 @@ function hashHandler(current: ASTBase): number {
   let result = getStringHashCode(current.type);
 
   switch (current.type) {
-    case ASTType.BinaryExpression:
-    case ASTType.LogicalExpression:
-    case ASTType.IsaExpression: {
-      const evalExpr = current as ASTEvaluationExpression;
+    case ASTType.BinaryExpression: {
+      const evalExpr = current as ASTBinaryExpression;
       result ^= getStringHashCode(evalExpr.operator);
       result ^= hashHandler(evalExpr.left);
       result ^= hashHandler(evalExpr.right);
       return attachCache(current, result);
     }
+    case ASTType.LogicalExpression: {
+      const evalExpr = current as ASTLogicalExpression;
+      result ^= getStringHashCode(evalExpr.operator);
+      result ^= hashHandler(evalExpr.left);
+      result ^= hashHandler(evalExpr.right);
+      return attachCache(current, result);
+    }
+    case ASTType.IsaExpression: {
+      const evalExpr = current as ASTIsaExpression;
+      result ^= getStringHashCode(evalExpr.operator);
+      result ^= hashHandler(evalExpr.left);
+      result ^= hashHandler(evalExpr.right);
+      return attachCache(current, result);
+    }
+    case ASTType.ComparisonGroupExpression: {
+      const comparisonGroupExpr = current as ASTComparisonGroupExpression;
+
+      for (
+        let index = 0;
+        index < comparisonGroupExpr.expressions.length;
+        index++
+      ) {
+        result ^= hashHandler(comparisonGroupExpr.expressions[index]);
+      }
+
+      for (
+        let index = 0;
+        index < comparisonGroupExpr.operators.length;
+        index++
+      ) {
+        result ^= getStringHashCode(comparisonGroupExpr.operators[index]);
+      }
+
+      return attachCache(current, result);
+    }
     case ASTType.FunctionDeclaration: {
       const fnStatement = current as ASTFunctionStatement;
       result ^= getHashCode(fnStatement.parameters.length);
-      for (const parameter of fnStatement.parameters) {
+      for (let index = 0; index < fnStatement.parameters.length; index++) {
+        const parameter = fnStatement.parameters[index];
         if (parameter.type === ASTType.Identifier) {
           result ^= getStringHashCode((parameter as ASTIdentifier).name);
           continue;
@@ -113,7 +150,8 @@ function hashHandler(current: ASTBase): number {
       const callExpr = current as ASTCallExpression;
       result ^= hashHandler(callExpr.base);
       result ^= getHashCode(callExpr.arguments.length);
-      for (const arg of callExpr.arguments) {
+      for (let index = 0; index < callExpr.arguments.length; index++) {
+        const arg = callExpr.arguments[index];
         result ^= hashHandler(arg);
       }
       return attachCache(current, result);
@@ -140,7 +178,8 @@ function hashHandler(current: ASTBase): number {
     case ASTType.MapConstructorExpression: {
       const mapExpr = current as ASTMapConstructorExpression;
       result ^= getHashCode(mapExpr.fields.length);
-      for (const field of mapExpr.fields) {
+      for (let index = 0; index < mapExpr.fields.length; index++) {
+        const field = mapExpr.fields[index];
         result ^= hashHandler(field.key);
         result ^= hashHandler(field.value);
       }
@@ -149,7 +188,8 @@ function hashHandler(current: ASTBase): number {
     case ASTType.ListConstructorExpression: {
       const listExpr = current as ASTListConstructorExpression;
       result ^= getHashCode(listExpr.fields.length);
-      for (const field of listExpr.fields) {
+      for (let index = 0; index < listExpr.fields.length; index++) {
+        const field = listExpr.fields[index];
         result ^= hashHandler(field.value);
       }
       return attachCache(current, result);

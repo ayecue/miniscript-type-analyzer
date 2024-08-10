@@ -125,8 +125,8 @@ describe('type-manager', () => {
         globals.remove
         remove
       `);
-      const lineA = doc.root.lines.get(2)[0];
-      const lineB = doc.root.lines.get(3)[0];
+      const lineA = doc.root.lines[2][0];
+      const lineB = doc.root.lines[3][0];
       const aggregator = doc.getRootScopeContext().aggregator;
 
       expect(aggregator.resolveNamespace(lineA, true).signatureDefinitions.first().getArguments().length).toEqual(1);
@@ -537,9 +537,9 @@ describe('type-manager', () => {
           super
         end function
       `);
-      const lineA = doc.root.lines.get(4)[0];
+      const lineA = doc.root.lines[4][0];
       const aggregatorA = doc.getScopeContext(doc.root.scopes[0]).aggregator;
-      const lineB = doc.root.lines.get(9)[0];
+      const lineB = doc.root.lines[9][0];
       const aggregatorB = doc.getScopeContext(doc.root.scopes[1]).aggregator;
 
       expect(Array.from(aggregatorA.resolveNamespace(lineA).types)).toEqual(['null']);
@@ -614,7 +614,7 @@ describe('type-manager', () => {
           end function
         end function
       `);
-      const line = doc.root.lines.get(11);
+      const line = doc.root.lines[11];
       const aggregator = doc.getScopeContext(doc.root.scopes[2]).aggregator;
       const assignments = aggregator.resolveAvailableAssignments(line[0]);
 

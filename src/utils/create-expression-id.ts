@@ -1,13 +1,16 @@
 import {
   ASTAssignmentStatement,
   ASTBase,
+  ASTBinaryExpression,
   ASTCallExpression,
-  ASTEvaluationExpression,
+  ASTComparisonGroupExpression,
   ASTFunctionStatement,
   ASTIdentifier,
   ASTIndexExpression,
+  ASTIsaExpression,
   ASTListConstructorExpression,
   ASTLiteral,
+  ASTLogicalExpression,
   ASTMapConstructorExpression,
   ASTMemberExpression,
   ASTParenthesisExpression,
@@ -26,10 +29,8 @@ function stringHandler(current: ASTBase): string {
   if (cachedHash !== null) return cachedHash;
 
   switch (current.type) {
-    case ASTType.BinaryExpression:
-    case ASTType.LogicalExpression:
-    case ASTType.IsaExpression: {
-      const evalExpr = current as ASTEvaluationExpression;
+    case ASTType.BinaryExpression: {
+      const evalExpr = current as ASTBinaryExpression;
       return attachCache(
         current,
         stringHandler(evalExpr.left) +
@@ -37,11 +38,50 @@ function stringHandler(current: ASTBase): string {
           stringHandler(evalExpr.right)
       );
     }
+    case ASTType.LogicalExpression: {
+      const evalExpr = current as ASTLogicalExpression;
+      return attachCache(
+        current,
+        stringHandler(evalExpr.left) +
+          evalExpr.operator +
+          stringHandler(evalExpr.right)
+      );
+    }
+    case ASTType.IsaExpression: {
+      const evalExpr = current as ASTIsaExpression;
+      return attachCache(
+        current,
+        stringHandler(evalExpr.left) +
+          evalExpr.operator +
+          stringHandler(evalExpr.right)
+      );
+    }
+    case ASTType.ComparisonGroupExpression: {
+      const comparisonGroupExpr = current as ASTComparisonGroupExpression;
+      const expressions: string[] = comparisonGroupExpr.expressions.map((it) =>
+        stringHandler(it)
+      );
+      const segments: string[] = [expressions[0]];
+
+      for (
+        let index = 0;
+        index < comparisonGroupExpr.operators.length;
+        index++
+      ) {
+        segments.push(
+          comparisonGroupExpr.operators[index],
+          expressions[index + 1]
+        );
+      }
+
+      return attachCache(current, segments.join(' '));
+    }
     case ASTType.FunctionDeclaration: {
       const fnStatement = current as ASTFunctionStatement;
       let body = 'function';
       const params: string[] = [];
-      for (const parameter of fnStatement.parameters) {
+      for (let index = 0; index < fnStatement.parameters.length; index++) {
+        const parameter = fnStatement.parameters[index];
         if (parameter.type === ASTType.Identifier) {
           params.push((parameter as ASTIdentifier).name);
           continue;
@@ -91,7 +131,8 @@ function stringHandler(current: ASTBase): string {
       const callExpr = current as ASTCallExpression;
       let body = stringHandler(callExpr.base);
       const args: string[] = [];
-      for (const arg of callExpr.arguments) {
+      for (let index = 0; index < callExpr.arguments.length; index++) {
+        const arg = callExpr.arguments[index];
         args.push(stringHandler(arg));
       }
       if (args.length > 0) {
@@ -128,7 +169,8 @@ function stringHandler(current: ASTBase): string {
     case ASTType.MapConstructorExpression: {
       const mapExpr = current as ASTMapConstructorExpression;
       const fields: string[] = [];
-      for (const field of mapExpr.fields) {
+      for (let index = 0; index < mapExpr.fields.length; index++) {
+        const field = mapExpr.fields[index];
         fields.push(
           stringHandler(field.key) + ':' + stringHandler(field.value)
         );
@@ -138,7 +180,8 @@ function stringHandler(current: ASTBase): string {
     case ASTType.ListConstructorExpression: {
       const listExpr = current as ASTListConstructorExpression;
       const fields: string[] = [];
-      for (const field of listExpr.fields) {
+      for (let index = 0; index < listExpr.fields.length; index++) {
+        const field = listExpr.fields[index];
         fields.push(stringHandler(field.value));
       }
       return attachCache(current, '[' + fields.join(',') + ']');

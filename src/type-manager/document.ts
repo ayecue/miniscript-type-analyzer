@@ -152,7 +152,10 @@ export class Document implements IDocument {
         fnEntity.signatureDefinitions.last() as SignatureDefinitionFunction;
 
       if (fnDef != null) {
-        for (const arg of fnDef.getArguments()) {
+        const args = fnDef.getArguments();
+
+        for (let index = 0; index < args.length; index++) {
+          const arg = args[index];
           const property = scope.resolveProperty(arg.getLabel(), true);
           const types = arg.getTypes().map((it) => it.type);
           if (property === null) {
@@ -212,20 +215,19 @@ export class Document implements IDocument {
   }
 
   getLastASTItemOfLine(line: number): ASTBase {
-    if (this._root.lines.has(line)) {
-      const items = this._root.lines.get(line);
+    const items = this._root.lines[line];
 
-      if (items.length > 0) {
-        return items[items.length - 1];
-      }
+    if (items && items.length > 0) {
+      return items[items.length - 1];
     }
 
     return null;
   }
 
   findASTItemInLine(line: number, type: ASTType): ASTBase {
-    if (this._root.lines.has(line)) {
-      const items = this._root.lines.get(line);
+    const items = this._root.lines[line];
+
+    if (items && items.length > 0) {
       const result = items.find((item) => item.type === type);
 
       if (result) {

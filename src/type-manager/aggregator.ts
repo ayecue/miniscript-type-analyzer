@@ -7,15 +7,18 @@ import {
   ASTAssignmentStatement,
   ASTBase,
   ASTBaseBlockWithScope,
+  ASTBinaryExpression,
   ASTCallExpression,
   ASTCallStatement,
   ASTComment,
-  ASTEvaluationExpression,
+  ASTComparisonGroupExpression,
   ASTFunctionStatement,
   ASTIdentifier,
   ASTIndexExpression,
+  ASTIsaExpression,
   ASTListConstructorExpression,
   ASTLiteral,
+  ASTLogicalExpression,
   ASTMapConstructorExpression,
   ASTMemberExpression,
   ASTParenthesisExpression,
@@ -145,7 +148,7 @@ export class Aggregator implements IAggregator {
     return this.resolveTypeWithDefault(item.expression);
   }
 
-  protected resolveBinaryExpression(item: ASTEvaluationExpression) {
+  protected resolveBinaryExpression(item: ASTBinaryExpression) {
     const binaryExpr = this.factory(CompletionItemKind.Expression)
       .setLabel('Binary Expr')
       .setLine(item.start.line);
@@ -159,14 +162,23 @@ export class Aggregator implements IAggregator {
     return binaryExpr;
   }
 
-  protected resolveLogicalExpression(item: ASTEvaluationExpression) {
+  protected resolveLogicalExpression(item: ASTLogicalExpression) {
     return this.factory(CompletionItemKind.Expression)
       .setLabel('Logical Expr')
       .addType(SignatureDefinitionBaseType.Number)
       .setLine(item.start.line);
   }
 
-  protected resolveIsaExpression(item: ASTEvaluationExpression) {
+  protected resolveComparisonGroupExpression(
+    item: ASTComparisonGroupExpression
+  ) {
+    return this.factory(CompletionItemKind.Expression)
+      .setLabel('Comparison Group Expr')
+      .addType(SignatureDefinitionBaseType.Number)
+      .setLine(item.start.line);
+  }
+
+  protected resolveIsaExpression(item: ASTIsaExpression) {
     return this.factory(CompletionItemKind.Expression)
       .setLabel('Isa Expr')
       .addType(SignatureDefinitionBaseType.Number)
@@ -214,7 +226,8 @@ export class Aggregator implements IAggregator {
       SignatureDefinitionBaseType.Map
     );
 
-    for (const field of item.fields) {
+    for (let index = 0; index < item.fields.length; index++) {
+      const field = item.fields[index];
       const value = this.resolveTypeWithDefault(field.value).setLine(
         field.start.line
       );
@@ -242,7 +255,8 @@ export class Aggregator implements IAggregator {
       SignatureDefinitionBaseType.List
     );
 
-    for (const field of item.fields) {
+    for (let index = 0; index < item.fields.length; index++) {
+      const field = item.fields[index];
       const key = this.factory(CompletionItemKind.Variable)
         .addType(SignatureDefinitionBaseType.Number)
         .setLine(field.start.line);
@@ -330,11 +344,15 @@ export class Aggregator implements IAggregator {
       case ASTType.CallExpression:
         return this.resolveCallExpression(item as ASTCallExpression);
       case ASTType.BinaryExpression:
-        return this.resolveBinaryExpression(item as ASTEvaluationExpression);
+        return this.resolveBinaryExpression(item as ASTBinaryExpression);
       case ASTType.LogicalExpression:
-        return this.resolveLogicalExpression(item as ASTEvaluationExpression);
+        return this.resolveLogicalExpression(item as ASTLogicalExpression);
       case ASTType.IsaExpression:
-        return this.resolveIsaExpression(item as ASTEvaluationExpression);
+        return this.resolveIsaExpression(item as ASTIsaExpression);
+      case ASTType.ComparisonGroupExpression:
+        return this.resolveComparisonGroupExpression(
+          item as ASTComparisonGroupExpression
+        );
       case ASTType.FunctionDeclaration:
         return this.resolveFunctionStatement(item as ASTFunctionStatement);
       case ASTType.SliceExpression:

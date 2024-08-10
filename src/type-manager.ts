@@ -16,8 +16,6 @@ export class TypeManager {
   }
 
   analyze(identifier: string, chunk: ASTChunk): Document {
-    console.time(`Analyzing for ${identifier} done within`);
-
     const typeDoc = new Document({
       container: this._container.copy(),
       root: chunk
@@ -28,8 +26,6 @@ export class TypeManager {
     } catch (err) {
       console.error(err);
     }
-
-    console.timeEnd(`Analyzing for ${identifier} done within`);
 
     this._types.set(identifier, typeDoc);
 

@@ -412,7 +412,8 @@ export class Entity implements IEntity {
 
     this.addType(SignatureDefinitionBaseType.Map);
 
-    for (const property of properties) {
+    for (let index = 0; index < properties.length; index++) {
+      const property = properties[index];
       const definition = signature.getDefinition(property);
       const entity = new Entity({
         label: property,
