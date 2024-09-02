@@ -429,12 +429,20 @@ export class Aggregator implements IAggregator {
   }
 
   resolveTypeWithDefault(item: ASTBase | null = null, noInvoke: boolean = false): IEntity {
-    return (
-      this.resolveType(item, noInvoke) ??
-      this.factory(CompletionItemKind.Variable)
-        .addType(SignatureDefinitionBaseType.Any)
-        .setLine(item?.start.line)
-    );
+    const type = this.resolveType(item, noInvoke);
+
+    if (type == null) {
+      const defaultType = this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any);
+
+      if (item != null) {
+        defaultType.setLine(item.start.line);
+      }
+
+      return defaultType;
+    }
+
+    return type;
   }
 
   protected resolveChain(
