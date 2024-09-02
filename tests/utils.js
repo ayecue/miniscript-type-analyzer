@@ -3,7 +3,7 @@ const { miniscriptMeta } = require('miniscript-meta');
 const { TypeManager } = require('../dist');
 
 const parse = (code) => {
-  const parser = new Parser(code);
+  const parser = new Parser(code, { unsafe: true });
   return parser.parseChunk();
 };
 

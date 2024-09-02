@@ -34,8 +34,8 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(evalExpr.left) +
-          evalExpr.operator +
-          stringHandler(evalExpr.right)
+        evalExpr.operator +
+        stringHandler(evalExpr.right)
       );
     }
     case ASTType.LogicalExpression: {
@@ -43,8 +43,8 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(evalExpr.left) +
-          evalExpr.operator +
-          stringHandler(evalExpr.right)
+        evalExpr.operator +
+        stringHandler(evalExpr.right)
       );
     }
     case ASTType.IsaExpression: {
@@ -52,8 +52,8 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(evalExpr.left) +
-          evalExpr.operator +
-          stringHandler(evalExpr.right)
+        evalExpr.operator +
+        stringHandler(evalExpr.right)
       );
     }
     case ASTType.ComparisonGroupExpression: {
@@ -89,8 +89,8 @@ function stringHandler(current: ASTBase): string {
         const assignment = parameter as ASTAssignmentStatement;
         params.push(
           (assignment.variable as ASTIdentifier).name +
-            '=' +
-            stringHandler(assignment.init)
+          '=' +
+          stringHandler(assignment.init)
         );
       }
       if (params.length > 0) {
@@ -107,8 +107,8 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(memberExpr.base) +
-          '.' +
-          (memberExpr.identifier as ASTIdentifier).name
+        '.' +
+        (memberExpr.identifier as ASTIdentifier).name
       );
     }
     case ASTType.IndexExpression: {
@@ -122,9 +122,9 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(indexExpr.base) +
-          '[' +
-          stringHandler(indexExpr.index) +
-          ']'
+        '[' +
+        stringHandler(indexExpr.index) +
+        ']'
       );
     }
     case ASTType.CallExpression: {
@@ -191,16 +191,14 @@ function stringHandler(current: ASTBase): string {
       return attachCache(
         current,
         stringHandler(sliceExpr.base) +
-          '[' +
-          stringHandler(sliceExpr.left) +
-          ':' +
-          stringHandler(sliceExpr.right) +
-          ']'
+        '[' +
+        stringHandler(sliceExpr.left) +
+        ':' +
+        stringHandler(sliceExpr.right) +
+        ']'
       );
     }
   }
-
-  console.warn(`Unexpected ast type ${current.type} in hash handler!`);
 
   return attachCache(current, '');
 }

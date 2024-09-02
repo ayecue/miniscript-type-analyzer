@@ -203,8 +203,6 @@ function hashHandler(current: ASTBase): number {
     }
   }
 
-  console.warn(`Unexpected ast type ${current.type} in hash handler!`);
-
   return attachCache(current, result);
 }
 

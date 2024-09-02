@@ -169,6 +169,21 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('foo').types.size).toEqual(2);
       expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number', 'string']);
     });
+
+    test('should properly analyze even though syntax is invalid', () => {
+      const doc = getDocument(`
+        test = function(abc =)
+
+        end function
+
+        test
+        foo = 123
+      `)
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('foo').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number']);
+    });
   });
 
   describe('intrinsics', () => {

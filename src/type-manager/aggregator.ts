@@ -428,12 +428,12 @@ export class Aggregator implements IAggregator {
     }
   }
 
-  resolveTypeWithDefault(item: ASTBase, noInvoke: boolean = false): IEntity {
+  resolveTypeWithDefault(item: ASTBase | null = null, noInvoke: boolean = false): IEntity {
     return (
       this.resolveType(item, noInvoke) ??
       this.factory(CompletionItemKind.Variable)
         .addType(SignatureDefinitionBaseType.Any)
-        .setLine(item.start.line)
+        .setLine(item?.start.line)
     );
   }
 
