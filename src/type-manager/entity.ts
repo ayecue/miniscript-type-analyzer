@@ -500,24 +500,9 @@ export class Entity implements IEntity {
         Array.from(this._signatureDefinitions, (value) => value.copy())
       ),
       types: new Set(this._types),
-      returnEntity: this._returnEntity
+      returnEntity: this._returnEntity,
+      values: options.values ?? this.values
     });
-
-    if (options.values) {
-      newCopy._values = options.values;
-    } else {
-      newCopy._values = new Map(
-        Array.from(this._values, ([key, value]) => [
-          key,
-          value.copy({
-            container: options.container,
-            line: options.line,
-            context: newCopy,
-            values: value.values
-          })
-        ])
-      );
-    }
 
     return newCopy;
   }

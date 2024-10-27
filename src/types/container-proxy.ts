@@ -18,6 +18,7 @@ export interface IContainerProxy {
   types: Map<SignatureDefinitionType, IEntity>;
 
   getTypeSignature(type: SignatureDefinitionType): IEntity | null;
+  setCustomType(type: SignatureDefinitionType, entitiy: IEntity): void;
   searchDefinitionMatches(
     types: string | SignatureDefinitionType[],
     property: string

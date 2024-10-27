@@ -60,6 +60,11 @@ export class ContainerProxy implements IContainerProxy {
     return types;
   }
 
+  setCustomType(type: SignatureDefinitionType, entitiy: IEntity): void {
+    if (this._types.has(type)) return;
+    this._types.set(type, entitiy);
+  }
+
   getTypeSignature(type: SignatureDefinitionType): IEntity | null {
     return this._primitives.get(type as SignatureDefinitionBaseType) ?? this._types.get(type) ?? null;
   }

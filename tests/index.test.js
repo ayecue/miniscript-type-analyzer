@@ -716,4 +716,26 @@ describe('type-manager', () => {
       expect(identifiers.size).toEqual(55);
     });
   });
+
+  describe('custom types', () => {
+    test('should return entity of custom type', () => {
+      const doc = getDocument(`
+        // @type test
+        foo = {}
+        foo.xxx = "was"
+
+        // @description This function returns a file!
+        // @param {string} name
+        // @return {test}
+        bar = function
+        end function
+
+
+        abc = bar.xxx
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['string']);
+    });
+  });
 });

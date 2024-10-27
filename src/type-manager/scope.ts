@@ -76,6 +76,10 @@ export class Scope implements IScope {
       }).addType(SignatureDefinitionBaseType.Map);
   }
 
+  setCustomType(type: SignatureDefinitionType, entitiy: IEntity): void {
+    this._container.setCustomType(type, entitiy);
+  }
+
   addSignatureType(): this {
     throw new Error('Cannot add signature type to scope!');
   }

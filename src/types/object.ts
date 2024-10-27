@@ -100,6 +100,7 @@ export interface IScope extends IEntity {
   locals: IEntity;
   isSelfAvailable(): boolean;
   isSuperAvailable(): boolean;
+  setCustomType(type: SignatureDefinitionType, entitiy: IEntity): void;
   resolveNamespace(name: string | IEntity, noInvoke?: boolean): IEntity | null;
   copy(options?: EntityCopyOptions): IScope;
 }

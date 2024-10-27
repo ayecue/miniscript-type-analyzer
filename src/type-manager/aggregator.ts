@@ -78,6 +78,59 @@ export class Aggregator implements IAggregator {
     });
   }
 
+  protected getCommentRelatedToMap(item: ASTBase): string | null {
+    const previousItem = this._document.getLastASTItemOfLine(
+      item.start.line - 1
+    );
+    const currentItem = this._document.findASTItemInLine(
+      item.start.line,
+      ASTType.Comment
+    );
+
+    if (previousItem instanceof ASTComment) {
+      const visited: Set<ASTBase> = new Set();
+      const lines = [];
+      let index = item.start.line - 1;
+
+      while (index >= 0) {
+        const item = this._document.getLastASTItemOfLine(index--);
+
+        if (visited.has(item)) continue;
+
+        if (item instanceof ASTComment) {
+          visited.add(item);
+          lines.unshift(item.value);
+        } else {
+          break;
+        }
+      }
+
+      return lines.join('\n');
+    } else if (currentItem instanceof ASTComment) {
+      return currentItem.value;
+    }
+
+    return null;
+  }
+
+  protected createCustomTypeFromMap(item: ASTBase, entity: IEntity): void {
+    const comment = this.getCommentRelatedToMap(item);
+
+    if (comment == null) {
+      return;
+    }
+
+    const result = comment.match(/@type\s+([a-zA-Z0-9_]+)/);
+
+    if (result == null) {
+      return;
+    }
+
+    const [_, type] = result;
+
+    this._scope.setCustomType(type, entity);
+  }
+
   protected createFunctionDescription(
     item: ASTBase,
     defaultText: string = DEFAULT_CUSTOM_FUNCTION_DESCRIPTION
@@ -244,6 +297,8 @@ export class Aggregator implements IAggregator {
         mapEntity.setProperty(key, value);
       }
     }
+
+    this.createCustomTypeFromMap(item, mapEntity);
 
     return mapEntity.setLabel('{}').setLine(item.start.line);
   }
