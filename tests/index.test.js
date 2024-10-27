@@ -184,6 +184,17 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('foo').types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number']);
     });
+
+    test('should properly analyze even though expression is followed by slice expression', () => {
+      const doc = getDocument(`
+        foo = [1]
+        bar = (foo + foo)[ : ]
+      `)
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('bar').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('bar').types)).toEqual(['any']);
+    });
   });
 
   describe('intrinsics', () => {

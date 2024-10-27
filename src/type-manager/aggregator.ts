@@ -271,7 +271,7 @@ export class Aggregator implements IAggregator {
   }
 
   protected resolveSliceExpression(item: ASTSliceExpression): IEntity {
-    const entity = this.resolveNamespace(item).setLine(item.start.line);
+    const entity = this.resolveNamespace(item);
 
     if (entity === null) {
       return this.factory(CompletionItemKind.Variable)
@@ -279,7 +279,7 @@ export class Aggregator implements IAggregator {
         .setLine(item.start.line);
     }
 
-    return entity;
+    return entity.setLine(item.start.line);
   }
 
   protected resolveIndexExpression(
@@ -428,12 +428,16 @@ export class Aggregator implements IAggregator {
     }
   }
 
-  resolveTypeWithDefault(item: ASTBase | null = null, noInvoke: boolean = false): IEntity {
+  resolveTypeWithDefault(
+    item: ASTBase | null = null,
+    noInvoke: boolean = false
+  ): IEntity {
     const type = this.resolveType(item, noInvoke);
 
     if (type == null) {
-      const defaultType = this.factory(CompletionItemKind.Variable)
-        .addType(SignatureDefinitionBaseType.Any);
+      const defaultType = this.factory(CompletionItemKind.Variable).addType(
+        SignatureDefinitionBaseType.Any
+      );
 
       if (item != null) {
         defaultType.setLine(item.start.line);
