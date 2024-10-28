@@ -255,12 +255,17 @@ export class Scope implements IScope {
     return new Scope({
       container: options.container ?? this._container,
       parent: this._parent.copy({
-        container: options.container
+        container: options.container,
+        disableCascade: true
       }),
       globals: this._globals.copy({
-        container: options.container
+        container: options.container,
+        disableCascade: true
       }),
-      locals: this._locals.copy(options)
+      locals: this._locals.copy({
+        ...options,
+        disableCascade: true
+      })
     });
   }
 }

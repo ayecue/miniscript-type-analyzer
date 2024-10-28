@@ -34,7 +34,9 @@ export type EntityCopyOptions = Partial<
     | 'isAPI'
     | 'isFromSignature'
   >
->;
+> & {
+  disableCascade?: boolean;
+};
 
 export interface IEntityPropertyHandler<T> {
   hasProperty(

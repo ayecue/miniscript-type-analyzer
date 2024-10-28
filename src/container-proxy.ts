@@ -10,6 +10,7 @@ export class ContainerProxy implements IContainerProxy {
   protected _container: Container;
   protected _primitives: Map<SignatureDefinitionBaseType, IEntity>;
   protected _types: Map<SignatureDefinitionType, IEntity>;
+  protected _customTypes: string[];
 
   get primitives() {
     return this._primitives;
@@ -23,6 +24,7 @@ export class ContainerProxy implements IContainerProxy {
     this._container = options.container;
     this._primitives = options.primitives ?? this.createPrimitives();
     this._types = options.types ?? this.createTypes();
+    this._customTypes = [];
   }
 
   protected createPrimitives() {
@@ -63,6 +65,17 @@ export class ContainerProxy implements IContainerProxy {
   setCustomType(type: SignatureDefinitionType, entitiy: IEntity): void {
     if (this._types.has(type)) return;
     this._types.set(type, entitiy);
+    this._customTypes.push(type);
+  }
+
+  mergeCustomTypes(proxy: ContainerProxy): void {
+    for (const type of proxy._customTypes) {
+      const entity = proxy._types.get(type);
+      if (entity == null) continue;
+      this.setCustomType(type, entity.copy({
+        disableCascade: true
+      }));
+    }
   }
 
   getTypeSignature(type: SignatureDefinitionType): IEntity | null {

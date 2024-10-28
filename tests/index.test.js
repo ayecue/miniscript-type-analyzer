@@ -737,5 +737,26 @@ describe('type-manager', () => {
 
       expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['string']);
     });
+
+    test('should return entity of custom type on merged doc', () => {
+      const doc1 = getDocument(`
+        // @type test
+        foo = {}
+        foo.xxx = "was"
+
+        // @description This function returns a file!
+        // @param {string} name
+        // @return {test}
+        bar = function
+        end function
+      `);
+      const doc2 = getDocument(`
+        abc = bar.xxx
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const scope = mergedDoc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['string']);
+    });
   });
 });

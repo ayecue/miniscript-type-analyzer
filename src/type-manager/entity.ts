@@ -504,6 +504,20 @@ export class Entity implements IEntity {
       values: options.values ?? this.values
     });
 
+    if (options.disableCascade) {
+      newCopy._values = new Map(
+        Array.from(this._values, ([key, value]) => [
+          key,
+          value.copy({
+            container: options.container,
+            line: options.line,
+            context: newCopy,
+            values: value.values
+          })
+        ])
+      );
+    }
+
     return newCopy;
   }
 }

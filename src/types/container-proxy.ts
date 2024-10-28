@@ -19,6 +19,7 @@ export interface IContainerProxy {
 
   getTypeSignature(type: SignatureDefinitionType): IEntity | null;
   setCustomType(type: SignatureDefinitionType, entitiy: IEntity): void;
+  mergeCustomTypes(proxy: IContainerProxy): void;
   searchDefinitionMatches(
     types: string | SignatureDefinitionType[],
     property: string

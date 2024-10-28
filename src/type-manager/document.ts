@@ -310,6 +310,7 @@ export class Document implements IDocument {
       newTypeDoc._intrinscis.list.extend(
         typeDoc._intrinscis.list.copy({ line: -1 })
       );
+      newTypeDoc._container.mergeCustomTypes(typeDoc._container);
     }
 
     newTypeDoc.analyze();
