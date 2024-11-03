@@ -738,6 +738,74 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['string']);
     });
 
+    test('should return entity of custom type virtual property', () => {
+      const doc = getDocument(`
+        // @type test
+        // @property {number} moo
+        foo = {}
+        foo.xxx = "was"
+
+        // @description This function returns a file!
+        // @param {string} name
+        // @return {test}
+        bar = function
+        end function
+
+
+        abc = bar.moo
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['number']);
+    });
+
+    test('should return entity of custom type virtual nested property', () => {
+      const doc = getDocument(`
+        // @type test
+        // @property {map} moo
+        // @property {list} moo.bar
+        foo = {}
+        foo.xxx = "was"
+
+        // @description This function returns a file!
+        // @param {string} name
+        // @return {test}
+        bar = function
+        end function
+
+
+        abc = bar.moo.bar
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['list']);
+    });
+
+    test('should return entity of child custom type virtual nested property', () => {
+      const doc = getDocument(`
+        // @type test
+        // @property {map} moo
+        // @property {list} moo.bar
+        foo = {}
+        foo.xxx = "was"
+
+        // @type teq
+        teq = new foo
+
+        // @description This function returns a file!
+        // @param {string} name
+        // @return {teq}
+        bar = function
+        end function
+
+
+        abc = bar.moo.bar
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['list']);
+    });
+
     test('should return entity of custom type on merged doc', () => {
       const doc1 = getDocument(`
         // @type test

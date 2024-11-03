@@ -24,7 +24,8 @@ import {
   ASTParenthesisExpression,
   ASTSliceExpression,
   ASTType,
-  ASTUnaryExpression
+  ASTUnaryExpression,
+  Keyword
 } from 'miniscript-core';
 
 import {
@@ -47,6 +48,7 @@ import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information
 import { createResolveChain } from '../utils/get-ast-chain';
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 import { Entity } from './entity';
+import { parseMapDescription } from '../utils/parse-map-description';
 
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;
@@ -78,7 +80,7 @@ export class Aggregator implements IAggregator {
     });
   }
 
-  protected getCommentRelatedToMap(item: ASTBase): string | null {
+  protected createMapDescription(item: ASTBase): string | null {
     const previousItem = this._document.getLastASTItemOfLine(
       item.start.line - 1
     );
@@ -114,21 +116,32 @@ export class Aggregator implements IAggregator {
   }
 
   protected createCustomTypeFromMap(item: ASTBase, entity: IEntity): void {
-    const comment = this.getCommentRelatedToMap(item);
+    const comment = this.createMapDescription(item);
 
     if (comment == null) {
       return;
     }
 
-    const result = comment.match(/@type\s+([a-zA-Z0-9_]+)/);
+    const result = parseMapDescription(comment);
 
     if (result == null) {
       return;
     }
 
-    const [_, type] = result;
+    result.properties.forEach((property) => {
+      if (property.path === '__isa') {
+        return;
+      }
 
-    this._scope.setCustomType(type, entity);
+      const path = property.path.split('.');
+      const propertyEntity = this.factory(CompletionItemKind.Property)
+        .addType(property.type)
+        .setLabel(path[path.length - 1]);
+
+      this.setEntityInPath(entity, path, propertyEntity);
+    });
+
+    this._scope.setCustomType(result.type, entity);
   }
 
   protected createFunctionDescription(
@@ -569,11 +582,12 @@ export class Aggregator implements IAggregator {
       return null;
     }
 
-    if (first.unary?.operator === 'new' && current !== null) {
+    if (first.unary?.operator === Keyword.New && current !== null) {
       const newInstance = this.factory(CompletionItemKind.Variable)
         .addType(SignatureDefinitionBaseType.Map)
         .setLabel(current.label);
       newInstance.setProperty('__isa', current);
+      this.createCustomTypeFromMap(first.unary, newInstance);
       current = newInstance;
     }
 
@@ -615,13 +629,50 @@ export class Aggregator implements IAggregator {
         return null;
       }
 
-      if (item.unary?.operator === 'new' && current !== null) {
+      if (item.unary?.operator === Keyword.New && current !== null) {
         const newInstance = this.factory(CompletionItemKind.Property)
           .addType(SignatureDefinitionBaseType.Map)
           .setLabel(current.label);
         newInstance.setProperty('__isa', current);
+        this.createCustomTypeFromMap(item.unary, newInstance);
         current = newInstance;
       }
+    }
+
+    return current;
+  }
+
+  setEntityInPath(source: IEntity, path: string[], value: IEntity): boolean {
+    let current: IEntity = source;
+
+    for (let index = 0; index < path.length - 1; index++) {
+      const key = path[index];
+      let next = current.resolveProperty(key);
+
+      if (next == null) {
+        const newEntity = this.factory(CompletionItemKind.Property).addType(SignatureDefinitionBaseType.Map).setLabel(key);
+        current.setProperty(key, newEntity);
+        next = newEntity;
+      }
+
+      current = next;
+    }
+
+    return current.setProperty(path[path.length - 1], value);
+  }
+
+  getEntityInPath(source: IEntity, path: string[]): IEntity | null {
+    let current: IEntity = source;
+
+    for (let index = 0; index < path.length; index++) {
+      const key = path[index];
+      const next = current.resolveProperty(key);
+
+      if (next == null) {
+        return null;
+      }
+
+      current = next;
     }
 
     return current;
