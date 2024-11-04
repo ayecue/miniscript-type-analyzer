@@ -30,9 +30,9 @@ function parseFunctionBlock(def: Block) {
       types: it.type.split('|'),
       opt: it.optional
     }));
-  const returns = def.tags.find(
-    (it) => it.tag === FunctionBlockTag.Return
-  ) ?? { type: 'any' };
+  const returns = def.tags.find((it) => it.tag === FunctionBlockTag.Return) ?? {
+    type: 'any'
+  };
   const examples = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Example)
     .map(convertSpecToString);

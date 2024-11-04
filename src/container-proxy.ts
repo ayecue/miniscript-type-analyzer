@@ -73,7 +73,8 @@ export class ContainerProxy implements IContainerProxy {
       const entity = proxy._types.get(type);
       if (entity == null) continue;
       this.setCustomType(type, entity.copy({
-        disableCascade: true
+        deepCopy: true,
+        line: -1
       }));
     }
   }

@@ -1,6 +1,6 @@
 {
   "name": "miniscript-type-analyzer",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "",
   "main": "dist/index",
   "typings": "dist/index",

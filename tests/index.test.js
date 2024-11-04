@@ -826,5 +826,41 @@ describe('type-manager', () => {
 
       expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['string']);
     });
+
+    test('should return identifier of custom type on merged doc', () => {
+      const doc1 = getDocument(`
+        // @type Bar
+        // @property {string} virtualMoo
+        Bar = {}
+        Bar.moo = ""
+        // @return {number}
+        Bar.test = function(functionName)
+          return self
+        end function
+
+        // @type Foo
+        Foo = new Bar
+        // @return {Foo}
+        Foo.New = function(message)
+          result = new Foo
+          return result
+        end function
+      `);
+      const doc2 = getDocument(`
+        test = Foo.New
+        abc = test.test
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const scope = mergedDoc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['number']);
+      expect(Array.from(scope.resolveProperty('test').getAllIdentifier().keys())).toEqual([
+        '__isa',
+        'New',
+        'virtualMoo',
+        'moo',
+        'test',
+      ]);
+    });
   });
 });

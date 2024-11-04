@@ -35,7 +35,7 @@ export type EntityCopyOptions = Partial<
     | 'isFromSignature'
   >
 > & {
-  disableCascade?: boolean;
+  deepCopy?: boolean;
 };
 
 export interface IEntityPropertyHandler<T> {

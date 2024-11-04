@@ -47,8 +47,8 @@ import { createExpressionId } from '../utils/create-expression-id';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { createResolveChain } from '../utils/get-ast-chain';
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
-import { Entity } from './entity';
 import { parseMapDescription } from '../utils/parse-map-description';
+import { Entity } from './entity';
 
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;
@@ -650,7 +650,9 @@ export class Aggregator implements IAggregator {
       let next = current.resolveProperty(key);
 
       if (next == null) {
-        const newEntity = this.factory(CompletionItemKind.Property).addType(SignatureDefinitionBaseType.Map).setLabel(key);
+        const newEntity = this.factory(CompletionItemKind.Property)
+          .addType(SignatureDefinitionBaseType.Map)
+          .setLabel(key);
         current.setProperty(key, newEntity);
         next = newEntity;
       }

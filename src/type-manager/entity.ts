@@ -434,13 +434,6 @@ export class Entity implements IEntity {
 
   getAllIdentifier(): Map<string, CompletionItem> {
     const properties = new Map();
-    const isaEntity = this._values.get('i:__isa');
-
-    if (isaEntity != null) {
-      for (const keyPair of isaEntity.getAllIdentifier()) {
-        properties.set(...keyPair);
-      }
-    }
 
     for (const type of this._types) {
       const items = this._container.getAllIdentifier(type);
@@ -504,11 +497,12 @@ export class Entity implements IEntity {
       values: options.values ?? this.values
     });
 
-    if (options.disableCascade) {
+    if (options.deepCopy) {
       newCopy._values = new Map(
         Array.from(this._values, ([key, value]) => [
           key,
           value.copy({
+            deepCopy: options.deepCopy,
             container: options.container,
             line: options.line,
             context: newCopy,
