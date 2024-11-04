@@ -678,6 +678,37 @@ describe('type-manager', () => {
       expect(assignments.length).toEqual(1);
       expect(assignments[0].start.line).toEqual(5);
     });
+
+    test('should return all assignments even in instances with multiple assignment expressions', () => {
+      const doc1 = getDocument(`
+        // @type Bar
+        Bar = {}
+        Bar.moo = ""
+        Bar.test = function(functionName)
+          return self
+        end function
+
+        // @type Foo
+        Foo = new Bar
+        // @return {Foo}
+        Foo.New = function(message)
+          result = new Foo
+          return result
+        end function
+      `);
+      const doc2 = getDocument(`
+        Foo = "was"
+        test = Foo.New
+        Foo
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const line = mergedDoc.root.lines[4];
+      const assignments = mergedDoc.resolveAvailableAssignments(line[0]);
+
+      expect(assignments.length).toEqual(2);
+      expect(assignments[0].start.line).toEqual(10);
+      expect(assignments[1].start.line).toEqual(2);
+    });
   });
 
   describe('get identifiers', () => {

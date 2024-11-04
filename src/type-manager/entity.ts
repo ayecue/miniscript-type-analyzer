@@ -403,6 +403,7 @@ export class Entity implements IEntity {
 
     this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
+    this._definitions.push(...entity.definitions);
     this.addType(...entity.types);
     for (const [key, value] of entity.values) {
       const item = this.values.get(key);

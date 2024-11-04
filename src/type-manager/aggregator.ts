@@ -788,6 +788,8 @@ export class Aggregator implements IAggregator {
           .addType(SignatureDefinitionBaseType.Any)
           .setLine(item.start.line);
 
+      value.definitions.push(item);
+
       this.defineNamespace(item.variable, value);
 
       let variableId = createExpressionId(item.variable);
@@ -806,8 +808,6 @@ export class Aggregator implements IAggregator {
       }
 
       const definition = definitions.get(variableId);
-
-      value.definitions.push(item);
 
       if (definition) {
         definition.push(item);
