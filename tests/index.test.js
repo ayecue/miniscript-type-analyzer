@@ -860,6 +860,18 @@ describe('type-manager', () => {
         'virtualMoo',
         'moo',
         'test',
+        'remove',
+        'push',
+        'pull',
+        'pop',
+        'shuffle',
+        'sum',
+        'hasIndex',
+        'indexOf',
+        'indexes',
+        'len',
+        'values',
+        'replace'
       ]);
     });
   });

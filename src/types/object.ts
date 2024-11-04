@@ -66,6 +66,8 @@ export interface IEntity {
   values: Map<string, IEntity>;
   label: string;
   context: IEntity | null;
+  getIsa(): IEntity | null;
+  hasIsa(): boolean;
   addSignatureType(definition: SignatureDefinition): this;
   hasProperty(name: string | IEntity): boolean;
   resolveProperty(name: string | IEntity, noInvoke?: boolean): IEntity | null;

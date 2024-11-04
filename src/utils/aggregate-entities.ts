@@ -6,7 +6,7 @@ export const aggregateEntity = (source: IEntity): IEntity[] => {
 
   while (isaEntity != null) {
     entities.push(isaEntity);
-    isaEntity = isaEntity.values.get('i:__isa');
+    isaEntity = isaEntity.getIsa();
   }
 
   return entities;

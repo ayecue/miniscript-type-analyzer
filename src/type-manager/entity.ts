@@ -260,6 +260,14 @@ export class Entity implements IEntity {
     return this._context != null && !this._context.isAPI;
   }
 
+  getIsa() {
+    return this._values.get('i:__isa') ?? null;
+  }
+
+  hasIsa() {
+    return this._values.has('i:__isa');
+  }
+
   isAPI() {
     return this._isAPI;
   }

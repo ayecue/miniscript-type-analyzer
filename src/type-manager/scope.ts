@@ -76,6 +76,14 @@ export class Scope implements IScope {
       }).addType(SignatureDefinitionBaseType.Map);
   }
 
+  getIsa(): IEntity | null {
+    return null;
+  }
+
+  hasIsa(): boolean {
+    return false;
+  }
+
   setCustomType(type: SignatureDefinitionType, entitiy: IEntity): void {
     this._container.setCustomType(type, entitiy);
   }

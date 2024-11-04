@@ -14,7 +14,7 @@ export const lookupProperty = (
       return item;
     }
 
-    const isa = current.values.get('i:__isa');
+    const isa = current.getIsa();
 
     if (isa == null) {
       break;

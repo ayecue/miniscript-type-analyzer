@@ -541,7 +541,7 @@ export class Aggregator implements IAggregator {
       } else if (first.getter.name === 'super') {
         const context = this._document
           .getScopeContext(first.ref.scope)
-          ?.scope.context?.values.get('i:__isa');
+          ?.scope.context?.getIsa();
 
         if (context == null) {
           current = this.factory(CompletionItemKind.Constant)
