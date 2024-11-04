@@ -49,6 +49,7 @@ import { createResolveChain } from '../utils/get-ast-chain';
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 import { parseMapDescription } from '../utils/parse-map-description';
 import { Entity } from './entity';
+import { merge } from '../utils/merge';
 
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;
@@ -738,7 +739,7 @@ export class Aggregator implements IAggregator {
       for (const definitionId of definitions.keys()) {
         if (definitionId.includes(query)) {
           const definition = definitions.get(definitionId)!;
-          assignments.push(...definition);
+          merge(assignments, definition);
         }
       }
     }
@@ -773,7 +774,7 @@ export class Aggregator implements IAggregator {
       if (aggregator == null) continue;
       const entity = aggregator.resolveNamespace(item, true);
       if (entity == null) continue;
-      assignments.push(...entity.definitions);
+      merge(assignments, entity.definitions);
     }
 
     return assignments;

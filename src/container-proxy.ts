@@ -150,10 +150,10 @@ export class ContainerProxy implements IContainerProxy {
     const properties = new Map();
 
     if (type === SignatureDefinitionBaseType.Any) {
-      for (const type of this._container.getAllVisibleTypes()) {
-        this.injectTypeIdentifiers(properties, type);
+      const types = this._container.getAllVisibleTypes();
+      for (let index = 0; index < types.length; index++) {
+        this.injectTypeIdentifiers(properties, types[index]);
       }
-
       return properties;
     }
 

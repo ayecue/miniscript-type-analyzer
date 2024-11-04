@@ -8,7 +8,8 @@ export const injectIdentifers = (
 ) => {
   const entities = aggregateEntity(source);
 
-  for (const entity of entities) {
+  for (let index = 0; index < entities.length; index++) {
+    const entity = entities[index];
     for (const [property, value] of entity.values) {
       if (property.startsWith('i:')) {
         const key = property.slice(2);

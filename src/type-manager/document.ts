@@ -23,6 +23,7 @@ import { IEntity } from '../types/object';
 import { Aggregator } from './aggregator';
 import { Entity } from './entity';
 import { Scope } from './scope';
+import { merge } from '../utils/merge';
 
 export class Document implements IDocument {
   protected _root: ASTChunk;
@@ -249,7 +250,7 @@ export class Document implements IDocument {
       for (const definitionId of definitions.keys()) {
         if (definitionId.includes(query)) {
           const definition = definitions.get(definitionId)!;
-          assignments.push(...definition);
+          merge(assignments, definition);
         }
       }
     }
@@ -293,7 +294,8 @@ export class Document implements IDocument {
       container: this._container.copy()
     });
 
-    for (const typeDoc of typeDocs) {
+    for (let index = 0; index < typeDocs.length; index++) {
+      const typeDoc = typeDocs[index];
       newTypeDoc._globals.extend(typeDoc._globals.copy({ line: -1 }));
       newTypeDoc._intrinscis.map.extend(
         typeDoc._intrinscis.map.copy({ line: -1 })

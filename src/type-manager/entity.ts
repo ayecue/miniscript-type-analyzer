@@ -20,6 +20,8 @@ import { injectIdentifers } from '../utils/inject-identifiers';
 import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
 import { lookupProperty } from '../utils/lookup-property';
 import { ObjectSet } from '../utils/object-set';
+import { merge } from '../utils/merge';
+import { mergeUnique } from '../utils/mergeUnique';
 
 export const resolveEntity = (
   container: IContainerProxy,
@@ -330,7 +332,9 @@ export class Entity implements IEntity {
   }
 
   addType(...types: SignatureDefinitionType[]): this {
-    for (const type of types) this._types.add(type);
+    for (let index = 0; index < types.length; index++) {
+      this._types.add(types[index]);
+    }
     return this;
   }
 
@@ -404,6 +408,7 @@ export class Entity implements IEntity {
     this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
     this._definitions.push(...entity.definitions);
+    mergeUnique(this._definitions, entity.definitions);
     this.addType(...entity.types);
     for (const [key, value] of entity.values) {
       const item = this.values.get(key);
