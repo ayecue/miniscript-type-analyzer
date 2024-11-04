@@ -649,6 +649,35 @@ describe('type-manager', () => {
       expect(assignments[1].start.line).toEqual(7);
       expect(assignments[2].start.line).toEqual(2);
     });
+
+    test('should return all assignments even in instances', () => {
+      const doc1 = getDocument(`
+        // @type Bar
+        Bar = {}
+        Bar.moo = ""
+        Bar.test = function(functionName)
+          return self
+        end function
+
+        // @type Foo
+        Foo = new Bar
+        // @return {Foo}
+        Foo.New = function(message)
+          result = new Foo
+          return result
+        end function
+      `);
+      const doc2 = getDocument(`
+        test = Foo.New
+        test.test
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const line = mergedDoc.root.lines[3];
+      const assignments = mergedDoc.resolveAvailableAssignments(line[0]);
+
+      expect(assignments.length).toEqual(1);
+      expect(assignments[0].start.line).toEqual(5);
+    });
   });
 
   describe('get identifiers', () => {

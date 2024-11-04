@@ -771,8 +771,9 @@ export class Aggregator implements IAggregator {
 
     for (const aggregator of aggregators) {
       if (aggregator == null) continue;
-      const definition = aggregator._definitions.get(itemId);
-      if (definition != null) assignments.push(...definition);
+      const entity = aggregator.resolveNamespace(item, true);
+      if (entity == null) continue;
+      assignments.push(...entity.definitions);
     }
 
     return assignments;
@@ -805,6 +806,8 @@ export class Aggregator implements IAggregator {
       }
 
       const definition = definitions.get(variableId);
+
+      value.definitions.push(item);
 
       if (definition) {
         definition.push(item);

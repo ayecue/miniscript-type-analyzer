@@ -3,6 +3,7 @@ import {
   SignatureDefinition,
   SignatureDefinitionType
 } from 'meta-utils';
+import { ASTAssignmentStatement } from 'miniscript-core';
 
 import { ObjectSet } from '../utils/object-set';
 import { CompletionItem, CompletionItemKind } from './completion';
@@ -20,6 +21,7 @@ export interface EntityOptions {
   values?: Map<string, IEntity>;
   returnEntity?: IEntity;
   context?: IEntity;
+  definitions?: ASTAssignmentStatement[];
 }
 
 export type EntityCopyOptions = Partial<
@@ -33,6 +35,7 @@ export type EntityCopyOptions = Partial<
     | 'values'
     | 'isAPI'
     | 'isFromSignature'
+    | 'definitions'
   >
 > & {
   deepCopy?: boolean;
@@ -66,6 +69,7 @@ export interface IEntity {
   values: Map<string, IEntity>;
   label: string;
   context: IEntity | null;
+  definitions: ASTAssignmentStatement[];
   getIsa(): IEntity | null;
   hasIsa(): boolean;
   addSignatureType(definition: SignatureDefinition): this;

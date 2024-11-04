@@ -23,6 +23,10 @@ export class Scope implements IScope {
   protected _locals: IEntity;
   protected _container: IContainerProxy;
 
+  get definitions() {
+    return [];
+  }
+
   get signatureDefinitions(): ObjectSet<SignatureDefinition> {
     return null;
   }
