@@ -140,7 +140,7 @@ export class ContainerProxy implements IContainerProxy {
     const signature = this.getTypeSignature(type);
     if (signature == null) return;
     injectIdentifers(properties, signature);
-    if (this._customTypes.has(type)) {
+    if (this._types.has(type)) {
       const map = this._primitives.get(SignatureDefinitionBaseType.Map);
       injectIdentifers(properties, map);
     }
