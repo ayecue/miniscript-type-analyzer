@@ -772,9 +772,8 @@ export class Aggregator implements IAggregator {
 
     for (const aggregator of aggregators) {
       if (aggregator == null) continue;
-      const entity = aggregator.resolveNamespace(item, true);
-      if (entity == null) continue;
-      merge(assignments, entity.definitions);
+      const definition = aggregator._definitions.get(itemId);
+      if (definition != null) assignments.push(...definition);
     }
 
     return assignments;
@@ -788,8 +787,6 @@ export class Aggregator implements IAggregator {
         this.factory(CompletionItemKind.Variable)
           .addType(SignatureDefinitionBaseType.Any)
           .setLine(item.start.line);
-
-      value.definitions.push(item);
 
       this.defineNamespace(item.variable, value);
 
@@ -814,6 +811,18 @@ export class Aggregator implements IAggregator {
         definition.push(item);
       } else {
         definitions.set(variableId, [item]);
+      }
+    }
+  }
+
+  extend(aggregator: Aggregator): void {
+    for (const [key, value] of aggregator.definitions) {
+      const definition = this.definitions.get(key);
+
+      if (definition) {
+        definition.push(...value);
+      } else {
+        this.definitions.set(key, value);
       }
     }
   }

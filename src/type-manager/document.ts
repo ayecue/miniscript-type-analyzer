@@ -317,6 +317,11 @@ export class Document implements IDocument {
 
     newTypeDoc.analyze();
 
+    for (let index = 0; index < typeDocs.length; index++) {
+      const typeDoc = typeDocs[index];
+      newTypeDoc.getRootScopeContext().aggregator.extend(typeDoc.getRootScopeContext().aggregator);
+    }
+
     return newTypeDoc;
   }
 }
