@@ -50,6 +50,7 @@ import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 import { parseMapDescription } from '../utils/parse-map-description';
 import { Entity } from './entity';
 import { merge } from '../utils/merge';
+import { mergeUnique } from '../utils/mergeUnique';
 
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;
@@ -773,7 +774,7 @@ export class Aggregator implements IAggregator {
     for (const aggregator of aggregators) {
       if (aggregator == null) continue;
       const definition = aggregator._definitions.get(itemId);
-      if (definition != null) assignments.push(...definition);
+      if (definition != null) merge(assignments, definition);
     }
 
     return assignments;
@@ -820,7 +821,7 @@ export class Aggregator implements IAggregator {
       const definition = this.definitions.get(key);
 
       if (definition) {
-        definition.push(...value);
+        mergeUnique(definition, value);
       } else {
         this.definitions.set(key, value);
       }
