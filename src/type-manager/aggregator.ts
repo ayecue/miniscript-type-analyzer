@@ -58,6 +58,7 @@ export class Aggregator implements IAggregator {
   protected _document: IDocument;
   protected _root: ASTBaseBlockWithScope;
   protected _definitions: Map<string, ASTAssignmentStatement[]>;
+  private _lastModifiedProperty: IEntity | null;
 
   get definitions(): Map<string, ASTAssignmentStatement[]> {
     return this._definitions;
@@ -73,6 +74,7 @@ export class Aggregator implements IAggregator {
     this._document = options.document;
     this._parent = (options.parent as Aggregator) ?? null;
     this._definitions = new Map();
+    this._lastModifiedProperty = null;
   }
 
   protected factory(kind: CompletionItemKind): IEntity {
@@ -687,9 +689,17 @@ export class Aggregator implements IAggregator {
     return this.resolveChain(astChain, noInvoke);
   }
 
+  private defineProperty(context: IEntity, name: string | IEntity, item: IEntity): boolean {
+    const success = context.setProperty(name, item);
+    this._lastModifiedProperty = context.resolveProperty(name, true);
+    return success;
+  }
+
   defineNamespace(item: ASTBase, container: IEntity): boolean {
     const astChain = createResolveChain(item);
     const last = astChain.pop();
+
+    this._lastModifiedProperty = null;
 
     if (astChain.length > 0) {
       const resolvedContext = this.resolveChain(astChain);
@@ -699,16 +709,13 @@ export class Aggregator implements IAggregator {
       }
 
       if (isResolveChainItemWithMember(last)) {
-        return resolvedContext.setProperty(last.getter.name, container);
+        return this.defineProperty(resolvedContext, last.getter.name, container);
       } else if (isResolveChainItemWithIndex(last)) {
         if (isValidIdentifierLiteral(last.getter)) {
-          return resolvedContext.setProperty(
-            last.getter.value.toString(),
-            container
-          );
+          return this.defineProperty(resolvedContext, last.getter.value.toString(), container);
         } else {
           const index = this.resolveTypeWithDefault(last.getter);
-          return resolvedContext.setProperty(index, container);
+          return this.defineProperty(resolvedContext, index, container);
         }
       }
 
@@ -718,10 +725,37 @@ export class Aggregator implements IAggregator {
     const context: IEntity = this._scope;
 
     if (isResolveChainItemWithIdentifier(last)) {
-      return context.setProperty(last.getter.name, container);
+      return this.defineProperty(context, last.getter.name, container);
     }
 
     return false;
+  }
+
+  private addDefinition(item: ASTAssignmentStatement): void {
+    this._lastModifiedProperty?.definitions.push(item);
+
+    let variableId = createExpressionId(item.variable);
+    let definitions = this._definitions;
+
+    if (variableId.startsWith('globals.')) {
+      definitions =
+        this._document.getRootScopeContext().aggregator.definitions;
+      variableId = variableId.slice(8);
+    } else if (variableId.startsWith('locals.')) {
+      definitions = this._definitions;
+      variableId = variableId.slice(7);
+    } else if (variableId.startsWith('outer.')) {
+      definitions = this.parent.definitions;
+      variableId = variableId.slice(6);
+    }
+
+    const definition = definitions.get(variableId);
+
+    if (definition) {
+      definition.push(item);
+    } else {
+      definitions.set(variableId, [item]);
+    }
   }
 
   resolveAvailableAssignmentsWithQuery(
@@ -773,8 +807,8 @@ export class Aggregator implements IAggregator {
 
     for (const aggregator of aggregators) {
       if (aggregator == null) continue;
-      const definition = aggregator._definitions.get(itemId);
-      if (definition != null) merge(assignments, definition);
+      const entity = aggregator.resolveNamespace(item, true);
+      if (entity != null) merge(assignments, entity.definitions);
     }
 
     return assignments;
@@ -790,29 +824,7 @@ export class Aggregator implements IAggregator {
           .setLine(item.start.line);
 
       this.defineNamespace(item.variable, value);
-
-      let variableId = createExpressionId(item.variable);
-      let definitions = this._definitions;
-
-      if (variableId.startsWith('globals.')) {
-        definitions =
-          this._document.getRootScopeContext().aggregator.definitions;
-        variableId = variableId.slice(8);
-      } else if (variableId.startsWith('locals.')) {
-        definitions = this._definitions;
-        variableId = variableId.slice(7);
-      } else if (variableId.startsWith('outer.')) {
-        definitions = this.parent.definitions;
-        variableId = variableId.slice(6);
-      }
-
-      const definition = definitions.get(variableId);
-
-      if (definition) {
-        definition.push(item);
-      } else {
-        definitions.set(variableId, [item]);
-      }
+      this.addDefinition(item);
     }
   }
 

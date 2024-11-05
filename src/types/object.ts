@@ -69,6 +69,7 @@ export interface IEntity {
   values: Map<string, IEntity>;
   label: string;
   context: IEntity | null;
+  definitions: ASTAssignmentStatement[];
   getIsa(): IEntity | null;
   hasIsa(): boolean;
   addSignatureType(definition: SignatureDefinition): this;

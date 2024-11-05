@@ -20,6 +20,7 @@ import { injectIdentifers } from '../utils/inject-identifiers';
 import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
 import { lookupProperty } from '../utils/lookup-property';
 import { ObjectSet } from '../utils/object-set';
+import { mergeUnique } from '../utils/mergeUnique';
 
 export const resolveEntity = (
   container: IContainerProxy,
@@ -209,6 +210,11 @@ export class Entity implements IEntity {
   protected _values: Map<string, IEntity>;
   protected _isAPI: boolean;
   protected _isFromSignature: boolean;
+  protected _definitions: ASTAssignmentStatement[];
+
+  get definitions() {
+    return this._definitions;
+  }
 
   get kind() {
     return this._kind;
@@ -250,6 +256,7 @@ export class Entity implements IEntity {
     this._values = options.values ?? new Map();
     this._context = options.context ?? null;
     this._container = options.container;
+    this._definitions = options.definitions ?? [];
     this._returnEntity = options.returnEntity ?? null;
   }
 
@@ -505,7 +512,8 @@ export class Entity implements IEntity {
       ),
       types: new Set(this._types),
       returnEntity: this._returnEntity,
-      values: options.values ?? this.values
+      values: options.values ?? this.values,
+      definitions: options.definitions ?? this._definitions
     });
 
     if (options.deepCopy) {
@@ -521,6 +529,7 @@ export class Entity implements IEntity {
           })
         ])
       );
+      newCopy._definitions = [...this._definitions];
     }
 
     return newCopy;
