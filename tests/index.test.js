@@ -709,6 +709,21 @@ describe('type-manager', () => {
       expect(assignments[0].start.line).toEqual(10);
       expect(assignments[1].start.line).toEqual(2);
     });
+
+    test('should return all assignments in map constructor', () => {
+      const doc1 = getDocument(`
+        test = { "abc": "def" }
+      `);
+      const doc2 = getDocument(`
+        test.abc
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const line = mergedDoc.root.lines[2];
+      const assignments = mergedDoc.resolveAvailableAssignments(line[0]);
+
+      expect(assignments.length).toEqual(1);
+      expect(assignments[0].start.line).toEqual(2);
+    });
   });
 
   describe('get identifiers', () => {

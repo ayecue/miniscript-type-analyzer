@@ -19,7 +19,7 @@ import {
   Intrinsics,
   ScopeContext
 } from '../types/document';
-import { IEntity } from '../types/object';
+import { ASTDefinitionItem, IEntity } from '../types/object';
 import { Aggregator } from './aggregator';
 import { Entity } from './entity';
 import { Scope } from './scope';
@@ -258,7 +258,7 @@ export class Document implements IDocument {
     return assignments;
   }
 
-  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[] {
+  resolveAvailableAssignments(item: ASTBase): ASTDefinitionItem[] {
     return (
       this._scopeMapping
         .get(item.scope)

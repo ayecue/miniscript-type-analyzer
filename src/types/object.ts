@@ -3,11 +3,13 @@ import {
   SignatureDefinition,
   SignatureDefinitionType
 } from 'meta-utils';
-import { ASTAssignmentStatement } from 'miniscript-core';
+import { ASTAssignmentStatement, ASTMapKeyString } from 'miniscript-core';
 
 import { ObjectSet } from '../utils/object-set';
 import { CompletionItem, CompletionItemKind } from './completion';
 import { IContainerProxy } from './container-proxy';
+
+export type ASTDefinitionItem = ASTAssignmentStatement | ASTMapKeyString;
 
 export interface EntityOptions {
   kind: CompletionItemKind;
@@ -21,7 +23,7 @@ export interface EntityOptions {
   values?: Map<string, IEntity>;
   returnEntity?: IEntity;
   context?: IEntity;
-  definitions?: ASTAssignmentStatement[];
+  definitions?: ASTDefinitionItem[];
 }
 
 export type EntityCopyOptions = Partial<
@@ -69,7 +71,7 @@ export interface IEntity {
   values: Map<string, IEntity>;
   label: string;
   context: IEntity | null;
-  definitions: ASTAssignmentStatement[];
+  definitions: ASTDefinitionItem[];
   getIsa(): IEntity | null;
   hasIsa(): boolean;
   addSignatureType(definition: SignatureDefinition): this;

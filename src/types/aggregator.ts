@@ -1,11 +1,10 @@
 import {
-  ASTAssignmentStatement,
   ASTBase,
   ASTBaseBlockWithScope
 } from 'miniscript-core';
 
 import { IDocument } from './document';
-import { IEntity, IScope } from './object';
+import { ASTDefinitionItem, IEntity, IScope } from './object';
 
 export interface AggregatorOptions {
   parent?: IAggregator;
@@ -15,7 +14,7 @@ export interface AggregatorOptions {
 }
 
 export interface IAggregator {
-  definitions: Map<string, ASTAssignmentStatement[]>;
+  definitions: Map<string, ASTDefinitionItem[]>;
   parent: IAggregator | null;
 
   resolveType(item: ASTBase, noInvoke?: boolean): IEntity | null;
@@ -24,8 +23,8 @@ export interface IAggregator {
   setEntityInPath(source: IEntity, path: string[], value: IEntity): boolean;
   getEntityInPath(source: IEntity, path: string[]): IEntity | null;
   defineNamespace(item: ASTBase, entity: IEntity): boolean;
-  resolveAvailableAssignmentsWithQuery(query: string): ASTAssignmentStatement[];
-  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[];
+  resolveAvailableAssignmentsWithQuery(query: string): ASTDefinitionItem[];
+  resolveAvailableAssignments(item: ASTBase): ASTDefinitionItem[];
   extend(aggregator: IAggregator): void;
   analyze(): void;
 }

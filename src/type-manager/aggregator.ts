@@ -35,7 +35,7 @@ import {
 } from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
 import { IDocument } from '../types/document';
-import { IEntity, IScope } from '../types/object';
+import { ASTDefinitionItem, IEntity, IScope } from '../types/object';
 import {
   isResolveChainItemWithIdentifier,
   isResolveChainItemWithIndex,
@@ -57,10 +57,10 @@ export class Aggregator implements IAggregator {
   protected _scope: IScope;
   protected _document: IDocument;
   protected _root: ASTBaseBlockWithScope;
-  protected _definitions: Map<string, ASTAssignmentStatement[]>;
+  protected _definitions: Map<string, ASTDefinitionItem[]>;
   private _lastModifiedProperty: IEntity | null;
 
-  get definitions(): Map<string, ASTAssignmentStatement[]> {
+  get definitions(): Map<string, ASTDefinitionItem[]> {
     return this._definitions;
   }
 
@@ -303,10 +303,12 @@ export class Aggregator implements IAggregator {
       );
 
       if (field.key.type === ASTType.StringLiteral) {
+        const property = (field.key as ASTLiteral).value.toString();
         mapEntity.setProperty(
-          (field.key as ASTLiteral).value.toString(),
+          property,
           value
         );
+        mapEntity.values.get(`i:${property}`)?.definitions.push(field);
       } else {
         const key = this.resolveTypeWithDefault(field.key).setLine(
           field.start.line

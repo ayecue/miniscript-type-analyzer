@@ -5,11 +5,11 @@ import {
   SignatureDefinitionFunction,
   SignatureDefinitionType
 } from 'meta-utils';
-import { ASTAssignmentStatement } from 'miniscript-core';
 
 import { CompletionItem, CompletionItemKind } from '../types/completion';
 import { IContainerProxy } from '../types/container-proxy';
 import {
+  ASTDefinitionItem,
   EntityCopyOptions,
   EntityOptions,
   IEntity,
@@ -20,7 +20,6 @@ import { injectIdentifers } from '../utils/inject-identifiers';
 import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
 import { lookupProperty } from '../utils/lookup-property';
 import { ObjectSet } from '../utils/object-set';
-import { mergeUnique } from '../utils/mergeUnique';
 
 export const resolveEntity = (
   container: IContainerProxy,
@@ -212,7 +211,7 @@ export class Entity implements IEntity {
   protected _values: Map<string, IEntity>;
   protected _isAPI: boolean;
   protected _isFromSignature: boolean;
-  protected _definitions: ASTAssignmentStatement[];
+  protected _definitions: ASTDefinitionItem[];
 
   get definitions() {
     return this._definitions;

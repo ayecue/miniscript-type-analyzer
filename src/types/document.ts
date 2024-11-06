@@ -1,5 +1,4 @@
 import {
-  ASTAssignmentStatement,
   ASTBase,
   ASTBaseBlockWithScope,
   ASTChunk,
@@ -8,7 +7,7 @@ import {
 
 import { IAggregator } from './aggregator';
 import { IContainerProxy } from './container-proxy';
-import { IEntity, IScope } from './object';
+import { ASTDefinitionItem, IEntity, IScope } from './object';
 
 export interface DocumentOptions {
   root: ASTChunk;
@@ -36,8 +35,8 @@ export interface IDocument {
   getScopeContext(block: ASTBaseBlockWithScope): ScopeContext | null;
   getAllScopeContexts(): ScopeContext[];
   getRootScopeContext(): ScopeContext;
-  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[];
-  resolveAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[];
+  resolveAvailableAssignments(item: ASTBase): ASTDefinitionItem[];
+  resolveAllAssignmentsWithQuery(query: string): ASTDefinitionItem[];
   resolveType(item: ASTBase, noInvoke?: boolean): IEntity | null;
   resolveTypeWithDefault(item: ASTBase, noInvoke?: boolean): IEntity;
   resolveNamespace(item: ASTBase, noInvoke?: boolean): IEntity | null;
