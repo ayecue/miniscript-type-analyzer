@@ -111,7 +111,8 @@ const identifierPropertyHandler: IEntityPropertyHandler<string> = {
         entity.copy({
           container,
           label: property,
-          context: origin
+          context: origin,
+          definitions: []
         })
       );
     }
@@ -189,7 +190,8 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
           entity.copy({
             container,
             label: type,
-            context: origin
+            context: origin,
+            definitions: []
           })
         );
       }
