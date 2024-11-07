@@ -8,7 +8,7 @@ export { ObjectSet, ObjectSetIterator } from './utils/object-set';
 export { AggregatorOptions, IAggregator, DEFAULT_CUSTOM_FUNCTION_DESCRIPTION } from './types/aggregator';
 export { CompletionItemKind, CompletionItem } from './types/completion';
 export { DocumentOptions, IDocument, ScopeContext, Intrinsics } from './types/document';
-export { EntityOptions, IEntityPropertyHandler, IEntity, ScopeOptions, IScope } from './types/object';
+export { EntityOptions, IEntityPropertyHandler, IEntity, ScopeOptions, IScope, ASTDefinitionItem } from './types/object';
 export { ContainerProxyOptions, IContainerProxy } from './types/container-proxy';
 export {
   ResolveChainItem,
@@ -28,6 +28,7 @@ export { TypeManagerOptions } from './types/type-manager';
 export { injectIdentifers } from './utils/inject-identifiers';
 export { isEligibleForProperties } from './utils/is-eligible-for-properties';
 export { lookupProperty } from './utils/lookup-property';
+export { aggregateEntity } from './utils/aggregate-entities';
 export { Entity } from './type-manager/entity';
 export { Scope } from './type-manager/scope';
 export { Aggregator } from './type-manager/aggregator';
