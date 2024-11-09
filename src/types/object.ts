@@ -9,7 +9,10 @@ import { ObjectSet } from '../utils/object-set';
 import { CompletionItem, CompletionItemKind } from './completion';
 import { IContainerProxy } from './container-proxy';
 
-export type ASTDefinitionItem = ASTAssignmentStatement | ASTMapKeyString;
+export type ASTDefinitionItem = {
+  source: string;
+  node: ASTAssignmentStatement | ASTMapKeyString;
+};
 
 export interface EntityOptions {
   kind: CompletionItemKind;

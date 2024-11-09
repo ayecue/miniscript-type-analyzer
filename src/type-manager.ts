@@ -17,6 +17,7 @@ export class TypeManager {
 
   analyze(identifier: string, chunk: ASTChunk): Document {
     const typeDoc = new Document({
+      source: identifier,
       container: this._container.copy(),
       root: chunk
     });

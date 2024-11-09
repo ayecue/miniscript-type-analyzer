@@ -10,6 +10,7 @@ import { IContainerProxy } from './container-proxy';
 import { ASTDefinitionItem, IEntity, IScope } from './object';
 
 export interface DocumentOptions {
+  source: string;
   root: ASTChunk;
   container: IContainerProxy;
   scopeMapping?: WeakMap<ASTBaseBlockWithScope, ScopeContext>;
@@ -24,6 +25,7 @@ export interface IDocument {
   api: IEntity;
   globals: IEntity;
   container: IContainerProxy;
+  source: string;
 
   // used for function comments mainly
   getLastASTItemOfLine(line: number): ASTBase;

@@ -47,10 +47,10 @@ import { createExpressionId } from '../utils/create-expression-id';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { createResolveChain } from '../utils/get-ast-chain';
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
-import { parseMapDescription } from '../utils/parse-map-description';
-import { Entity } from './entity';
 import { merge } from '../utils/merge';
 import { mergeUnique } from '../utils/mergeUnique';
+import { parseMapDescription } from '../utils/parse-map-description';
+import { Entity } from './entity';
 
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;
@@ -304,11 +304,11 @@ export class Aggregator implements IAggregator {
 
       if (field.key.type === ASTType.StringLiteral) {
         const property = (field.key as ASTLiteral).value.toString();
-        mapEntity.setProperty(
-          property,
-          value
-        );
-        mapEntity.values.get(`i:${property}`)?.definitions.push(field);
+        mapEntity.setProperty(property, value);
+        mapEntity.values.get(`i:${property}`)?.definitions.push({
+          source: this._document.source,
+          node: field
+        });
       } else {
         const key = this.resolveTypeWithDefault(field.key).setLine(
           field.start.line
@@ -691,7 +691,11 @@ export class Aggregator implements IAggregator {
     return this.resolveChain(astChain, noInvoke);
   }
 
-  private defineProperty(context: IEntity, name: string | IEntity, item: IEntity): boolean {
+  private defineProperty(
+    context: IEntity,
+    name: string | IEntity,
+    item: IEntity
+  ): boolean {
     const success = context.setProperty(name, item);
     this._lastModifiedProperty = context.resolveProperty(name, true);
     return success;
@@ -711,10 +715,18 @@ export class Aggregator implements IAggregator {
       }
 
       if (isResolveChainItemWithMember(last)) {
-        return this.defineProperty(resolvedContext, last.getter.name, container);
+        return this.defineProperty(
+          resolvedContext,
+          last.getter.name,
+          container
+        );
       } else if (isResolveChainItemWithIndex(last)) {
         if (isValidIdentifierLiteral(last.getter)) {
-          return this.defineProperty(resolvedContext, last.getter.value.toString(), container);
+          return this.defineProperty(
+            resolvedContext,
+            last.getter.value.toString(),
+            container
+          );
         } else {
           const index = this.resolveTypeWithDefault(last.getter);
           return this.defineProperty(resolvedContext, index, container);
@@ -734,14 +746,16 @@ export class Aggregator implements IAggregator {
   }
 
   private addDefinition(item: ASTAssignmentStatement): void {
-    this._lastModifiedProperty?.definitions.push(item);
+    this._lastModifiedProperty?.definitions.push({
+      source: this._document.source,
+      node: item
+    });
 
     let variableId = createExpressionId(item.variable);
     let definitions = this._definitions;
 
     if (variableId.startsWith('globals.')) {
-      definitions =
-        this._document.getRootScopeContext().aggregator.definitions;
+      definitions = this._document.getRootScopeContext().aggregator.definitions;
       variableId = variableId.slice(8);
     } else if (variableId.startsWith('locals.')) {
       definitions = this._definitions;
@@ -754,16 +768,22 @@ export class Aggregator implements IAggregator {
     const definition = definitions.get(variableId);
 
     if (definition) {
-      definition.push(item);
+      definition.push({
+        source: this._document.source,
+        node: item
+      });
     } else {
-      definitions.set(variableId, [item]);
+      definitions.set(variableId, [
+        {
+          source: this._document.source,
+          node: item
+        }
+      ]);
     }
   }
 
-  resolveAvailableAssignmentsWithQuery(
-    query: string
-  ): ASTAssignmentStatement[] {
-    const assignments: ASTAssignmentStatement[] = [];
+  resolveAvailableAssignmentsWithQuery(query: string): ASTDefinitionItem[] {
+    const assignments: ASTDefinitionItem[] = [];
     const aggregators = new Set([
       this,
       this._parent,
@@ -784,7 +804,7 @@ export class Aggregator implements IAggregator {
     return assignments;
   }
 
-  resolveAvailableAssignments(item: ASTBase): ASTAssignmentStatement[] {
+  resolveAvailableAssignments(item: ASTBase): ASTDefinitionItem[] {
     let itemId = createExpressionId(item);
     let aggregator: Aggregator = this;
 
@@ -800,7 +820,7 @@ export class Aggregator implements IAggregator {
       itemId = itemId.slice(6);
     }
 
-    const assignments: ASTAssignmentStatement[] = [];
+    const assignments: ASTDefinitionItem[] = [];
     const aggregators = new Set([
       aggregator,
       aggregator._parent,

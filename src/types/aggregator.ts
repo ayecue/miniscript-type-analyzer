@@ -1,7 +1,4 @@
-import {
-  ASTBase,
-  ASTBaseBlockWithScope
-} from 'miniscript-core';
+import { ASTBase, ASTBaseBlockWithScope } from 'miniscript-core';
 
 import { IDocument } from './document';
 import { ASTDefinitionItem, IEntity, IScope } from './object';

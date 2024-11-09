@@ -20,10 +20,10 @@ import {
   ScopeContext
 } from '../types/document';
 import { ASTDefinitionItem, IEntity } from '../types/object';
+import { merge } from '../utils/merge';
 import { Aggregator } from './aggregator';
 import { Entity } from './entity';
 import { Scope } from './scope';
-import { merge } from '../utils/merge';
 
 export class Document implements IDocument {
   protected _root: ASTChunk;
@@ -32,6 +32,11 @@ export class Document implements IDocument {
   protected _globals: IEntity;
   protected _intrinscis: Intrinsics;
   protected _api: IEntity;
+  protected _source: string;
+
+  get source() {
+    return this._source;
+  }
 
   get root() {
     return this._root;
@@ -54,6 +59,7 @@ export class Document implements IDocument {
   }
 
   constructor(options: DocumentOptions) {
+    this._source = options.source;
     this._root = options.root;
     this._container = options.container;
     this._scopeMapping = options.scopeMapping ?? new WeakMap();
@@ -239,8 +245,8 @@ export class Document implements IDocument {
     return null;
   }
 
-  resolveAllAssignmentsWithQuery(query: string): ASTAssignmentStatement[] {
-    const assignments: ASTAssignmentStatement[] = [];
+  resolveAllAssignmentsWithQuery(query: string): ASTDefinitionItem[] {
+    const assignments: ASTDefinitionItem[] = [];
     const scopes = [this._root, ...this._root.scopes];
 
     for (let index = 0; index < scopes.length; index++) {
@@ -290,6 +296,7 @@ export class Document implements IDocument {
 
   merge(...typeDocs: Document[]): Document {
     const newTypeDoc = new Document({
+      source: this._source,
       root: this._root,
       container: this._container.copy()
     });
@@ -319,7 +326,9 @@ export class Document implements IDocument {
 
     for (let index = 0; index < typeDocs.length; index++) {
       const typeDoc = typeDocs[index];
-      newTypeDoc.getRootScopeContext().aggregator.extend(typeDoc.getRootScopeContext().aggregator);
+      newTypeDoc
+        .getRootScopeContext()
+        .aggregator.extend(typeDoc.getRootScopeContext().aggregator);
     }
 
     return newTypeDoc;

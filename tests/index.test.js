@@ -590,12 +590,12 @@ describe('type-manager', () => {
       const assignments = doc.resolveAllAssignmentsWithQuery('test');
 
       expect(assignments.length).toEqual(6);
-      expect(assignments[0].start.line).toEqual(2);
-      expect(assignments[1].start.line).toEqual(2);
-      expect(assignments[2].start.line).toEqual(3);
-      expect(assignments[3].start.line).toEqual(5);
-      expect(assignments[4].start.line).toEqual(8);
-      expect(assignments[5].start.line).toEqual(9);
+      expect(assignments[0].node.start.line).toEqual(2);
+      expect(assignments[1].node.start.line).toEqual(2);
+      expect(assignments[2].node.start.line).toEqual(3);
+      expect(assignments[3].node.start.line).toEqual(5);
+      expect(assignments[4].node.start.line).toEqual(8);
+      expect(assignments[5].node.start.line).toEqual(9);
     })
   });
 
@@ -619,9 +619,9 @@ describe('type-manager', () => {
       const assignments = aggregator.resolveAvailableAssignmentsWithQuery('level');
 
       expect(assignments.length).toEqual(3);
-      expect(assignments[0].start.line).toEqual(10);
-      expect(assignments[1].start.line).toEqual(7);
-      expect(assignments[2].start.line).toEqual(2);
+      expect(assignments[0].node.start.line).toEqual(10);
+      expect(assignments[1].node.start.line).toEqual(7);
+      expect(assignments[2].node.start.line).toEqual(2);
     });
 
     test('should return all assignments which match namespace', () => {
@@ -645,9 +645,9 @@ describe('type-manager', () => {
       const assignments = aggregator.resolveAvailableAssignments(line[0]);
 
       expect(assignments.length).toEqual(3);
-      expect(assignments[0].start.line).toEqual(10);
-      expect(assignments[1].start.line).toEqual(7);
-      expect(assignments[2].start.line).toEqual(2);
+      expect(assignments[0].node.start.line).toEqual(10);
+      expect(assignments[1].node.start.line).toEqual(7);
+      expect(assignments[2].node.start.line).toEqual(2);
     });
 
     test('should return all assignments even in instances', () => {
@@ -676,7 +676,7 @@ describe('type-manager', () => {
       const assignments = mergedDoc.resolveAvailableAssignments(line[0]);
 
       expect(assignments.length).toEqual(1);
-      expect(assignments[0].start.line).toEqual(5);
+      expect(assignments[0].node.start.line).toEqual(5);
     });
 
     test('should return all assignments even in instances with multiple assignment expressions', () => {
@@ -706,8 +706,8 @@ describe('type-manager', () => {
       const assignments = mergedDoc.resolveAvailableAssignments(line[0]);
 
       expect(assignments.length).toEqual(2);
-      expect(assignments[0].start.line).toEqual(10);
-      expect(assignments[1].start.line).toEqual(2);
+      expect(assignments[0].node.start.line).toEqual(10);
+      expect(assignments[1].node.start.line).toEqual(2);
     });
 
     test('should return all assignments in map constructor', () => {
@@ -722,7 +722,7 @@ describe('type-manager', () => {
       const assignments = mergedDoc.resolveAvailableAssignments(line[0]);
 
       expect(assignments.length).toEqual(1);
-      expect(assignments[0].start.line).toEqual(2);
+      expect(assignments[0].node.start.line).toEqual(2);
     });
   });
 
