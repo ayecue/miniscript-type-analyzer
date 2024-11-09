@@ -41,7 +41,7 @@ export const resolveEntity = (
         container,
         label: entity.label,
         context: entity.context
-      }).addType(...returnTypes);
+      }).addTypes(returnTypes);
     }
 
     return new Entity({
@@ -331,7 +331,12 @@ export class Entity implements IEntity {
     return this;
   }
 
-  addType(...types: SignatureDefinitionType[]): this {
+  addType(type: SignatureDefinitionType): this {
+    this._types.add(type);
+    return this;
+  }
+
+  addTypes(types: SignatureDefinitionType[]): this {
     for (let index = 0; index < types.length; index++) {
       this._types.add(types[index]);
     }
@@ -407,7 +412,7 @@ export class Entity implements IEntity {
 
     this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
-    this.addType(...entity.types);
+    this.addTypes(Array.from(entity.types));
     for (const [key, value] of entity.values) {
       const item = this.values.get(key);
 

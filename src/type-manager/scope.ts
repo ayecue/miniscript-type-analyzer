@@ -147,6 +147,10 @@ export class Scope implements IScope {
     throw new Error('Scope cannot get type assigned!');
   }
 
+  addTypes(): this {
+    throw new Error('Scope cannot get types assigned!');
+  }
+
   setReturnEntity(): this {
     throw new Error('Scope cannot set return entity!');
   }

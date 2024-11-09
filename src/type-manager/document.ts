@@ -171,11 +171,11 @@ export class Document implements IDocument {
               new Entity({
                 kind: CompletionItemKind.Variable,
                 container: this._container
-              }).addType(...types)
+              }).addTypes(types)
             );
           } else {
             property.types.delete(SignatureDefinitionBaseType.Any);
-            property.addType(...types);
+            property.addTypes(types);
           }
         }
       }

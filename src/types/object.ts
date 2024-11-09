@@ -81,7 +81,8 @@ export interface IEntity {
   hasProperty(name: string | IEntity): boolean;
   resolveProperty(name: string | IEntity, noInvoke?: boolean): IEntity | null;
   setProperty(name: string | IEntity, item: IEntity): boolean;
-  addType(...types: SignatureDefinitionType[]): this;
+  addTypes(types: SignatureDefinitionType[]): this;
+  addType(type: SignatureDefinitionType): this;
   insertSignature(signature: Signature): this;
   copy(options?: EntityCopyOptions): IEntity;
   extend(entity: IEntity): this;
