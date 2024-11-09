@@ -32,6 +32,7 @@ export class ContainerProxy implements IContainerProxy {
 
     for (const [type, signature] of this._container.getPrimitives()) {
       const signatureEntity = new Entity({
+        source: 'internal',
         kind: CompletionItemKind.Constant,
         container: this,
         isAPI: type === SignatureDefinitionBaseType.General
@@ -50,6 +51,7 @@ export class ContainerProxy implements IContainerProxy {
 
     for (const [type, signature] of this._container.getTypes()) {
       const signatureEntity = new Entity({
+        source: 'internal',
         kind: CompletionItemKind.Constant,
         container: this
       })
@@ -73,8 +75,7 @@ export class ContainerProxy implements IContainerProxy {
       const entity = proxy._types.get(type);
       if (entity == null) continue;
       this.setCustomType(type, entity.copy({
-        deepCopy: true,
-        line: -1
+        deepCopy: true
       }));
     }
   }

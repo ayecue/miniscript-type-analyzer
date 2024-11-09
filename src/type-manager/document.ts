@@ -108,6 +108,7 @@ export class Document implements IDocument {
 
   protected initGlobals(): IEntity {
     return new Entity({
+      source: this._source,
       kind: CompletionItemKind.Constant,
       container: this._container,
       label: 'globals'
@@ -117,6 +118,7 @@ export class Document implements IDocument {
   protected analyzeScope(block: ASTFunctionStatement): void {
     const parentContext = this._scopeMapping.get(block.scope)!;
     const scope = new Scope({
+      source: this._source,
       container: this._container,
       parent: parentContext?.scope,
       globals: this._globals
@@ -169,6 +171,7 @@ export class Document implements IDocument {
             scope.setProperty(
               arg.getLabel(),
               new Entity({
+                source: this._source,
                 kind: CompletionItemKind.Variable,
                 container: this._container
               }).addTypes(types)
@@ -184,6 +187,7 @@ export class Document implements IDocument {
 
   analyze() {
     const scope = new Scope({
+      source: this._source,
       container: this._container,
       globals: this._globals,
       locals: this._globals
@@ -303,22 +307,12 @@ export class Document implements IDocument {
 
     for (let index = 0; index < typeDocs.length; index++) {
       const typeDoc = typeDocs[index];
-      newTypeDoc._globals.extend(typeDoc._globals.copy({ line: -1 }));
-      newTypeDoc._intrinscis.map.extend(
-        typeDoc._intrinscis.map.copy({ line: -1 })
-      );
-      newTypeDoc._intrinscis.funcRef.extend(
-        typeDoc._intrinscis.funcRef.copy({ line: -1 })
-      );
-      newTypeDoc._intrinscis.number.extend(
-        typeDoc._intrinscis.number.copy({ line: -1 })
-      );
-      newTypeDoc._intrinscis.string.extend(
-        typeDoc._intrinscis.string.copy({ line: -1 })
-      );
-      newTypeDoc._intrinscis.list.extend(
-        typeDoc._intrinscis.list.copy({ line: -1 })
-      );
+      newTypeDoc._globals.extend(typeDoc._globals);
+      newTypeDoc._intrinscis.map.extend(typeDoc._intrinscis.map);
+      newTypeDoc._intrinscis.funcRef.extend(typeDoc._intrinscis.funcRef);
+      newTypeDoc._intrinscis.number.extend(typeDoc._intrinscis.number);
+      newTypeDoc._intrinscis.string.extend(typeDoc._intrinscis.string);
+      newTypeDoc._intrinscis.list.extend(typeDoc._intrinscis.list);
       newTypeDoc._container.mergeCustomTypes(typeDoc._container);
     }
 

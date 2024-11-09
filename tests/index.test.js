@@ -790,6 +790,23 @@ describe('type-manager', () => {
 
       expect(identifiers.size).toEqual(55);
     });
+
+    test('should return all identifier with external ones being line -1', () => {
+      const doc1 = getDocument(`
+        test = { "abc": "def" }
+      `);
+      const doc2 = getDocument(`
+        hello = {}
+
+        test.abc
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const scope = mergedDoc.getRootScopeContext().scope;
+      const entityIdentifiers = Array.from(scope.getAllIdentifier());
+
+      expect(entityIdentifiers[entityIdentifiers.length - 2][1].line).toEqual(-1);
+      expect(entityIdentifiers[entityIdentifiers.length - 1][1].line).toEqual(2);
+    });
   });
 
   describe('custom types', () => {

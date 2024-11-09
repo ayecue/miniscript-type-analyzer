@@ -13,8 +13,9 @@ const getDocument = (code) => {
   const typeManager = new TypeManager({
     container: miniscriptMeta
   });
+  const id = (Math.random() + 1).toString(36).substring(7);
 
-  return typeManager.analyze('test', parse(code));
+  return typeManager.analyze(id, parse(code));
 }
 
 exports.getDocument = getDocument;

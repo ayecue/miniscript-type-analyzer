@@ -18,7 +18,7 @@ export const injectIdentifers = (
         }
         properties.set(key, {
           kind: value.kind,
-          line: value.line
+          line: value.source === source.source ? value.line : -1
         });
       }
     }

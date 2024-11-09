@@ -18,10 +18,15 @@ import { ObjectSet } from '../utils/object-set';
 import { Entity, resolveEntity } from './entity';
 
 export class Scope implements IScope {
+  protected _source: string;
   protected _parent: IScope | null;
   protected _globals: IEntity;
   protected _locals: IEntity;
   protected _container: IContainerProxy;
+
+  get source() {
+    return this._source;
+  }
 
   get definitions() {
     return [];
@@ -68,12 +73,14 @@ export class Scope implements IScope {
   }
 
   constructor(options: ScopeOptions) {
+    this._source = options.source;
     this._container = options.container;
     this._parent = options.parent ?? null;
     this._globals = options.globals;
     this._locals =
       options.locals ??
       new Entity({
+        source: this._source,
         kind: CompletionItemKind.Constant,
         container: this._container,
         label: 'locals'
@@ -269,15 +276,14 @@ export class Scope implements IScope {
 
   copy(options: EntityCopyOptions = {}): IScope {
     return new Scope({
+      source: this._source,
       container: options.container ?? this._container,
       parent: this._parent.copy({
         container: options.container,
-        line: -1,
         deepCopy: true
       }),
       globals: this._globals.copy({
         container: options.container,
-        line: -1,
         deepCopy: true
       }),
       locals: this._locals.copy({

@@ -15,6 +15,7 @@ export type ASTDefinitionItem = {
 };
 
 export interface EntityOptions {
+  source: string;
   kind: CompletionItemKind;
   isFromSignature?: boolean;
   isAPI?: boolean;
@@ -67,6 +68,7 @@ export interface IEntityPropertyHandler<T> {
 }
 
 export interface IEntity {
+  source: string;
   kind: CompletionItemKind;
   line: number;
   signatureDefinitions: ObjectSet<SignatureDefinition>;
@@ -102,6 +104,7 @@ export interface IEntity {
 }
 
 export interface ScopeOptions {
+  source: string;
   container: IContainerProxy;
   globals: IEntity;
   parent?: IScope;

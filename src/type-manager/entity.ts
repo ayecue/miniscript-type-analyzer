@@ -37,6 +37,7 @@ export const resolveEntity = (
 
     if (returnTypes) {
       return new Entity({
+        source: entity.source,
         kind: CompletionItemKind.Variable,
         container,
         label: entity.label,
@@ -45,6 +46,7 @@ export const resolveEntity = (
     }
 
     return new Entity({
+      source: entity.source,
       kind: CompletionItemKind.Variable,
       container,
       label: entity.label,
@@ -143,6 +145,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
   ): IEntity | null {
     if (!isEligibleForProperties(origin)) {
       return new Entity({
+        source: origin.source,
         kind: CompletionItemKind.Variable,
         container,
         label: property.label,
@@ -151,6 +154,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
     }
 
     const aggregatedEntity = new Entity({
+      source: property.source,
       kind: CompletionItemKind.Variable,
       container,
       label: property.label,
@@ -200,6 +204,7 @@ const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
 };
 
 export class Entity implements IEntity {
+  protected _source: string;
   protected _kind: CompletionItemKind;
   protected _line: number;
   protected _context: IEntity | null;
@@ -212,6 +217,10 @@ export class Entity implements IEntity {
   protected _isAPI: boolean;
   protected _isFromSignature: boolean;
   protected _definitions: ASTDefinitionItem[];
+
+  get source() {
+    return this._source;
+  }
 
   get definitions() {
     return this._definitions;
@@ -246,6 +255,7 @@ export class Entity implements IEntity {
   }
 
   constructor(options: EntityOptions) {
+    this._source = options.source;
     this._isAPI = options.isAPI ?? false;
     this._isFromSignature = options.isFromSignature ?? false;
     this._kind = options.kind;
@@ -440,6 +450,7 @@ export class Entity implements IEntity {
       const property = properties[index];
       const definition = signature.getDefinition(property);
       const entity = new Entity({
+        source: this._source,
         label: property,
         kind:
           definition.getType().type === SignatureDefinitionBaseType.Function
@@ -506,6 +517,7 @@ export class Entity implements IEntity {
 
   copy(options: EntityCopyOptions = {}): IEntity {
     const newCopy = new Entity({
+      source: this._source,
       kind: options.kind ?? this._kind,
       line: options.line ?? this._line,
       isFromSignature: options.isFromSignature ?? this._isFromSignature,
