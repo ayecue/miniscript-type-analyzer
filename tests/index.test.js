@@ -807,6 +807,25 @@ describe('type-manager', () => {
       expect(entityIdentifiers[entityIdentifiers.length - 2][1].line).toEqual(-1);
       expect(entityIdentifiers[entityIdentifiers.length - 1][1].line).toEqual(2);
     });
+
+    test('should return all identifier with internal assigments having their source overriden', () => {
+      const doc1 = getDocument(`
+        // @type test
+        test = { "abc": "def" }
+        // @return {test}
+        test.New = function
+          return new self
+        end function
+      `);
+      const doc2 = getDocument(`
+        hello = test.New
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const scope = mergedDoc.getRootScopeContext().scope;
+      const entityIdentifiers = Array.from(scope.getAllIdentifier());
+
+      expect(entityIdentifiers[entityIdentifiers.length - 1][1].line).toEqual(2);
+    });
   });
 
   describe('custom types', () => {

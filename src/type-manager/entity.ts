@@ -517,7 +517,7 @@ export class Entity implements IEntity {
 
   copy(options: EntityCopyOptions = {}): IEntity {
     const newCopy = new Entity({
-      source: this._source,
+      source: options.source ?? this._source,
       kind: options.kind ?? this._kind,
       line: options.line ?? this._line,
       isFromSignature: options.isFromSignature ?? this._isFromSignature,

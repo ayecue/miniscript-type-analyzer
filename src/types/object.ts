@@ -42,6 +42,7 @@ export type EntityCopyOptions = Partial<
     | 'isAPI'
     | 'isFromSignature'
     | 'definitions'
+    | 'source'
   >
 > & {
   deepCopy?: boolean;
