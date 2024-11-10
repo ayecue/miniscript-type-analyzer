@@ -19,8 +19,8 @@ import { isSignatureDefinitionFunction } from '../types/signature';
 import { injectIdentifers } from '../utils/inject-identifiers';
 import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
 import { lookupProperty } from '../utils/lookup-property';
-import { ObjectSet } from '../utils/object-set';
 import { mergeUnique } from '../utils/mergeUnique';
+import { ObjectSet } from '../utils/object-set';
 
 export const resolveEntity = (
   container: IContainerProxy,

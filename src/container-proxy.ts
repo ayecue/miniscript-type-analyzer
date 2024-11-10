@@ -126,6 +126,7 @@ export class ContainerProxy implements IContainerProxy {
 
     const mergedEntity = new Entity({
       source: 'internal',
+      label: property,
       kind: CompletionItemKind.Property,
       container: this
     });
