@@ -2,7 +2,7 @@
 
 [![miniscript-type-analyzer](https://circleci.com/gh/ayecue/miniscript-type-analyzer.svg?style=svg)](https://circleci.com/gh/ayecue/miniscript-type-analyzer)
 
-Analyzes MiniScript and suggests types. Recommended to be used with [greybel-core](https://github.com/ayecue/greybel-core) even though it should be also to digest [miniscript-core](https://github.com/ayecue/miniscript-core) AST.
+Analyzes MiniScript and suggests types. Recommended to be used with [greybel-core](https://github.com/ayecue/greybel-core) even though it should be also able to digest [miniscript-core](https://github.com/ayecue/miniscript-core) AST.
 
 ## Example
 ```ts
