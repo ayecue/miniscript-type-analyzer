@@ -986,4 +986,31 @@ describe('type-manager', () => {
       ]);
     });
   });
+
+  describe('cyclic references', () => {
+    test('should resolve entity from cyclic references', () => {
+      const doc = getDocument(`
+        Bar = {}
+        Bar = new Bar
+        Bar.test = {"moo":"null"}
+
+
+        Foo = {}
+        Foo.__isa = Foo
+        Foo.test = function(a, b)
+
+        end function
+
+
+        nad = new Foo
+        nad.doesNotExist
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const entity = scope.resolveProperty('nad', true);
+      const entityIdentifiers = entity.getAllIdentifier();
+
+      expect(entity.resolveProperty('doesNotExist')).toBeNull();
+      expect(entityIdentifiers.size).toEqual(14);
+    });
+  });
 });

@@ -1,13 +1,13 @@
 import { IEntity } from '../types/object';
 
 export const aggregateEntity = (source: IEntity): IEntity[] => {
-  const entities: IEntity[] = [];
+  const entities: Set<IEntity> = new Set();
   let isaEntity = source;
 
-  while (isaEntity != null) {
-    entities.push(isaEntity);
+  while (isaEntity != null && !entities.has(isaEntity)) {
+    entities.add(isaEntity);
     isaEntity = isaEntity.getIsa();
   }
 
-  return entities;
+  return Array.from(entities);
 };

@@ -841,7 +841,9 @@ export class Aggregator implements IAggregator {
     for (let index = 0; index < this._root.assignments.length; index++) {
       const item = this._root.assignments[index] as ASTAssignmentStatement;
       const value =
-        this.resolveType(item.init)?.copy({ source: this._document.source }).setLine(item.start.line) ??
+        this.resolveType(item.init)
+          ?.copy({ source: this._document.source })
+          .setLine(item.start.line) ??
         this.factory(CompletionItemKind.Variable)
           .addType(SignatureDefinitionBaseType.Any)
           .setLine(item.start.line);

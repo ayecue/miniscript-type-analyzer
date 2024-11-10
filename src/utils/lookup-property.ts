@@ -6,6 +6,7 @@ export const lookupProperty = (
   property: string
 ): IEntity | null => {
   let current = entity;
+  const visited = new Set<IEntity>([current]);
 
   while (isEligibleForProperties(current)) {
     const item = current.values.get(`i:${property}`);
@@ -16,10 +17,11 @@ export const lookupProperty = (
 
     const isa = current.getIsa();
 
-    if (isa == null) {
+    if (isa == null || visited.has(isa)) {
       break;
     }
 
+    visited.add(isa);
     current = isa;
   }
 
