@@ -20,6 +20,7 @@ import { injectIdentifers } from '../utils/inject-identifiers';
 import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
 import { lookupProperty } from '../utils/lookup-property';
 import { ObjectSet } from '../utils/object-set';
+import { mergeUnique } from '../utils/mergeUnique';
 
 export const resolveEntity = (
   container: IContainerProxy,
@@ -417,11 +418,12 @@ export class Entity implements IEntity {
     }
   }
 
-  extend(entity: IEntity): this {
+  extend(entity: IEntity, includeDefinitions: boolean = false): this {
     if (entity === this) return this;
 
     this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
+    if (includeDefinitions) mergeUnique(this.definitions, entity.definitions);
     this.addTypes(Array.from(entity.types));
     for (const [key, value] of entity.values) {
       const item = this.values.get(key);
@@ -435,7 +437,7 @@ export class Entity implements IEntity {
           })
         );
       } else {
-        item.extend(value);
+        item.extend(value, includeDefinitions);
       }
     }
     return this;

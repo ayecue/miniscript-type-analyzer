@@ -724,6 +724,58 @@ describe('type-manager', () => {
       expect(assignments.length).toEqual(1);
       expect(assignments[0].node.start.line).toEqual(2);
     });
+
+    test('should return all assignments from different custom types', () => {
+      const doc1 = getDocument(`
+        // @type Bar
+        // @property {string} virtualMoo
+        // @property {string} nested.virtalMoo
+        Bar = {}
+        Bar.moo = ""
+
+        // Hello world
+        // I am **bold**
+        // @return {Bar} - Some info about return
+        Bar.test = function(test, abc)
+          print("test")
+          return self
+        end function
+
+        // @type Moo
+        Moo = new Bar
+        Moo.test = function
+        end function
+        // @return {Moo}
+        Moo.New = function(message)
+          result = new Moo
+          return result
+        end function
+
+        // @type Foo
+        Foo = new Bar
+        // @return {Foo}
+        Foo.New = function(message)
+          result = new Foo
+          return result
+        end function
+
+        // @return {Moo|Foo}
+        myTestFunction = function
+        end function
+
+        myVar = myTestFunction
+      `);
+      const doc2 = getDocument(`
+        myVar.test
+      `);
+      const mergedDoc = doc2.merge(doc1);
+      const line = mergedDoc.root.lines[2];
+      const assignments = mergedDoc.resolveAvailableAssignments(line[0]);
+
+      expect(assignments.length).toEqual(2);
+      expect(assignments[0].node.start.line).toEqual(18);
+      expect(assignments[1].node.start.line).toEqual(11);
+    });
   });
 
   describe('get identifiers', () => {

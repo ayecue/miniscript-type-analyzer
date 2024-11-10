@@ -124,7 +124,18 @@ export class ContainerProxy implements IContainerProxy {
       return resolveEntity(this, internalAnyDef, noInvoke);
     }
 
-    return resolveEntity(this, matches.values().next().value, noInvoke);
+    const mergedEntity = new Entity({
+      source: 'internal',
+      kind: CompletionItemKind.Property,
+      container: this
+    });
+
+    for (const value of matches.values()) {
+      const result = resolveEntity(this, value, noInvoke);
+      mergedEntity.extend(result, true)
+    }
+
+    return mergedEntity;
   }
 
   getGeneralDefinition(property: string, noInvoke: boolean = false): IEntity | null {
