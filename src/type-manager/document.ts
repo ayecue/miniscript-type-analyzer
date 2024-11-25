@@ -307,12 +307,24 @@ export class Document implements IDocument {
 
     for (let index = 0; index < typeDocs.length; index++) {
       const typeDoc = typeDocs[index];
-      newTypeDoc._globals.extend(typeDoc._globals, true);
-      newTypeDoc._intrinscis.map.extend(typeDoc._intrinscis.map, true);
-      newTypeDoc._intrinscis.funcRef.extend(typeDoc._intrinscis.funcRef, true);
-      newTypeDoc._intrinscis.number.extend(typeDoc._intrinscis.number, true);
-      newTypeDoc._intrinscis.string.extend(typeDoc._intrinscis.string, true);
-      newTypeDoc._intrinscis.list.extend(typeDoc._intrinscis.list, true);
+      newTypeDoc._globals.extend(typeDoc._globals, true, true);
+      newTypeDoc._intrinscis.map.extend(typeDoc._intrinscis.map, true, true);
+      newTypeDoc._intrinscis.funcRef.extend(
+        typeDoc._intrinscis.funcRef,
+        true,
+        true
+      );
+      newTypeDoc._intrinscis.number.extend(
+        typeDoc._intrinscis.number,
+        true,
+        true
+      );
+      newTypeDoc._intrinscis.string.extend(
+        typeDoc._intrinscis.string,
+        true,
+        true
+      );
+      newTypeDoc._intrinscis.list.extend(typeDoc._intrinscis.list, true, true);
       newTypeDoc._container.mergeCustomTypes(typeDoc._container);
     }
 

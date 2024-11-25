@@ -421,6 +421,7 @@ export class Entity implements IEntity {
   extend(
     entity: IEntity,
     includeDefinitions: boolean = false,
+    deepCopy: boolean = false,
     refs: WeakSet<IEntity> = new WeakSet()
   ): this {
     if (entity === this) return this;
@@ -430,7 +431,13 @@ export class Entity implements IEntity {
 
     this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
-    if (includeDefinitions) mergeUnique(this.definitions, entity.definitions);
+    if (includeDefinitions) {
+      if (deepCopy) {
+        this._definitions = [...this.definitions, ...entity.definitions];
+      } else {
+        mergeUnique(this._definitions, entity.definitions);
+      }
+    }
     this.addTypes(Array.from(entity.types));
     for (const [key, value] of entity.values) {
       const item = this.values.get(key);
@@ -440,11 +447,12 @@ export class Entity implements IEntity {
           key,
           value.copy({
             container: this._container,
-            context: this
+            context: this,
+            deepCopy
           })
         );
       } else {
-        item.extend(value, includeDefinitions, refs);
+        item.extend(value, includeDefinitions, deepCopy, refs);
       }
     }
     return this;

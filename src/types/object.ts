@@ -91,6 +91,7 @@ export interface IEntity {
   extend(
     entity: IEntity,
     includeDefinitions?: boolean,
+    deepCopy?: boolean,
     refs?: WeakSet<IEntity>
   ): this;
   getAllIdentifier(): Map<string, CompletionItem>;

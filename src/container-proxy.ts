@@ -133,7 +133,7 @@ export class ContainerProxy implements IContainerProxy {
 
     for (const value of matches.values()) {
       const result = resolveEntity(this, value, noInvoke);
-      mergedEntity.extend(result, true)
+      mergedEntity.extend(result, true, true);
     }
 
     return mergedEntity;
