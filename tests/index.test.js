@@ -1067,7 +1067,7 @@ describe('type-manager', () => {
   });
 
   describe('define properties which do not exist yet', () => {
-    test('should resolve entity from cyclic references', () => {
+    test('should resolve entity without initially being created', () => {
       const doc1 = getDocument(`
         test.bar = 123
       `);
@@ -1076,6 +1076,26 @@ describe('type-manager', () => {
       `);
       const doc3 = getDocument(`
         test = {}
+      `);
+      const mergedDoc = doc3.merge(doc1, doc2);
+      const scope = mergedDoc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('test').types)).toEqual(['any', 'map']);
+      expect(scope.resolveProperty('test').values.size).toEqual(2);
+      expect(Array.from(scope.resolveProperty('test').resolveProperty('bar').types)).toEqual(['number']);
+      expect(Array.from(scope.resolveProperty('test').resolveProperty('foo').types)).toEqual(['string']);
+      expect(scope.resolveProperty('test').definitions.length).toEqual(1);
+    });
+
+    test('should resolve entity without initially being created and being defined in external', () => {
+      const doc1 = getDocument(`
+        test.bar = 123
+      `);
+      const doc2 = getDocument(`
+        test = {}
+      `);
+      const doc3 = getDocument(`
+        test.foo = "foo"
       `);
       const mergedDoc = doc3.merge(doc1, doc2);
       const scope = mergedDoc.getRootScopeContext().scope;
