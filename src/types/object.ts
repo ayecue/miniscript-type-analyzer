@@ -30,6 +30,17 @@ export interface EntityOptions {
   definitions?: ASTDefinitionItem[];
 }
 
+export type EntityCopyStackItem = {
+  parent: IEntity;
+  key: string;
+  value: IEntity;
+};
+
+export type EntityExtendStackItem = {
+  origin: IEntity;
+  from: IEntity;
+};
+
 export type EntityCopyOptions = Partial<
   Pick<
     EntityOptions,

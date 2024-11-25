@@ -11,6 +11,8 @@ import { IContainerProxy } from '../types/container-proxy';
 import {
   ASTDefinitionItem,
   EntityCopyOptions,
+  EntityCopyStackItem,
+  EntityExtendStackItem,
   EntityOptions,
   IEntity,
   IEntityPropertyHandler
@@ -421,40 +423,59 @@ export class Entity implements IEntity {
   extend(
     entity: IEntity,
     includeDefinitions: boolean = false,
-    deepCopy: boolean = false,
-    refs: WeakSet<IEntity> = new WeakSet()
+    deepCopy: boolean = false
   ): this {
     if (entity === this) return this;
-    if (refs.has(entity)) return this;
 
-    refs.add(entity);
+    const refs: WeakSet<IEntity> = new WeakSet();
+    const stack: EntityExtendStackItem[] = [{ origin: this, from: entity }];
 
-    this._isFromSignature = false;
-    this._signatureDefinitions.extend(entity.signatureDefinitions);
-    if (includeDefinitions) {
-      if (deepCopy) {
-        this._definitions = [...this.definitions, ...entity.definitions];
-      } else {
-        mergeUnique(this._definitions, entity.definitions);
+    while (stack.length > 0) {
+      const { origin, from } = stack.pop()!;
+
+      if (refs.has(origin)) continue;
+      if (refs.has(from)) continue;
+
+      refs.add(origin);
+      refs.add(from);
+
+      const originEntity = origin as Entity;
+      const fromEntity = from as Entity;
+
+      originEntity._isFromSignature = false;
+      originEntity._signatureDefinitions.extend(from.signatureDefinitions);
+
+      if (includeDefinitions) {
+        if (deepCopy) {
+          originEntity._definitions = [
+            ...originEntity._definitions,
+            ...fromEntity._definitions
+          ];
+        } else {
+          mergeUnique(originEntity._definitions, fromEntity._definitions);
+        }
+      }
+
+      origin.addTypes(Array.from(from.types));
+
+      for (const [key, value] of from.values) {
+        const item = origin.values.get(key);
+
+        if (item == null) {
+          origin.values.set(
+            key,
+            value.copy({
+              container: originEntity._container,
+              context: origin,
+              deepCopy
+            })
+          );
+        } else {
+          stack.push({ origin: item as Entity, from: value as Entity });
+        }
       }
     }
-    this.addTypes(Array.from(entity.types));
-    for (const [key, value] of entity.values) {
-      const item = this.values.get(key);
 
-      if (item == null) {
-        this.values.set(
-          key,
-          value.copy({
-            container: this._container,
-            context: this,
-            deepCopy
-          })
-        );
-      } else {
-        item.extend(value, includeDefinitions, deepCopy, refs);
-      }
-    }
     return this;
   }
 
@@ -551,21 +572,47 @@ export class Entity implements IEntity {
       definitions: options.definitions ?? this._definitions
     });
 
-    if (options.deepCopy) {
-      newCopy._values = new Map(
-        Array.from(this._values, ([key, value]) => [
-          key,
-          value.copy({
-            deepCopy: options.deepCopy,
-            container: options.container,
-            line: options.line,
-            context: newCopy,
-            values: value.values
-          })
-        ])
-      );
-      newCopy._definitions = [...this._definitions];
+    if (!options.deepCopy) {
+      return newCopy;
     }
+
+    const cache = new WeakMap<IEntity, IEntity>();
+    const stack: EntityCopyStackItem[] = [];
+
+    newCopy._values = new Map();
+
+    for (const [key, value] of this._values) {
+      stack.push({ parent: newCopy, key, value });
+    }
+
+    while (stack.length > 0) {
+      const { parent, key, value } = stack.pop()!;
+
+      if (cache.has(value)) {
+        parent.values.set(key, cache.get(value)!);
+      } else {
+        const copiedValue = value.copy({
+          deepCopy: options.deepCopy,
+          container: options.container,
+          line: options.line,
+          context: parent,
+          values: value.values
+        }) as Entity;
+
+        cache.set(value, copiedValue);
+        parent.values.set(key, copiedValue);
+
+        for (const [nestedKey, nestedValue] of value.values) {
+          stack.push({
+            parent: copiedValue,
+            key: nestedKey,
+            value: nestedValue
+          });
+        }
+      }
+    }
+
+    newCopy._definitions = [...this._definitions];
 
     return newCopy;
   }

@@ -8,7 +8,7 @@ export { ObjectSet, ObjectSetIterator } from './utils/object-set';
 export { AggregatorOptions, IAggregator, DEFAULT_CUSTOM_FUNCTION_DESCRIPTION } from './types/aggregator';
 export { CompletionItemKind, CompletionItem } from './types/completion';
 export { DocumentOptions, IDocument, ScopeContext, Intrinsics } from './types/document';
-export { EntityOptions, IEntityPropertyHandler, IEntity, ScopeOptions, IScope, ASTDefinitionItem } from './types/object';
+export { EntityOptions, IEntityPropertyHandler, IEntity, ScopeOptions, IScope, ASTDefinitionItem, EntityCopyOptions, EntityCopyStackItem, EntityExtendStackItem } from './types/object';
 export { ContainerProxyOptions, IContainerProxy } from './types/container-proxy';
 export {
   ResolveChainItem,
