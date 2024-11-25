@@ -1065,4 +1065,26 @@ describe('type-manager', () => {
       expect(entityIdentifiers.size).toEqual(14);
     });
   });
+
+  describe('define properties which do not exist yet', () => {
+    test('should resolve entity from cyclic references', () => {
+      const doc1 = getDocument(`
+        test.bar = 123
+      `);
+      const doc2 = getDocument(`
+        test.foo = "foo"
+      `);
+      const doc3 = getDocument(`
+        test = {}
+      `);
+      const mergedDoc = doc3.merge(doc1, doc2);
+      const scope = mergedDoc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('test').types)).toEqual(['any', 'map']);
+      expect(scope.resolveProperty('test').values.size).toEqual(2);
+      expect(Array.from(scope.resolveProperty('test').resolveProperty('bar').types)).toEqual(['number']);
+      expect(Array.from(scope.resolveProperty('test').resolveProperty('foo').types)).toEqual(['string']);
+      expect(scope.resolveProperty('test').definitions.length).toEqual(1);
+    });
+  });
 });

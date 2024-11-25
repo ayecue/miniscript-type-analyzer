@@ -577,11 +577,20 @@ export class Aggregator implements IAggregator {
           });
         }
       } else {
-        current =
-          this._scope.resolveNamespace(first.getter.name, firstNoInvoke) ??
-          this.factory(CompletionItemKind.Variable)
+        let nextEntity = this._scope.resolveNamespace(
+          first.getter.name,
+          firstNoInvoke
+        );
+
+        if (nextEntity == null) {
+          nextEntity = this.factory(CompletionItemKind.Variable)
             .addType(SignatureDefinitionBaseType.Any)
             .setLabel(first.getter.name);
+
+          this._scope.globals.setProperty(first.getter.name, nextEntity);
+        }
+
+        current = nextEntity;
       }
     } else if (isResolveChainItemWithValue(first)) {
       current = this.resolveTypeWithDefault(first.value, firstNoInvoke);
@@ -607,27 +616,54 @@ export class Aggregator implements IAggregator {
         (noInvoke && chain.length - 1 === index);
 
       if (isResolveChainItemWithMember(item)) {
-        current =
-          current.resolveProperty(item.getter.name, itemNoInvoke) ??
-          this.factory(CompletionItemKind.Variable)
+        let nextEntity = current.resolveProperty(
+          item.getter.name,
+          itemNoInvoke
+        );
+
+        if (nextEntity == null) {
+          nextEntity = this.factory(CompletionItemKind.Variable)
             .addType(SignatureDefinitionBaseType.Any)
             .setLabel(item.getter.name);
+
+          current.setProperty(item.getter.name, nextEntity);
+        }
+
+        current = nextEntity;
       } else if (isResolveChainItemWithIndex(item)) {
         // index expressions do not get invoked automatically
         if (isValidIdentifierLiteral(item.getter)) {
           const name = item.getter.value.toString();
-          current =
-            current.resolveProperty(name, item.isInCallExpression) ??
-            this.factory(CompletionItemKind.Variable)
+          let nextEntity = current.resolveProperty(
+            name,
+            item.isInCallExpression
+          );
+
+          if (nextEntity == null) {
+            nextEntity = this.factory(CompletionItemKind.Variable)
               .addType(SignatureDefinitionBaseType.Any)
               .setLabel(name);
+
+            current.setProperty(name, nextEntity);
+          }
+
+          current = nextEntity;
         } else {
           const index = this.resolveTypeWithDefault(item.getter);
-          current =
-            current.resolveProperty(index, item.isInCallExpression) ??
-            this.factory(CompletionItemKind.Variable).addType(
+          let nextEntity = current.resolveProperty(
+            index,
+            item.isInCallExpression
+          );
+
+          if (nextEntity == null) {
+            nextEntity = this.factory(CompletionItemKind.Variable).addType(
               SignatureDefinitionBaseType.Any
             );
+
+            current.setProperty(index, nextEntity);
+          }
+
+          current = nextEntity;
         }
       } else if (item.ref.type === ASTType.SliceExpression) {
         // while slicing it will remain pretty much as the same value
