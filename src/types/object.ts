@@ -88,7 +88,11 @@ export interface IEntity {
   addType(type: SignatureDefinitionType): this;
   insertSignature(signature: Signature): this;
   copy(options?: EntityCopyOptions): IEntity;
-  extend(entity: IEntity, includeDefinitions?: boolean): this;
+  extend(
+    entity: IEntity,
+    includeDefinitions?: boolean,
+    refs?: WeakSet<IEntity>
+  ): this;
   getAllIdentifier(): Map<string, CompletionItem>;
   isCallable(): boolean;
   isAPI(): boolean;

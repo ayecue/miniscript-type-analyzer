@@ -418,8 +418,15 @@ export class Entity implements IEntity {
     }
   }
 
-  extend(entity: IEntity, includeDefinitions: boolean = false): this {
+  extend(
+    entity: IEntity,
+    includeDefinitions: boolean = false,
+    refs: WeakSet<IEntity> = new WeakSet()
+  ): this {
     if (entity === this) return this;
+    if (refs.has(entity)) return this;
+
+    refs.add(entity);
 
     this._isFromSignature = false;
     this._signatureDefinitions.extend(entity.signatureDefinitions);
@@ -437,7 +444,7 @@ export class Entity implements IEntity {
           })
         );
       } else {
-        item.extend(value, includeDefinitions);
+        item.extend(value, includeDefinitions, refs);
       }
     }
     return this;

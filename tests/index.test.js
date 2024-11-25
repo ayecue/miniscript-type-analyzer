@@ -119,6 +119,54 @@ describe('type-manager', () => {
     });
   });
 
+  describe('non identifier base', () => {
+    test('should return entity from string literal', () => {
+      const doc = getDocument(`
+        // @return {number}
+        string.test = function
+        end function
+
+        foo = "test".test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('foo').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['number']);
+    });
+
+    test('should return entity from number literal', () => {
+      const doc = getDocument(`
+        // @return {string}
+        number.test = function
+        end function
+
+        foo = (123).test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('foo').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['string']);
+    });
+
+    test('should return entity from expression', () => {
+      const doc = getDocument(`
+        // @return {number}
+        string.test = function
+        end function
+
+        // @return {string}
+        number.test = function
+        end function
+
+        foo = (1 + 2).test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('foo').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['string']);
+    });
+  });
+
   describe('globals', () => {
     test('should return entity from either global or api', () => {
       const doc = getDocument(`
@@ -192,8 +240,8 @@ describe('type-manager', () => {
       `)
       const scope = doc.getRootScopeContext().scope;
 
-      expect(scope.resolveProperty('bar').types.size).toEqual(1);
-      expect(Array.from(scope.resolveProperty('bar').types)).toEqual(['any']);
+      expect(scope.resolveProperty('bar').types.size).toEqual(2);
+      expect(Array.from(scope.resolveProperty('bar').types)).toEqual(['any', 'list']);
     });
   });
 

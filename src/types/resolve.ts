@@ -63,7 +63,10 @@ export const isResolveChainItemWithValue = (
       item.ref.type === ASTType.StringLiteral ||
       item.ref.type === ASTType.NilLiteral ||
       item.ref.type === ASTType.MapConstructorExpression ||
-      item.ref.type === ASTType.ListConstructorExpression)
+      item.ref.type === ASTType.ListConstructorExpression ||
+      item.ref.type === ASTType.BinaryExpression ||
+      item.ref.type === ASTType.LogicalExpression ||
+      item.ref.type === ASTType.ComparisonGroupExpression)
   );
 };
 
