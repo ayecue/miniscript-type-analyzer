@@ -30,12 +30,6 @@ export interface EntityOptions {
   definitions?: ASTDefinitionItem[];
 }
 
-export type EntityCopyStackItem = {
-  parent: IEntity;
-  key: string;
-  value: IEntity;
-};
-
 export type EntityExtendStackItem = {
   target: IEntity;
   source: IEntity;
@@ -98,7 +92,7 @@ export interface IEntity {
   addTypes(types: SignatureDefinitionType[]): this;
   addType(type: SignatureDefinitionType): this;
   insertSignature(signature: Signature): this;
-  copy(options?: EntityCopyOptions): IEntity;
+  copy(options?: EntityCopyOptions, cache?: WeakMap<IEntity, IEntity>): IEntity;
   extend(
     entity: IEntity,
     includeDefinitions?: boolean,

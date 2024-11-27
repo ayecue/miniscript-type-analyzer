@@ -1066,11 +1066,11 @@ describe('type-manager', () => {
 
       expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['number']);
       expect(Array.from(scope.resolveProperty('test').getAllIdentifier().keys())).toEqual([
-        'New',
         '__isa',
-        'test',
-        'moo',
+        'New',
         'virtualMoo',
+        'moo',
+        'test',
         'remove',
         'push',
         'pull',

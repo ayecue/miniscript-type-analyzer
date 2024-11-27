@@ -11,7 +11,6 @@ import { IContainerProxy } from '../types/container-proxy';
 import {
   ASTDefinitionItem,
   EntityCopyOptions,
-  EntityCopyStackItem,
   EntityExtendStackItem,
   EntityOptions,
   IEntity,
@@ -536,7 +535,13 @@ export class Entity implements IEntity {
     return this.toJSONInternal();
   }
 
-  copy(options: EntityCopyOptions = {}): IEntity {
+  copy(options: EntityCopyOptions = {}, cache?: WeakMap<IEntity, IEntity>): IEntity {
+    const cachedCopy = cache?.get(this);
+
+    if (cachedCopy) {
+      return cachedCopy;
+    }
+
     const newCopy = new Entity({
       source: options.source ?? this._source,
       kind: options.kind ?? this._kind,
@@ -559,40 +564,20 @@ export class Entity implements IEntity {
       return newCopy;
     }
 
-    const cache = new WeakMap<IEntity, IEntity>();
-    const stack: EntityCopyStackItem[] = [];
+
+    cache = cache ?? new WeakMap<IEntity, IEntity>();
+    cache.set(this, newCopy);
 
     newCopy._values = new Map();
 
     for (const [key, value] of this._values) {
-      stack.push({ parent: newCopy, key, value });
-    }
-
-    while (stack.length > 0) {
-      const { parent, key, value } = stack.pop()!;
-
-      if (cache.has(value)) {
-        parent.values.set(key, cache.get(value)!);
-      } else {
-        const copiedValue = value.copy({
-          deepCopy: options.deepCopy,
-          container: options.container,
-          line: options.line,
-          context: parent,
-          values: value.values
-        }) as Entity;
-
-        cache.set(value, copiedValue);
-        parent.values.set(key, copiedValue);
-
-        for (const [nestedKey, nestedValue] of value.values) {
-          stack.push({
-            parent: copiedValue,
-            key: nestedKey,
-            value: nestedValue
-          });
-        }
-      }
+      newCopy._values.set(key, value.copy({
+        deepCopy: true,
+        container: options.container,
+        line: options.line,
+        context: newCopy,
+        values: value.values
+      }));
     }
 
     newCopy._definitions = [...this._definitions];
