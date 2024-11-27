@@ -37,8 +37,8 @@ export type EntityCopyStackItem = {
 };
 
 export type EntityExtendStackItem = {
-  origin: IEntity;
-  from: IEntity;
+  target: IEntity;
+  source: IEntity;
 };
 
 export type EntityCopyOptions = Partial<

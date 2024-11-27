@@ -420,62 +420,45 @@ export class Entity implements IEntity {
     }
   }
 
-  extend(
-    entity: IEntity,
-    includeDefinitions: boolean = false,
-    deepCopy: boolean = false
-  ): this {
+  extend(entity: IEntity, includeDefinitions: boolean = false, deepCopy: boolean = false): this {
     if (entity === this) return this;
 
-    const refs: WeakSet<IEntity> = new WeakSet();
-    const stack: EntityExtendStackItem[] = [{ origin: this, from: entity }];
+    const refs: WeakSet<IEntity> = new WeakSet([entity]);
+    const stack: EntityExtendStackItem[] = [{ target: this, source: entity }];
 
     while (stack.length > 0) {
-      const { origin, from } = stack.pop()!;
+      const current = stack.pop()!;
+      const target = current.target as Entity;
+      const source = current.source as Entity;
 
-      if (refs.has(origin)) continue;
-      if (refs.has(from)) continue;
-
-      refs.add(origin);
-      refs.add(from);
-
-      const originEntity = origin as Entity;
-      const fromEntity = from as Entity;
-
-      originEntity._isFromSignature = false;
-      originEntity._signatureDefinitions.extend(from.signatureDefinitions);
+      target._isFromSignature = false;
+      target._signatureDefinitions.extend(source._signatureDefinitions);
 
       if (includeDefinitions) {
         if (deepCopy) {
-          originEntity._definitions = [
-            ...originEntity._definitions,
-            ...fromEntity._definitions
-          ];
+          target._definitions = [...target._definitions, ...source._definitions];
         } else {
-          mergeUnique(originEntity._definitions, fromEntity._definitions);
+          mergeUnique(target._definitions, source._definitions);
         }
       }
 
-      origin.addTypes(Array.from(from.types));
+      target.addTypes(Array.from(source.types));
 
-      for (const [key, value] of from.values) {
-        const item = origin.values.get(key);
+      for (const [key, value] of source.values) {
+        const item = target._values.get(key);
 
         if (item == null) {
-          origin.values.set(
-            key,
-            value.copy({
-              container: originEntity._container,
-              context: origin,
-              deepCopy
-            })
-          );
-        } else {
-          stack.push({ origin: item as Entity, from: value as Entity });
+          target._values.set(key, value.copy({
+            container: target._container,
+            context: target,
+            deepCopy
+          }));
+        } else if (!refs.has(value)) {
+          refs.add(value);
+          stack.push({ target: item, source: value });
         }
       }
     }
-
     return this;
   }
 
