@@ -419,7 +419,11 @@ export class Entity implements IEntity {
     }
   }
 
-  extend(entity: IEntity, includeDefinitions: boolean = false, deepCopy: boolean = false): this {
+  extend(
+    entity: IEntity,
+    includeDefinitions: boolean = false,
+    deepCopy: boolean = false
+  ): this {
     if (entity === this) return this;
 
     const refs: WeakSet<IEntity> = new WeakSet([entity]);
@@ -435,7 +439,10 @@ export class Entity implements IEntity {
 
       if (includeDefinitions) {
         if (deepCopy) {
-          target._definitions = [...target._definitions, ...source._definitions];
+          target._definitions = [
+            ...target._definitions,
+            ...source._definitions
+          ];
         } else {
           mergeUnique(target._definitions, source._definitions);
         }
@@ -447,11 +454,14 @@ export class Entity implements IEntity {
         const item = target._values.get(key);
 
         if (item == null) {
-          target._values.set(key, value.copy({
-            container: target._container,
-            context: target,
-            deepCopy
-          }));
+          target._values.set(
+            key,
+            value.copy({
+              container: target._container,
+              context: target,
+              deepCopy
+            })
+          );
         } else if (!refs.has(value)) {
           refs.add(value);
           stack.push({ target: item, source: value });
@@ -535,13 +545,7 @@ export class Entity implements IEntity {
     return this.toJSONInternal();
   }
 
-  copy(options: EntityCopyOptions = {}, cache?: WeakMap<IEntity, IEntity>): IEntity {
-    const cachedCopy = cache?.get(this);
-
-    if (cachedCopy) {
-      return cachedCopy;
-    }
-
+  copy(options: EntityCopyOptions = {}): IEntity {
     const newCopy = new Entity({
       source: options.source ?? this._source,
       kind: options.kind ?? this._kind,
@@ -564,20 +568,37 @@ export class Entity implements IEntity {
       return newCopy;
     }
 
+    const cache = new WeakMap<IEntity, IEntity>();
 
-    cache = cache ?? new WeakMap<IEntity, IEntity>();
-    cache.set(this, newCopy);
+    function deepCopyEntity(newContext: IEntity, entity: IEntity): IEntity {
+      const cachedCopy = cache.get(entity);
+
+      if (cachedCopy) {
+        return cachedCopy;
+      }
+
+      const entityCopy = entity.copy({
+        container: options.container,
+        line: options.line,
+        context: newContext,
+        values: new Map()
+      }) as Entity;
+
+      cache.set(entity, entityCopy);
+
+      for (const [key, value] of entity.values) {
+        entityCopy._values.set(key, deepCopyEntity(entityCopy, value));
+      }
+
+      entityCopy._definitions = [...entity.definitions];
+
+      return entityCopy;
+    }
 
     newCopy._values = new Map();
 
     for (const [key, value] of this._values) {
-      newCopy._values.set(key, value.copy({
-        deepCopy: true,
-        container: options.container,
-        line: options.line,
-        context: newCopy,
-        values: value.values
-      }));
+      newCopy._values.set(key, deepCopyEntity(newCopy, value));
     }
 
     newCopy._definitions = [...this._definitions];

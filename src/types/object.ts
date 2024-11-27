@@ -92,7 +92,7 @@ export interface IEntity {
   addTypes(types: SignatureDefinitionType[]): this;
   addType(type: SignatureDefinitionType): this;
   insertSignature(signature: Signature): this;
-  copy(options?: EntityCopyOptions, cache?: WeakMap<IEntity, IEntity>): IEntity;
+  copy(options?: EntityCopyOptions): IEntity;
   extend(
     entity: IEntity,
     includeDefinitions?: boolean,
