@@ -52,6 +52,207 @@ import { mergeUnique } from '../utils/mergeUnique';
 import { parseMapDescription } from '../utils/parse-map-description';
 import { Entity } from './entity';
 
+export class ASTChainIterator implements Iterator<IEntity> {
+  aggregator: IAggregator;
+  chain: ResolveChainItem[];
+  current: IEntity;
+  index: number;
+  endIndex: number;
+  noInvoke: boolean;
+
+  constructor(aggregator: IAggregator, chain: ResolveChainItem[], noInvoke: boolean = false) {
+    this.aggregator = aggregator;
+    this.chain = chain;
+    this.noInvoke = noInvoke;
+    this.index = 0;
+    this.endIndex = this.chain.length - 1;
+    this.current = null;
+  }
+
+  private getInitial(): IEntity {
+    let initial: IEntity = null;
+    const scope = this.aggregator.scope;
+    const document = this.aggregator.document;
+    const first = this.chain[0];
+    const firstNoInvoke =
+      (first.unary?.operator === '@' && !first.isInCallExpression) ||
+      (this.noInvoke && this.index === this.endIndex);
+
+    if (isResolveChainItemWithIdentifier(first)) {
+      if (first.getter.name === 'globals') {
+        initial = scope.globals;
+      } else if (first.getter.name === 'outer') {
+        initial = scope.outer;
+      } else if (first.getter.name === 'locals') {
+        initial = scope.locals;
+      } else if (first.getter.name === 'super') {
+        const context = document
+          .getScopeContext(first.ref.scope)
+          ?.scope.context?.getIsa();
+
+        if (context == null) {
+          initial = this.aggregator.factory(CompletionItemKind.Constant)
+            .addType('null')
+            .setLabel('super');
+        } else {
+          initial = context.copy({
+            kind: CompletionItemKind.Constant,
+            label: 'super',
+            values: context.values
+          });
+        }
+      } else if (first.getter.name === 'self') {
+        const context = document.getScopeContext(first.ref.scope)?.scope
+          .context;
+
+        if (context == null) {
+          initial = this.aggregator.factory(CompletionItemKind.Constant)
+            .addType('null')
+            .setLabel('self');
+        } else {
+          initial = context.copy({
+            kind: CompletionItemKind.Constant,
+            label: 'self',
+            values: context.values
+          });
+        }
+      } else {
+        let nextEntity = scope.resolveNamespace(
+          first.getter.name,
+          firstNoInvoke
+        );
+
+        if (nextEntity == null) {
+          nextEntity = this.aggregator.factory(CompletionItemKind.Variable)
+            .addType(SignatureDefinitionBaseType.Any)
+            .setLabel(first.getter.name);
+
+          scope.globals.setProperty(first.getter.name, nextEntity);
+        }
+
+        initial = nextEntity;
+      }
+    } else if (isResolveChainItemWithValue(first)) {
+      initial = this.aggregator.resolveTypeWithDefault(first.value, firstNoInvoke);
+    } else {
+      return null;
+    }
+
+    if (first.unary?.operator === Keyword.New && initial !== null) {
+      const newInstance = this.aggregator.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Map)
+        .setLabel(initial.label);
+      newInstance.setProperty('__isa', initial);
+      this.aggregator.createCustomTypeFromMap(first.unary, newInstance);
+      initial = newInstance;
+    }
+
+    return initial;
+  }
+
+  private getNext(): IEntity {
+    let current: IEntity = this.current;
+    const item = this.chain[this.index];
+    const itemNoInvoke =
+      (item.unary?.operator === '@' && !item.isInCallExpression) ||
+      (this.noInvoke && this.index === this.endIndex);
+
+    if (isResolveChainItemWithMember(item)) {
+      let nextEntity = current.resolveProperty(
+        item.getter.name,
+        itemNoInvoke
+      );
+
+      if (nextEntity == null) {
+        nextEntity = this.aggregator.factory(CompletionItemKind.Variable)
+          .addType(SignatureDefinitionBaseType.Any)
+          .setLabel(item.getter.name);
+
+        current.setProperty(item.getter.name, nextEntity);
+      }
+
+      current = nextEntity;
+    } else if (isResolveChainItemWithIndex(item)) {
+      // index expressions do not get invoked automatically
+      if (isValidIdentifierLiteral(item.getter)) {
+        const name = item.getter.value.toString();
+        let nextEntity = current.resolveProperty(
+          name,
+          item.isInCallExpression
+        );
+
+        if (nextEntity == null) {
+          nextEntity = this.aggregator.factory(CompletionItemKind.Variable)
+            .addType(SignatureDefinitionBaseType.Any)
+            .setLabel(name);
+
+          current.setProperty(name, nextEntity);
+        }
+
+        current = nextEntity;
+      } else {
+        const index = this.aggregator.resolveTypeWithDefault(item.getter);
+        let nextEntity = current.resolveProperty(
+          index,
+          item.isInCallExpression
+        );
+
+        if (nextEntity == null) {
+          nextEntity = this.aggregator.factory(CompletionItemKind.Variable).addType(
+            SignatureDefinitionBaseType.Any
+          );
+
+          current.setProperty(index, nextEntity);
+        }
+
+        current = nextEntity;
+      }
+    } else if (item.ref.type === ASTType.SliceExpression) {
+      // while slicing it will remain pretty much as the same value
+      current = current.copy();
+    } else {
+      return null;
+    }
+
+    if (item.unary?.operator === Keyword.New && this.current !== null) {
+      const newInstance = this.aggregator.factory(CompletionItemKind.Property)
+        .addType(SignatureDefinitionBaseType.Map)
+        .setLabel(current.label);
+      newInstance.setProperty('__isa', current);
+      this.aggregator.createCustomTypeFromMap(item.unary, newInstance);
+      current = newInstance;
+    }
+
+    return current;
+  }
+
+  next(): IteratorResult<IEntity> {
+    if (this.index >= this.chain.length) {
+      return {
+        value: null,
+        done: true
+      };
+    }
+
+    const value = this.index === 0 ? this.getInitial() : this.getNext();
+
+    if (value == null) {
+      return {
+        value: null,
+        done: true
+      };
+    }
+
+    this.index++;
+    this.current = value;
+
+    return {
+      value,
+      done: false
+    };
+  }
+}
+
 export class Aggregator implements IAggregator {
   protected _parent: Aggregator | null;
   protected _scope: IScope;
@@ -68,6 +269,14 @@ export class Aggregator implements IAggregator {
     return this._parent;
   }
 
+  get scope(): IScope {
+    return this._scope;
+  }
+
+  get document(): IDocument {
+    return this._document;
+  }
+
   constructor(options: AggregatorOptions) {
     this._root = options.root;
     this._scope = options.scope;
@@ -77,7 +286,7 @@ export class Aggregator implements IAggregator {
     this._lastModifiedProperty = null;
   }
 
-  protected factory(kind: CompletionItemKind): IEntity {
+  factory(kind: CompletionItemKind): IEntity {
     return new Entity({
       source: this._document.source,
       kind,
@@ -120,7 +329,7 @@ export class Aggregator implements IAggregator {
     return null;
   }
 
-  protected createCustomTypeFromMap(item: ASTBase, entity: IEntity): void {
+  createCustomTypeFromMap(item: ASTBase, entity: IEntity): void {
     const comment = this.createMapDescription(item);
 
     if (comment == null) {
@@ -532,154 +741,13 @@ export class Aggregator implements IAggregator {
       return null;
     }
 
+    const iterator = new ASTChainIterator(this, chain, noInvoke);
     let current: IEntity = null;
-    const first = chain[0];
-    const firstNoInvoke =
-      (first.unary?.operator === '@' && !first.isInCallExpression) ||
-      (noInvoke && chain.length === 1);
+    let next = iterator.next();
 
-    if (isResolveChainItemWithIdentifier(first)) {
-      if (first.getter.name === 'globals') {
-        current = this._scope.globals;
-      } else if (first.getter.name === 'outer') {
-        current = this._scope.outer;
-      } else if (first.getter.name === 'locals') {
-        current = this._scope.locals;
-      } else if (first.getter.name === 'super') {
-        const context = this._document
-          .getScopeContext(first.ref.scope)
-          ?.scope.context?.getIsa();
-
-        if (context == null) {
-          current = this.factory(CompletionItemKind.Constant)
-            .addType('null')
-            .setLabel('super');
-        } else {
-          current = context.copy({
-            kind: CompletionItemKind.Constant,
-            label: 'super',
-            values: context.values
-          });
-        }
-      } else if (first.getter.name === 'self') {
-        const context = this._document.getScopeContext(first.ref.scope)?.scope
-          .context;
-
-        if (context == null) {
-          current = this.factory(CompletionItemKind.Constant)
-            .addType('null')
-            .setLabel('self');
-        } else {
-          current = context.copy({
-            kind: CompletionItemKind.Constant,
-            label: 'self',
-            values: context.values
-          });
-        }
-      } else {
-        let nextEntity = this._scope.resolveNamespace(
-          first.getter.name,
-          firstNoInvoke
-        );
-
-        if (nextEntity == null) {
-          nextEntity = this.factory(CompletionItemKind.Variable)
-            .addType(SignatureDefinitionBaseType.Any)
-            .setLabel(first.getter.name);
-
-          this._scope.globals.setProperty(first.getter.name, nextEntity);
-        }
-
-        current = nextEntity;
-      }
-    } else if (isResolveChainItemWithValue(first)) {
-      current = this.resolveTypeWithDefault(first.value, firstNoInvoke);
-    } else {
-      return null;
-    }
-
-    if (first.unary?.operator === Keyword.New && current !== null) {
-      const newInstance = this.factory(CompletionItemKind.Variable)
-        .addType(SignatureDefinitionBaseType.Map)
-        .setLabel(current.label);
-      newInstance.setProperty('__isa', current);
-      this.createCustomTypeFromMap(first.unary, newInstance);
-      current = newInstance;
-    }
-
-    const length = chain.length;
-
-    for (let index = 1; index < length && current !== null; index++) {
-      const item = chain[index];
-      const itemNoInvoke =
-        (item.unary?.operator === '@' && !item.isInCallExpression) ||
-        (noInvoke && chain.length - 1 === index);
-
-      if (isResolveChainItemWithMember(item)) {
-        let nextEntity = current.resolveProperty(
-          item.getter.name,
-          itemNoInvoke
-        );
-
-        if (nextEntity == null) {
-          nextEntity = this.factory(CompletionItemKind.Variable)
-            .addType(SignatureDefinitionBaseType.Any)
-            .setLabel(item.getter.name);
-
-          current.setProperty(item.getter.name, nextEntity);
-        }
-
-        current = nextEntity;
-      } else if (isResolveChainItemWithIndex(item)) {
-        // index expressions do not get invoked automatically
-        if (isValidIdentifierLiteral(item.getter)) {
-          const name = item.getter.value.toString();
-          let nextEntity = current.resolveProperty(
-            name,
-            item.isInCallExpression
-          );
-
-          if (nextEntity == null) {
-            nextEntity = this.factory(CompletionItemKind.Variable)
-              .addType(SignatureDefinitionBaseType.Any)
-              .setLabel(name);
-
-            current.setProperty(name, nextEntity);
-          }
-
-          current = nextEntity;
-        } else {
-          const index = this.resolveTypeWithDefault(item.getter);
-          let nextEntity = current.resolveProperty(
-            index,
-            item.isInCallExpression
-          );
-
-          if (nextEntity == null) {
-            nextEntity = this.factory(CompletionItemKind.Variable).addType(
-              SignatureDefinitionBaseType.Any
-            );
-
-            current.setProperty(index, nextEntity);
-          }
-
-          current = nextEntity;
-        }
-      } else if (item.ref.type === ASTType.SliceExpression) {
-        // while slicing it will remain pretty much as the same value
-        current = current.copy();
-      } else {
-        return null;
-      }
-
-      if (item.unary?.operator === Keyword.New && current !== null) {
-        const newInstance = this.factory(CompletionItemKind.Property)
-          .addType(SignatureDefinitionBaseType.Map)
-          .setLabel(current.label);
-        newInstance.setProperty('__isa', current);
-        this.createCustomTypeFromMap(item.unary, newInstance);
-        current = newInstance;
-      }
+    while (!next.done) {
+      current = next.value;
+      next = iterator.next();
     }
 
     return current;

@@ -2,6 +2,7 @@ import { ASTBase, ASTBaseBlockWithScope } from 'miniscript-core';
 
 import { IDocument } from './document';
 import { ASTDefinitionItem, IEntity, IScope } from './object';
+import { CompletionItemKind } from './completion';
 
 export interface AggregatorOptions {
   parent?: IAggregator;
@@ -13,7 +14,11 @@ export interface AggregatorOptions {
 export interface IAggregator {
   definitions: Map<string, ASTDefinitionItem[]>;
   parent: IAggregator | null;
+  scope: IScope;
+  document: IDocument;
 
+  factory(kind: CompletionItemKind): IEntity;
+  createCustomTypeFromMap(item: ASTBase, entity: IEntity): void;
   resolveType(item: ASTBase, noInvoke?: boolean): IEntity | null;
   resolveTypeWithDefault(item: ASTBase, noInvoke?: boolean): IEntity;
   resolveNamespace(item: ASTBase, noInvoke?: boolean): IEntity | null;
