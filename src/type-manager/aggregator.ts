@@ -69,6 +69,12 @@ export class ASTChainIterator implements Iterator<IEntity> {
     this.current = null;
   }
 
+  private defineAssumedProperty(entity: IEntity, property: string | IEntity, value: IEntity): void {
+    // only define assumed properties in traversal
+    if (this.index === this.endIndex) return;
+    entity.setProperty(property, value);
+  }
+
   private getInitial(): IEntity {
     let initial: IEntity = null;
     const scope = this.aggregator.scope;
@@ -127,7 +133,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
             .addType(SignatureDefinitionBaseType.Any)
             .setLabel(first.getter.name);
 
-          scope.globals.setProperty(first.getter.name, nextEntity);
+          this.defineAssumedProperty(scope.globals, first.getter.name, nextEntity);
         }
 
         initial = nextEntity;
@@ -168,7 +174,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
           .addType(SignatureDefinitionBaseType.Any)
           .setLabel(item.getter.name);
 
-        current.setProperty(item.getter.name, nextEntity);
+        this.defineAssumedProperty(current, item.getter.name, nextEntity);
       }
 
       current = nextEntity;
@@ -186,7 +192,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
             .addType(SignatureDefinitionBaseType.Any)
             .setLabel(name);
 
-          current.setProperty(name, nextEntity);
+          this.defineAssumedProperty(current, name, nextEntity);
         }
 
         current = nextEntity;
@@ -202,7 +208,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
             SignatureDefinitionBaseType.Any
           );
 
-          current.setProperty(index, nextEntity);
+          this.defineAssumedProperty(current, index, nextEntity);
         }
 
         current = nextEntity;
