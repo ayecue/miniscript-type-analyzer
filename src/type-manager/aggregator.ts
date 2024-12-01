@@ -59,11 +59,13 @@ export class ASTChainIterator implements Iterator<IEntity> {
   index: number;
   endIndex: number;
   noInvoke: boolean;
+  assumeLast: boolean;
 
-  constructor(aggregator: IAggregator, chain: ResolveChainItem[], noInvoke: boolean = false) {
+  constructor(aggregator: IAggregator, chain: ResolveChainItem[], noInvoke: boolean = false, assumeLast: boolean = false) {
     this.aggregator = aggregator;
     this.chain = chain;
     this.noInvoke = noInvoke;
+    this.assumeLast = assumeLast;
     this.index = 0;
     this.endIndex = this.chain.length - 1;
     this.current = null;
@@ -77,6 +79,11 @@ export class ASTChainIterator implements Iterator<IEntity> {
     }
 
     value.addType(SignatureDefinitionBaseType.Any);
+
+    if (this.index === this.endIndex && !this.assumeLast) {
+      return value;
+    }
+
     entity.setProperty(property, value);
 
     return entity.resolveProperty(property, true);
@@ -732,13 +739,14 @@ export class Aggregator implements IAggregator {
 
   protected resolveChain(
     chain: ResolveChainItem[],
-    noInvoke: boolean = false
+    noInvoke: boolean = false,
+    assumeLast: boolean = false
   ): IEntity | null {
     if (chain.length === 0) {
       return null;
     }
 
-    const iterator = new ASTChainIterator(this, chain, noInvoke);
+    const iterator = new ASTChainIterator(this, chain, noInvoke, assumeLast);
     let current: IEntity = null;
     let next = iterator.next();
 
@@ -810,7 +818,7 @@ export class Aggregator implements IAggregator {
     this._lastModifiedProperty = null;
 
     if (astChain.length > 0) {
-      const resolvedContext = this.resolveChain(astChain);
+      const resolvedContext = this.resolveChain(astChain, false, true);
 
       if (resolvedContext === null) {
         return false;
