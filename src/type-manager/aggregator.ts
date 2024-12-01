@@ -69,10 +69,17 @@ export class ASTChainIterator implements Iterator<IEntity> {
     this.current = null;
   }
 
-  private defineAssumedProperty(entity: IEntity, property: string | IEntity, value: IEntity): void {
-    // only define assumed properties in traversal
-    if (this.index === this.endIndex) return;
+  private defineAssumedProperty(entity: IEntity, property: string | IEntity): IEntity {
+    const value = this.aggregator.factory(CompletionItemKind.Variable);
+
+    if (typeof property === 'string') {
+      value.setLabel(property);
+    }
+
+    value.addType(SignatureDefinitionBaseType.Any);
     entity.setProperty(property, value);
+
+    return entity.resolveProperty(property, true);
   }
 
   private getInitial(): IEntity {
@@ -129,11 +136,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
         );
 
         if (nextEntity == null) {
-          nextEntity = this.aggregator.factory(CompletionItemKind.Variable)
-            .addType(SignatureDefinitionBaseType.Any)
-            .setLabel(first.getter.name);
-
-          this.defineAssumedProperty(scope.globals, first.getter.name, nextEntity);
+          nextEntity = this.defineAssumedProperty(scope.globals, first.getter.name);
         }
 
         initial = nextEntity;
@@ -170,11 +173,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
       );
 
       if (nextEntity == null) {
-        nextEntity = this.aggregator.factory(CompletionItemKind.Variable)
-          .addType(SignatureDefinitionBaseType.Any)
-          .setLabel(item.getter.name);
-
-        this.defineAssumedProperty(current, item.getter.name, nextEntity);
+        nextEntity = this.defineAssumedProperty(current, item.getter.name);
       }
 
       current = nextEntity;
@@ -188,11 +187,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
         );
 
         if (nextEntity == null) {
-          nextEntity = this.aggregator.factory(CompletionItemKind.Variable)
-            .addType(SignatureDefinitionBaseType.Any)
-            .setLabel(name);
-
-          this.defineAssumedProperty(current, name, nextEntity);
+          nextEntity = this.defineAssumedProperty(current, name);
         }
 
         current = nextEntity;
@@ -204,11 +199,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
         );
 
         if (nextEntity == null) {
-          nextEntity = this.aggregator.factory(CompletionItemKind.Variable).addType(
-            SignatureDefinitionBaseType.Any
-          );
-
-          this.defineAssumedProperty(current, index, nextEntity);
+          nextEntity = this.defineAssumedProperty(current, index);
         }
 
         current = nextEntity;
