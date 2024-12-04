@@ -1,6 +1,6 @@
 export enum CompletionItemKind {
   Variable = 'var',
-  Property = 'var',
+  Property = 'property',
   Function = 'function',
   Literal = 'literal',
   Constant = 'constant',
