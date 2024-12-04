@@ -72,7 +72,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
   }
 
   private defineAssumedProperty(entity: IEntity, property: string | IEntity): IEntity {
-    const value = this.aggregator.factory(CompletionItemKind.Variable);
+    const value = this.aggregator.factory(this.index === 0 ? CompletionItemKind.Variable : CompletionItemKind.Property);
 
     if (typeof property === 'string') {
       value.setLabel(property);
