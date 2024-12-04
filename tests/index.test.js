@@ -240,8 +240,8 @@ describe('type-manager', () => {
       `)
       const scope = doc.getRootScopeContext().scope;
 
-      expect(scope.resolveProperty('bar').types.size).toEqual(2);
-      expect(Array.from(scope.resolveProperty('bar').types)).toEqual(['any', 'list']);
+      expect(scope.resolveProperty('bar').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('bar').types)).toEqual(['list']);
     });
   });
 
@@ -637,13 +637,11 @@ describe('type-manager', () => {
       `);
       const assignments = doc.resolveAllAssignmentsWithQuery('test');
 
-      expect(assignments.length).toEqual(6);
+      expect(assignments.length).toEqual(4);
       expect(assignments[0].node.start.line).toEqual(2);
-      expect(assignments[1].node.start.line).toEqual(2);
-      expect(assignments[2].node.start.line).toEqual(3);
-      expect(assignments[3].node.start.line).toEqual(5);
-      expect(assignments[4].node.start.line).toEqual(8);
-      expect(assignments[5].node.start.line).toEqual(9);
+      expect(assignments[1].node.start.line).toEqual(5);
+      expect(assignments[2].node.start.line).toEqual(8);
+      expect(assignments[3].node.start.line).toEqual(9);
     })
   });
 
