@@ -484,8 +484,8 @@ export class Entity implements IEntity {
         label: property,
         kind:
           definition.getType().type === SignatureDefinitionBaseType.Function
-            ? CompletionItemKind.Function
-            : CompletionItemKind.Property,
+            ? CompletionItemKind.InternalFunction
+            : CompletionItemKind.InternalProperty,
         container: this._container,
         isFromSignature: true
       });

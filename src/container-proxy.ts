@@ -33,7 +33,7 @@ export class ContainerProxy implements IContainerProxy {
     for (const [type, signature] of this._container.getPrimitives()) {
       const signatureEntity = new Entity({
         source: 'internal',
-        kind: CompletionItemKind.Constant,
+        kind: CompletionItemKind.Internal,
         container: this,
         isAPI: type === SignatureDefinitionBaseType.General
       })
@@ -52,7 +52,7 @@ export class ContainerProxy implements IContainerProxy {
     for (const [type, signature] of this._container.getTypes()) {
       const signatureEntity = new Entity({
         source: 'internal',
-        kind: CompletionItemKind.Constant,
+        kind: CompletionItemKind.Internal,
         container: this
       })
         .addType(SignatureDefinitionBaseType.Map)
@@ -127,7 +127,7 @@ export class ContainerProxy implements IContainerProxy {
     const mergedEntity = new Entity({
       source: 'internal',
       label: property,
-      kind: CompletionItemKind.Property,
+      kind: CompletionItemKind.Internal,
       container: this
     });
 
