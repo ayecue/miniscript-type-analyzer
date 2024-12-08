@@ -124,10 +124,11 @@ export class ContainerProxy implements IContainerProxy {
       return resolveEntity(this, internalAnyDef, noInvoke);
     }
 
+    const firstMatch = matches.values().next().value as IEntity;
     const mergedEntity = new Entity({
       source: 'internal',
       label: property,
-      kind: CompletionItemKind.Internal,
+      kind: firstMatch.kind,
       container: this
     });
 
