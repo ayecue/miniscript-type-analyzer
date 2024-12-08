@@ -2,7 +2,7 @@ export { isValidIdentifierLiteral } from './utils/is-valid-identifier-literal';
 export { createExpressionHash } from './utils/create-expression-hash';
 export { createExpressionId } from './utils/create-expression-id';
 export { enrichWithMetaInformation } from './utils/enrich-with-meta-information';
-export { createResolveChain } from './utils/get-ast-chain';
+export { createResolveChain } from './utils/create-resolve-chain';
 export { getHashCode, getStringHashCode, rotateBits } from './utils/hash';
 export { ObjectSet, ObjectSetIterator } from './utils/object-set';
 export { AggregatorOptions, IAggregator, DEFAULT_CUSTOM_FUNCTION_DESCRIPTION } from './types/aggregator';

@@ -76,8 +76,12 @@ function handler(
     case ASTType.NumericLiteral:
     case ASTType.StringLiteral:
     case ASTType.NilLiteral:
+    case ASTType.BooleanLiteral:
     case ASTType.MapConstructorExpression:
-    case ASTType.ListConstructorExpression: {
+    case ASTType.ListConstructorExpression:
+    case ASTType.BinaryExpression:
+    case ASTType.LogicalExpression:
+    case ASTType.ComparisonGroupExpression: {
       chain.push({
         ref: current,
         value: current,

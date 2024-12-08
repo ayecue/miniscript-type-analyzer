@@ -169,6 +169,7 @@ function hashHandler(current: ASTBase): number {
       result ^= getStringHashCode(identifier.name);
       return attachCache(current, result);
     }
+    case ASTType.BooleanLiteral:
     case ASTType.NumericLiteral:
     case ASTType.StringLiteral:
     case ASTType.NilLiteral: {

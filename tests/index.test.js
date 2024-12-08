@@ -148,6 +148,20 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['string']);
     });
 
+    test('should return entity from boolean literal', () => {
+      const doc = getDocument(`
+        // @return {string}
+        number.test = function
+        end function
+
+        foo = (true).test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('foo').types.size).toEqual(1);
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['string']);
+    });
+
     test('should return entity from expression', () => {
       const doc = getDocument(`
         // @return {number}
@@ -1126,7 +1140,7 @@ describe('type-manager', () => {
       const mergedDoc = doc3.merge(doc1, doc2);
       const scope = mergedDoc.getRootScopeContext().scope;
 
-      expect(Array.from(scope.resolveProperty('test').types)).toEqual(['any', 'map']);
+      expect(Array.from(scope.resolveProperty('test').types)).toEqual(['map']);
       expect(scope.resolveProperty('test').values.size).toEqual(2);
       expect(Array.from(scope.resolveProperty('test').resolveProperty('bar').types)).toEqual(['number']);
       expect(Array.from(scope.resolveProperty('test').resolveProperty('foo').types)).toEqual(['string']);
@@ -1146,7 +1160,7 @@ describe('type-manager', () => {
       const mergedDoc = doc3.merge(doc1, doc2);
       const scope = mergedDoc.getRootScopeContext().scope;
 
-      expect(Array.from(scope.resolveProperty('test').types)).toEqual(['any', 'map']);
+      expect(Array.from(scope.resolveProperty('test').types)).toEqual(['map']);
       expect(scope.resolveProperty('test').values.size).toEqual(2);
       expect(Array.from(scope.resolveProperty('test').resolveProperty('bar').types)).toEqual(['number']);
       expect(Array.from(scope.resolveProperty('test').resolveProperty('foo').types)).toEqual(['string']);

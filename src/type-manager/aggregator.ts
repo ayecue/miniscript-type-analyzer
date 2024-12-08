@@ -44,8 +44,8 @@ import {
   ResolveChainItem
 } from '../types/resolve';
 import { createExpressionId } from '../utils/create-expression-id';
+import { createResolveChain } from '../utils/create-resolve-chain';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
-import { createResolveChain } from '../utils/get-ast-chain';
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 import { merge } from '../utils/merge';
 import { mergeUnique } from '../utils/mergeUnique';
@@ -59,34 +59,48 @@ export class ASTChainIterator implements Iterator<IEntity> {
   index: number;
   endIndex: number;
   noInvoke: boolean;
-  assumeLast: boolean;
+  assume: boolean;
 
-  constructor(aggregator: IAggregator, chain: ResolveChainItem[], noInvoke: boolean = false, assumeLast: boolean = false) {
+  constructor(
+    aggregator: IAggregator,
+    chain: ResolveChainItem[],
+    noInvoke: boolean = false,
+    assume: boolean = false
+  ) {
     this.aggregator = aggregator;
     this.chain = chain;
     this.noInvoke = noInvoke;
-    this.assumeLast = assumeLast;
+    this.assume = assume;
     this.index = 0;
     this.endIndex = this.chain.length - 1;
     this.current = null;
   }
 
-  private defineAssumedProperty(entity: IEntity, property: string | IEntity): IEntity {
-    const value = this.aggregator.factory(this.index === 0 ? CompletionItemKind.Variable : CompletionItemKind.Property);
+  private defineAssumedProperty(
+    entity: IEntity,
+    property: string | IEntity
+  ): IEntity {
+    const value = this.aggregator.factory(
+      this.index === 0
+        ? CompletionItemKind.Variable
+        : CompletionItemKind.Property
+    );
 
     if (typeof property === 'string') {
       value.setLabel(property);
     }
 
-    value.addType(SignatureDefinitionBaseType.Any);
+    if (this.assume) {
+      value.addType(SignatureDefinitionBaseType.Map);
 
-    if (this.index === this.endIndex && !this.assumeLast) {
-      return value;
+      entity.setProperty(property, value);
+
+      return entity.resolveProperty(property, true);
     }
 
-    entity.setProperty(property, value);
+    value.addType(SignatureDefinitionBaseType.Any);
 
-    return entity.resolveProperty(property, true);
+    return value;
   }
 
   private getInitial(): IEntity {
@@ -111,7 +125,8 @@ export class ASTChainIterator implements Iterator<IEntity> {
           ?.scope.context?.getIsa();
 
         if (context == null) {
-          initial = this.aggregator.factory(CompletionItemKind.Constant)
+          initial = this.aggregator
+            .factory(CompletionItemKind.Constant)
             .addType('null')
             .setLabel('super');
         } else {
@@ -126,7 +141,8 @@ export class ASTChainIterator implements Iterator<IEntity> {
           .context;
 
         if (context == null) {
-          initial = this.aggregator.factory(CompletionItemKind.Constant)
+          initial = this.aggregator
+            .factory(CompletionItemKind.Constant)
             .addType('null')
             .setLabel('self');
         } else {
@@ -143,19 +159,26 @@ export class ASTChainIterator implements Iterator<IEntity> {
         );
 
         if (nextEntity == null) {
-          nextEntity = this.defineAssumedProperty(scope.globals, first.getter.name);
+          nextEntity = this.defineAssumedProperty(
+            scope.globals,
+            first.getter.name
+          );
         }
 
         initial = nextEntity;
       }
     } else if (isResolveChainItemWithValue(first)) {
-      initial = this.aggregator.resolveTypeWithDefault(first.value, firstNoInvoke);
+      initial = this.aggregator.resolveTypeWithDefault(
+        first.value,
+        firstNoInvoke
+      );
     } else {
       return null;
     }
 
     if (first.unary?.operator === Keyword.New && initial !== null) {
-      const newInstance = this.aggregator.factory(CompletionItemKind.Variable)
+      const newInstance = this.aggregator
+        .factory(CompletionItemKind.Variable)
         .addType(SignatureDefinitionBaseType.Map)
         .setLabel(initial.label);
       newInstance.setProperty('__isa', initial);
@@ -174,10 +197,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
       (this.noInvoke && this.index === this.endIndex);
 
     if (isResolveChainItemWithMember(item)) {
-      let nextEntity = current.resolveProperty(
-        item.getter.name,
-        itemNoInvoke
-      );
+      let nextEntity = current.resolveProperty(item.getter.name, itemNoInvoke);
 
       if (nextEntity == null) {
         nextEntity = this.defineAssumedProperty(current, item.getter.name);
@@ -188,10 +208,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
       // index expressions do not get invoked automatically
       if (isValidIdentifierLiteral(item.getter)) {
         const name = item.getter.value.toString();
-        let nextEntity = current.resolveProperty(
-          name,
-          item.isInCallExpression
-        );
+        let nextEntity = current.resolveProperty(name, item.isInCallExpression);
 
         if (nextEntity == null) {
           nextEntity = this.defineAssumedProperty(current, name);
@@ -219,7 +236,8 @@ export class ASTChainIterator implements Iterator<IEntity> {
     }
 
     if (item.unary?.operator === Keyword.New && this.current !== null) {
-      const newInstance = this.aggregator.factory(CompletionItemKind.Property)
+      const newInstance = this.aggregator
+        .factory(CompletionItemKind.Property)
         .addType(SignatureDefinitionBaseType.Map)
         .setLabel(current.label);
       newInstance.setProperty('__isa', current);
@@ -740,13 +758,13 @@ export class Aggregator implements IAggregator {
   protected resolveChain(
     chain: ResolveChainItem[],
     noInvoke: boolean = false,
-    assumeLast: boolean = false
+    assume: boolean = false
   ): IEntity | null {
     if (chain.length === 0) {
       return null;
     }
 
-    const iterator = new ASTChainIterator(this, chain, noInvoke, assumeLast);
+    const iterator = new ASTChainIterator(this, chain, noInvoke, assume);
     let current: IEntity = null;
     let next = iterator.next();
 

@@ -54,20 +54,22 @@ export interface ResolveChainItemWithValue extends ResolveChainItemBase {
   value: ASTBase;
 }
 
+const resolveChainItemWithValueTypes: Set<string> = new Set([
+  ASTType.NumericLiteral,
+  ASTType.StringLiteral,
+  ASTType.NilLiteral,
+  ASTType.BooleanLiteral,
+  ASTType.MapConstructorExpression,
+  ASTType.ListConstructorExpression,
+  ASTType.BinaryExpression,
+  ASTType.LogicalExpression,
+  ASTType.ComparisonGroupExpression
+]);
+
 export const isResolveChainItemWithValue = (
   item: ResolveChainItemBase
 ): item is ResolveChainItemWithValue => {
-  return (
-    item != null &&
-    (item.ref.type === ASTType.NumericLiteral ||
-      item.ref.type === ASTType.StringLiteral ||
-      item.ref.type === ASTType.NilLiteral ||
-      item.ref.type === ASTType.MapConstructorExpression ||
-      item.ref.type === ASTType.ListConstructorExpression ||
-      item.ref.type === ASTType.BinaryExpression ||
-      item.ref.type === ASTType.LogicalExpression ||
-      item.ref.type === ASTType.ComparisonGroupExpression)
-  );
+  return item != null && resolveChainItemWithValueTypes.has(item.ref.type);
 };
 
 export type ResolveChainItemWithGetter =

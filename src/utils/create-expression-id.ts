@@ -162,6 +162,7 @@ function stringHandler(current: ASTBase): string {
       return attachCache(current, identifier.name);
     }
     case ASTType.NumericLiteral:
+    case ASTType.BooleanLiteral:
     case ASTType.StringLiteral:
     case ASTType.NilLiteral: {
       return attachCache(current, (current as ASTLiteral).raw.toString());

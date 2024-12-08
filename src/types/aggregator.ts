@@ -1,8 +1,8 @@
 import { ASTBase, ASTBaseBlockWithScope } from 'miniscript-core';
 
+import { CompletionItemKind } from './completion';
 import { IDocument } from './document';
 import { ASTDefinitionItem, IEntity, IScope } from './object';
-import { CompletionItemKind } from './completion';
 
 export interface AggregatorOptions {
   parent?: IAggregator;
