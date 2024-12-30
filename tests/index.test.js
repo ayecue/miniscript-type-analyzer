@@ -360,23 +360,44 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['crypto']);
     });
 
+    test('should return entity of nested return value', () => {
+      const doc = getDocument(`
+        // Hello world
+        // @return {map<string,list<string>>} - Some info about return
+        test = function
+        end function
+        output = test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signature = scope.resolveProperty('test', true).signatureDefinitions.first();
+      const returnType = signature.getReturns()[0];
+
+      expect(returnType.valueType.type).toEqual('list');
+      expect(returnType.valueType.valueType.type).toEqual('string');
+    });
+
     test('should return entities from arguments', () => {
       const doc = getDocument(`
         // Hello world
         // I am **bold**
         // @param {string} test - The title of the book.
         // @param {string|number} abc - The author of the book.
+        // @param {list<string>|map<string,list<string>>} foo - Foobar.
         // @return {crypto} - Some info about return
-        test = function(test, abc)
+        test = function(test, abc, foo)
         end function
         output = test
       `);
       const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
       const firstArg = scope.resolveProperty('test', true);
       const secondArg = scope.resolveProperty('abc', true);
+      const thirdArg = scope.resolveProperty('foo', true);
 
       expect(Array.from(firstArg.types)).toEqual(['string']);
       expect(Array.from(secondArg.types)).toEqual(['string', 'number']);
+      expect(Array.from(thirdArg.types)).toEqual(['list', 'map']);
+      expect(Array.from(thirdArg.values.get('t:string').types)).toEqual(['list']);
+      expect(Array.from(thirdArg.values.get('t:string').values.get('t:number').types)).toEqual(['string']);
     });
 
     test('should return entity from arguments which has extended its type', () => {

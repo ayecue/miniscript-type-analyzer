@@ -2,7 +2,9 @@ import { Block, parse, Spec } from 'comment-parser';
 import {
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction,
-  SignaturePayloadDefinitionArg
+  SignaturePayloadDefinitionArg,
+  SignaturePayloadDefinitionTypeMeta,
+  TypeParser
 } from 'meta-utils';
 
 function convertSpecToString(it: Spec): string {
@@ -16,6 +18,22 @@ export enum FunctionBlockTag {
   Example = 'example'
 }
 
+function parseItemType(item: string): SignaturePayloadDefinitionTypeMeta {
+  return new TypeParser(item).parse();
+}
+
+function parseReturnType(commentType: Spec): SignaturePayloadDefinitionTypeMeta[] {
+  return commentType.type.split('|').map(parseItemType);
+}
+
+function parseArgType(commentType: Spec): SignaturePayloadDefinitionArg {
+  return {
+    types: commentType.type.split('|').map(parseItemType),
+    label: commentType.name,
+    opt: commentType.optional
+  };
+}
+
 function parseFunctionBlock(def: Block) {
   const descriptions = [
     def.description ?? '',
@@ -25,14 +43,10 @@ function parseFunctionBlock(def: Block) {
   ].join('\n\n');
   const args: SignaturePayloadDefinitionArg[] = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Param)
-    .map((it) => ({
-      label: it.name,
-      types: it.type.split('|'),
-      opt: it.optional
-    }));
-  const returns = def.tags.find((it) => it.tag === FunctionBlockTag.Return) ?? {
-    type: 'any'
-  };
+    .map(parseArgType);
+  const returns = def.tags
+    .filter((it) => it.tag === FunctionBlockTag.Return)
+    .flatMap(parseReturnType)
   const examples = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Example)
     .map(convertSpecToString);
@@ -55,7 +69,7 @@ export function enrichWithMetaInformation(item: SignatureDefinitionFunction) {
     const {
       descriptions: commentDescription,
       args: commentArgs,
-      returns: commentReturnValues,
+      returns: commentReturn,
       examples: commentExample
     } = parseFunctionBlock(commentDef);
 
@@ -73,7 +87,7 @@ export function enrichWithMetaInformation(item: SignatureDefinitionFunction) {
           label
         };
       }),
-      returns: commentReturnValues.type.split('|'),
+      returns: commentReturn,
       description: commentDescription,
       example: commentExample
     });

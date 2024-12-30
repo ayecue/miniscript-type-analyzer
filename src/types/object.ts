@@ -1,13 +1,22 @@
 import {
   Signature,
   SignatureDefinition,
-  SignatureDefinitionType
+  SignatureDefinitionType,
+  SignatureDefinitionTypeMeta
 } from 'meta-utils';
 import { ASTAssignmentStatement, ASTMapKeyString } from 'miniscript-core';
 
 import { ObjectSet } from '../utils/object-set';
 import { CompletionItem, CompletionItemKind } from './completion';
 import { IContainerProxy } from './container-proxy';
+
+export enum PropertyType {
+  Type = 't',
+  Identifier = 'i',
+}
+
+export const IdentifierPropertyPattern = `${PropertyType.Identifier}:` as const;
+export const IsaPropertyPattern = `${PropertyType.Identifier}:__isa` as const;
 
 export type ASTDefinitionItem = {
   source: string;
@@ -89,8 +98,10 @@ export interface IEntity {
   hasProperty(name: string | IEntity): boolean;
   resolveProperty(name: string | IEntity, noInvoke?: boolean): IEntity | null;
   setProperty(name: string | IEntity, item: IEntity): boolean;
-  addTypes(types: SignatureDefinitionType[]): this;
+  addTypes(types: string[]): this;
   addType(type: SignatureDefinitionType): this;
+  addTypesWithMeta(types: SignatureDefinitionTypeMeta[]): this;
+  addTypeWithMeta(meta: SignatureDefinitionTypeMeta): this;
   insertSignature(signature: Signature): this;
   copy(options?: EntityCopyOptions): IEntity;
   extend(
@@ -104,7 +115,7 @@ export interface IEntity {
   isAPI(): boolean;
   isFromSignature(): boolean;
   hasContext(): boolean;
-  getCallableReturnTypes(): string[] | null;
+  getCallableReturnTypes(): SignatureDefinitionTypeMeta[] | null;
   setReturnEntity(entitiy: IEntity): this;
   getReturnEntity(): IEntity;
   setKind(kind: CompletionItemKind): this;

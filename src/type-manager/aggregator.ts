@@ -35,7 +35,7 @@ import {
 } from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
 import { IDocument } from '../types/document';
-import { ASTDefinitionItem, IEntity, IScope } from '../types/object';
+import { ASTDefinitionItem, PropertyType, IEntity, IScope } from '../types/object';
 import {
   isResolveChainItemWithIdentifier,
   isResolveChainItemWithIndex,
@@ -537,7 +537,7 @@ export class Aggregator implements IAggregator {
       if (field.key.type === ASTType.StringLiteral) {
         const property = (field.key as ASTLiteral).value.toString();
         mapEntity.setProperty(property, value);
-        mapEntity.values.get(`i:${property}`)?.definitions.push({
+        mapEntity.values.get(`${PropertyType.Identifier}:${property}`)?.definitions.push({
           source: this._document.source,
           node: field
         });
