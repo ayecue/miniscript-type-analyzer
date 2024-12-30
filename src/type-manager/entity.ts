@@ -3,7 +3,8 @@ import {
   SignatureDefinition,
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction,
-  SignatureDefinitionType
+  SignatureDefinitionType,
+  SignatureDefinitionTypeMeta
 } from 'meta-utils';
 
 import { CompletionItem, CompletionItemKind } from '../types/completion';
@@ -13,8 +14,10 @@ import {
   EntityCopyOptions,
   EntityExtendStackItem,
   EntityOptions,
+  PropertyType,
   IEntity,
-  IEntityPropertyHandler
+  IEntityPropertyHandler,
+  IsaPropertyPattern
 } from '../types/object';
 import { isSignatureDefinitionFunction } from '../types/signature';
 import { injectIdentifers } from '../utils/inject-identifiers';
@@ -23,189 +26,246 @@ import { lookupProperty } from '../utils/lookup-property';
 import { mergeUnique } from '../utils/mergeUnique';
 import { ObjectSet } from '../utils/object-set';
 
-export const resolveEntity = (
-  container: IContainerProxy,
-  entity: IEntity,
-  noInvoke: boolean = false
-) => {
-  if (entity.isCallable() && !noInvoke) {
-    const returnEntity = entity.getReturnEntity();
+export class Entity implements IEntity {
+  static resolveEntity(
+    container: IContainerProxy,
+    entity: IEntity,
+    noInvoke: boolean = false
+  ) {
+    if (entity.isCallable() && !noInvoke) {
+      const returnEntity = entity.getReturnEntity();
 
-    if (returnEntity !== null) {
-      return returnEntity;
-    }
+      if (returnEntity !== null) {
+        return returnEntity;
+      }
 
-    const returnTypes = entity.getCallableReturnTypes();
+      const returnTypes = entity.getCallableReturnTypes();
 
-    if (returnTypes) {
+      if (returnTypes) {
+        return new Entity({
+          source: entity.source,
+          kind: CompletionItemKind.Variable,
+          container,
+          label: entity.label,
+          context: entity.context
+        }).addTypesWithMeta(returnTypes);
+      }
+
       return new Entity({
         source: entity.source,
         kind: CompletionItemKind.Variable,
         container,
         label: entity.label,
         context: entity.context
-      }).addTypes(returnTypes);
-    }
-
-    return new Entity({
-      source: entity.source,
-      kind: CompletionItemKind.Variable,
-      container,
-      label: entity.label,
-      context: entity.context
-    }).addType(SignatureDefinitionBaseType.Any);
-  }
-
-  return entity;
-};
-
-const identifierPropertyHandler: IEntityPropertyHandler<string> = {
-  hasProperty(
-    origin: IEntity,
-    container: IContainerProxy,
-    property: string
-  ): boolean {
-    return (
-      !!lookupProperty(origin, property) ||
-      (!origin.isAPI() &&
-        !!container.getDefinition(Array.from(origin.types), property, true))
-    );
-  },
-
-  resolveProperty(
-    origin: IEntity,
-    container: IContainerProxy,
-    property: string,
-    noInvoke: boolean = false
-  ): IEntity | null {
-    const entity = lookupProperty(origin, property) ?? null;
-
-    if (entity == null) {
-      if (!origin.isAPI()) {
-        return container.getDefinition(
-          Array.from(origin.types),
-          property,
-          noInvoke
-        );
-      }
-
-      return null;
-    }
-
-    return resolveEntity(container, entity, noInvoke);
-  },
-
-  setProperty(
-    origin: IEntity,
-    container: IContainerProxy,
-    property: string,
-    entity: IEntity
-  ): boolean {
-    if (!isEligibleForProperties(origin)) return false;
-
-    const key = `i:${property}`;
-    const existingEntity = origin.values.get(key);
-
-    if (existingEntity) {
-      existingEntity.extend(entity);
-    } else {
-      origin.values.set(
-        key,
-        entity.copy({
-          container,
-          label: property,
-          context: origin,
-          definitions: []
-        })
-      );
-    }
-
-    return true;
-  }
-};
-
-const entityPropertyHandler: IEntityPropertyHandler<IEntity> = {
-  hasProperty(
-    origin: IEntity,
-    _container: IContainerProxy,
-    property: IEntity
-  ): boolean {
-    if (!isEligibleForProperties(origin)) return false;
-    for (const type of property.types) {
-      if (origin.values.has(`t:${type}`)) {
-        return true;
-      }
-    }
-    return false;
-  },
-
-  resolveProperty(
-    origin: IEntity,
-    container: IContainerProxy,
-    property: IEntity,
-    noInvoke: boolean = false
-  ): IEntity | null {
-    if (!isEligibleForProperties(origin)) {
-      return new Entity({
-        source: origin.source,
-        kind: CompletionItemKind.Variable,
-        container,
-        label: property.label,
-        context: origin
       }).addType(SignatureDefinitionBaseType.Any);
     }
 
-    const aggregatedEntity = new Entity({
-      source: property.source,
-      kind: CompletionItemKind.Variable,
-      container,
-      label: property.label,
-      context: origin
-    });
-
-    for (const type of property.types) {
-      const entity = origin.values.get(`t:${type}`);
-      if (!entity) continue;
-      aggregatedEntity.extend(entity);
-    }
-
-    if (aggregatedEntity.types.size === 0) {
-      aggregatedEntity.addType(SignatureDefinitionBaseType.Any);
-    }
-
-    return resolveEntity(container, aggregatedEntity, noInvoke);
-  },
-
-  setProperty(
-    origin: IEntity,
-    container: IContainerProxy,
-    property: IEntity,
-    entity: IEntity
-  ): boolean {
-    if (!isEligibleForProperties(origin)) return false;
-    for (const type of property.types) {
-      const key = `t:${type}`;
-      const existingEntity = origin.values.get(key);
-
-      if (existingEntity) {
-        existingEntity.extend(entity);
-      } else {
-        origin.values.set(
-          key,
-          entity.copy({
-            container,
-            label: type,
-            context: origin,
-            definitions: []
-          })
-        );
-      }
-    }
-    return true;
+    return entity;
   }
-};
 
-export class Entity implements IEntity {
+  static handlers: {
+    identifier: IEntityPropertyHandler<string>;
+    entity: IEntityPropertyHandler<IEntity>;
+    type: IEntityPropertyHandler<string>;
+  } = {
+      identifier: {
+        hasProperty(
+          origin: IEntity,
+          container: IContainerProxy,
+          property: string
+        ): boolean {
+          return (
+            !!lookupProperty(PropertyType.Identifier, origin, property) ||
+            (!origin.isAPI() &&
+              !!container.getDefinition(Array.from(origin.types), property, true))
+          );
+        },
+
+        resolveProperty(
+          origin: IEntity,
+          container: IContainerProxy,
+          property: string,
+          noInvoke: boolean = false
+        ): IEntity | null {
+          const entity = lookupProperty(PropertyType.Identifier, origin, property) ?? null;
+
+          if (entity == null) {
+            if (!origin.isAPI()) {
+              return container.getDefinition(
+                Array.from(origin.types),
+                property,
+                noInvoke
+              );
+            }
+
+            return null;
+          }
+
+          return Entity.resolveEntity(container, entity, noInvoke);
+        },
+
+        setProperty(
+          origin: IEntity,
+          container: IContainerProxy,
+          property: string,
+          entity: IEntity
+        ): boolean {
+          if (!isEligibleForProperties(origin)) return false;
+
+          const key = `${PropertyType.Identifier}:${property}`;
+          const existingEntity = origin.values.get(key);
+
+          if (existingEntity) {
+            existingEntity.extend(entity);
+          } else {
+            origin.values.set(
+              key,
+              entity.copy({
+                container,
+                label: property,
+                context: origin,
+                definitions: []
+              })
+            );
+          }
+
+          return true;
+        }
+      },
+      entity: {
+        hasProperty(
+          origin: IEntity,
+          _container: IContainerProxy,
+          property: IEntity
+        ): boolean {
+          if (!isEligibleForProperties(origin)) return false;
+          for (const type of property.types) {
+            if (origin.values.has(`${PropertyType.Type}:${type}`)) {
+              return true;
+            }
+          }
+          return false;
+        },
+
+        resolveProperty(
+          origin: IEntity,
+          container: IContainerProxy,
+          property: IEntity,
+          noInvoke: boolean = false
+        ): IEntity | null {
+          if (!isEligibleForProperties(origin)) {
+            return new Entity({
+              source: origin.source,
+              kind: CompletionItemKind.Variable,
+              container,
+              label: property.label,
+              context: origin
+            }).addType(SignatureDefinitionBaseType.Any);
+          }
+
+          const aggregatedEntity = new Entity({
+            source: property.source,
+            kind: CompletionItemKind.Variable,
+            container,
+            label: property.label,
+            context: origin
+          });
+
+          for (const type of property.types) {
+            const entity = origin.values.get(`${PropertyType.Type}:${type}`);
+            if (!entity) continue;
+            aggregatedEntity.extend(entity);
+          }
+
+          if (aggregatedEntity.types.size === 0) {
+            aggregatedEntity.addType(SignatureDefinitionBaseType.Any);
+          }
+
+          return Entity.resolveEntity(container, aggregatedEntity, noInvoke);
+        },
+
+        setProperty(
+          origin: IEntity,
+          container: IContainerProxy,
+          property: IEntity,
+          entity: IEntity
+        ): boolean {
+          if (!isEligibleForProperties(origin)) return false;
+          for (const type of property.types) {
+            const key = `${PropertyType.Type}:${type}`;
+            const existingEntity = origin.values.get(key);
+
+            if (existingEntity) {
+              existingEntity.extend(entity);
+            } else {
+              origin.values.set(
+                key,
+                entity.copy({
+                  container,
+                  label: type,
+                  context: origin,
+                  definitions: []
+                })
+              );
+            }
+          }
+          return true;
+        }
+      },
+      type: {
+        hasProperty(
+          origin: IEntity,
+          _container: IContainerProxy,
+          type: string
+        ): boolean {
+          return !!lookupProperty(PropertyType.Type, origin, type);
+        },
+
+        resolveProperty(
+          origin: IEntity,
+          container: IContainerProxy,
+          type: string,
+          noInvoke: boolean = false
+        ): IEntity | null {
+          const entity = lookupProperty(PropertyType.Type, origin, type) ?? null;
+
+          if (entity == null) {
+            return null;
+          }
+
+          return Entity.resolveEntity(container, entity, noInvoke);
+        },
+
+        setProperty(
+          origin: IEntity,
+          container: IContainerProxy,
+          type: string,
+          entity: IEntity
+        ): boolean {
+          if (!isEligibleForProperties(origin)) return false;
+
+          const key = `${PropertyType.Type}:${type}`;
+          const existingEntity = origin.values.get(key);
+
+          if (existingEntity) {
+            existingEntity.extend(entity);
+          } else {
+            origin.values.set(
+              key,
+              entity.copy({
+                container,
+                label: type,
+                context: origin,
+                definitions: []
+              })
+            );
+          }
+
+          return true;
+        }
+      }
+    };
+
   protected _source: string;
   protected _kind: CompletionItemKind;
   protected _line: number;
@@ -282,11 +342,11 @@ export class Entity implements IEntity {
   }
 
   getIsa() {
-    return this._values.get('i:__isa') ?? null;
+    return this._values.get(IsaPropertyPattern) ?? null;
   }
 
   hasIsa() {
-    return this._values.has('i:__isa');
+    return this._values.has(IsaPropertyPattern);
   }
 
   isAPI() {
@@ -297,15 +357,14 @@ export class Entity implements IEntity {
     return this._types.has(SignatureDefinitionBaseType.Function);
   }
 
-  getCallableReturnTypes(): string[] | null {
+  getCallableReturnTypes(): SignatureDefinitionTypeMeta[] | null {
     if (!this.isCallable()) return null;
     const functionDefs = Array.from(this._signatureDefinitions).filter((item) =>
       isSignatureDefinitionFunction(item)
     ) as SignatureDefinitionFunction[];
     if (functionDefs.length === 0) return null;
     return functionDefs
-      .flatMap((item) => item.getReturns())
-      .map((item) => item.type);
+      .flatMap((item) => item.getReturns());
   }
 
   addSignatureType(definition: SignatureDefinition): this {
@@ -355,17 +414,49 @@ export class Entity implements IEntity {
     return this;
   }
 
+  addTypeWithMeta(meta: SignatureDefinitionTypeMeta): this {
+    this._types.add(meta.type);
+
+    if (meta.type === SignatureDefinitionBaseType.Map || meta.type === SignatureDefinitionBaseType.List) {
+      const keyType = meta.type === SignatureDefinitionBaseType.Map ? (meta.keyType.type ?? SignatureDefinitionBaseType.Any) : SignatureDefinitionBaseType.Number;
+
+      const valueEntity = new Entity({
+        source: this._source,
+        kind: CompletionItemKind.Property,
+        container: this._container,
+        context: this
+      });
+
+      if (meta.valueType.type === SignatureDefinitionBaseType.Map || meta.valueType.type === SignatureDefinitionBaseType.List) {
+        valueEntity.addTypeWithMeta(meta.valueType);
+      } else {
+        valueEntity.addType(meta.valueType.type ?? SignatureDefinitionBaseType.Any);
+      }
+
+      Entity.handlers.type.setProperty(this, this._container, keyType, valueEntity);
+    }
+
+    return this;
+  }
+
+  addTypesWithMeta(types: SignatureDefinitionTypeMeta[]): this {
+    for (let index = 0; index < types.length; index++) {
+      this.addTypeWithMeta(types[index]);
+    }
+    return this;
+  }
+
   hasProperty(property: string | IEntity): boolean {
     switch (typeof property) {
       case 'object': {
-        return entityPropertyHandler.hasProperty(
+        return Entity.handlers.entity.hasProperty(
           this,
           this._container,
           property as IEntity
         );
       }
       default: {
-        return identifierPropertyHandler.hasProperty(
+        return Entity.handlers.identifier.hasProperty(
           this,
           this._container,
           property
@@ -380,7 +471,7 @@ export class Entity implements IEntity {
   ): IEntity | null {
     switch (typeof property) {
       case 'object': {
-        return entityPropertyHandler.resolveProperty(
+        return Entity.handlers.entity.resolveProperty(
           this,
           this._container,
           property as IEntity,
@@ -388,7 +479,7 @@ export class Entity implements IEntity {
         );
       }
       default: {
-        return identifierPropertyHandler.resolveProperty(
+        return Entity.handlers.identifier.resolveProperty(
           this,
           this._container,
           property,
@@ -401,7 +492,7 @@ export class Entity implements IEntity {
   setProperty(property: string | IEntity, entity: IEntity): boolean {
     switch (typeof property) {
       case 'object': {
-        return entityPropertyHandler.setProperty(
+        return Entity.handlers.entity.setProperty(
           this,
           this._container,
           property as IEntity,
@@ -409,7 +500,7 @@ export class Entity implements IEntity {
         );
       }
       default: {
-        return identifierPropertyHandler.setProperty(
+        return Entity.handlers.identifier.setProperty(
           this,
           this._container,
           property,

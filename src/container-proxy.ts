@@ -1,7 +1,7 @@
 import { Container, SignatureDefinitionBaseType, SignatureDefinitionType } from "meta-utils";
 import { ContainerProxyOptions, IContainerProxy } from "./types/container-proxy";
-import { IEntity } from "./types/object";
-import { Entity, resolveEntity } from "./type-manager/entity";
+import { IEntity, PropertyType } from "./types/object";
+import { Entity } from "./type-manager/entity";
 import { CompletionItem, CompletionItemKind } from "./types/completion";
 import { injectIdentifers } from "./utils/inject-identifiers";
 import { lookupProperty } from "./utils/lookup-property";
@@ -92,7 +92,7 @@ export class ContainerProxy implements IContainerProxy {
     for (const type of typesSet) {
       const current = this.getTypeSignature(type);
       if (current === null) continue;
-      const match = lookupProperty(current, property);
+      const match = lookupProperty(PropertyType.Identifier, current, property);
       if (match === null) continue;
       matches.set(type, match);
     }
@@ -102,10 +102,10 @@ export class ContainerProxy implements IContainerProxy {
 
   getDefinition(types: SignatureDefinitionType | SignatureDefinitionType[], property: string, noInvoke: boolean = false): IEntity | null {
     if (typeof types === 'string') return this.getDefinition([types], property);
-    const internalAnyDef = lookupProperty(this._primitives.get(SignatureDefinitionBaseType.Any), property);
+    const internalAnyDef = lookupProperty(PropertyType.Identifier, this._primitives.get(SignatureDefinitionBaseType.Any), property);
 
     if (types.includes(SignatureDefinitionBaseType.Any) && internalAnyDef) {
-      return resolveEntity(this, internalAnyDef, noInvoke);
+      return Entity.resolveEntity(this, internalAnyDef, noInvoke);
     }
 
     const matches = this.searchDefinitionMatches(types, property);
@@ -113,15 +113,15 @@ export class ContainerProxy implements IContainerProxy {
     if (matches.size === 0) {
       return null;
     } else if (matches.size === 1) {
-      return resolveEntity(this, matches.values().next().value, noInvoke);
+      return Entity.resolveEntity(this, matches.values().next().value, noInvoke);
     }
 
     if (matches.has(SignatureDefinitionBaseType.Any)) {
-      return resolveEntity(this, matches.get(SignatureDefinitionBaseType.Any), noInvoke);
+      return Entity.resolveEntity(this, matches.get(SignatureDefinitionBaseType.Any), noInvoke);
     }
 
     if (internalAnyDef !== null) {
-      return resolveEntity(this, internalAnyDef, noInvoke);
+      return Entity.resolveEntity(this, internalAnyDef, noInvoke);
     }
 
     const firstMatch = matches.values().next().value as IEntity;
@@ -133,7 +133,7 @@ export class ContainerProxy implements IContainerProxy {
     });
 
     for (const value of matches.values()) {
-      const result = resolveEntity(this, value, noInvoke);
+      const result = Entity.resolveEntity(this, value, noInvoke);
       mergedEntity.extend(result, true, true);
     }
 
@@ -141,13 +141,13 @@ export class ContainerProxy implements IContainerProxy {
   }
 
   getGeneralDefinition(property: string, noInvoke: boolean = false): IEntity | null {
-    const generalDef = lookupProperty(this._primitives.get(SignatureDefinitionBaseType.General), property);
+    const generalDef = lookupProperty(PropertyType.Identifier, this._primitives.get(SignatureDefinitionBaseType.General), property);
 
     if (generalDef == null) {
       return null;
     }
 
-    return resolveEntity(this, generalDef, noInvoke);
+    return Entity.resolveEntity(this, generalDef, noInvoke);
   }
 
   private injectTypeIdentifiers(properties: Map<string, CompletionItem>, type: SignatureDefinitionType) {

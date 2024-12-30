@@ -9,13 +9,14 @@ import { CompletionItem, CompletionItemKind } from '../types/completion';
 import { IContainerProxy } from '../types/container-proxy';
 import {
   EntityCopyOptions,
+  PropertyType,
   IEntity,
   IScope,
   ScopeOptions
 } from '../types/object';
 import { injectIdentifers } from '../utils/inject-identifiers';
 import { ObjectSet } from '../utils/object-set';
-import { Entity, resolveEntity } from './entity';
+import { Entity } from './entity';
 
 export class Scope implements IScope {
   protected _source: string;
@@ -127,15 +128,17 @@ export class Scope implements IScope {
       return this._globals;
     }
 
-    if (this._locals.values.has(`i:${property}`)) {
-      const entity = this._locals.values.get(`i:${property}`);
-      return resolveEntity(this._container, entity, noInvoke);
-    } else if (this._parent?.locals.values.has(`i:${property}`)) {
-      const entity = this._parent.locals.values.get(`i:${property}`);
-      return resolveEntity(this._container, entity, noInvoke);
-    } else if (this._globals.values.has(`i:${property}`)) {
-      const entity = this._globals.values.get(`i:${property}`);
-      return resolveEntity(this._container, entity, noInvoke);
+    const key = `${PropertyType.Identifier}:${property}`;
+
+    if (this._locals.values.has(key)) {
+      const entity = this._locals.values.get(key);
+      return Entity.resolveEntity(this._container, entity, noInvoke);
+    } else if (this._parent?.locals.values.has(key)) {
+      const entity = this._parent.locals.values.get(key);
+      return Entity.resolveEntity(this._container, entity, noInvoke);
+    } else if (this._globals.values.has(key)) {
+      const entity = this._globals.values.get(key);
+      return Entity.resolveEntity(this._container, entity, noInvoke);
     }
 
     return this._container.getGeneralDefinition(property, noInvoke);
@@ -156,6 +159,14 @@ export class Scope implements IScope {
 
   addTypes(): this {
     throw new Error('Scope cannot get types assigned!');
+  }
+
+  addTypeWithMeta(): this {
+    throw new Error('Scope cannot get meta type assigned!');
+  }
+
+  addTypesWithMeta(): this {
+    throw new Error('Scope cannot get meta types assigned!');
   }
 
   setReturnEntity(): this {

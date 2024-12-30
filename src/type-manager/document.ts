@@ -166,7 +166,7 @@ export class Document implements IDocument {
         for (let index = 0; index < args.length; index++) {
           const arg = args[index];
           const property = scope.resolveProperty(arg.getLabel(), true);
-          const types = arg.getTypes().map((it) => it.type);
+          const types = arg.getTypes();
           if (property === null) {
             scope.setProperty(
               arg.getLabel(),
@@ -174,11 +174,11 @@ export class Document implements IDocument {
                 source: this._source,
                 kind: CompletionItemKind.Variable,
                 container: this._container
-              }).addTypes(types)
+              }).addTypesWithMeta(types)
             );
           } else {
             property.types.delete(SignatureDefinitionBaseType.Any);
-            property.addTypes(types);
+            property.addTypesWithMeta(types);
           }
         }
       }
