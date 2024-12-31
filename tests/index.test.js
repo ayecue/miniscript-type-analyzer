@@ -961,6 +961,66 @@ describe('type-manager', () => {
     });
   });
 
+  describe('iterator', () => {
+    test('should return string iterator', () => {
+      const doc = getDocument(`
+        foo = "was"
+
+        for item in foo
+        end for
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('item').types)).toEqual(['string']);
+    });
+
+    test('should return list iterator', () => {
+      const doc = getDocument(`
+        foo = [1, 2]
+
+        for item in foo
+        end for
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('item').types)).toEqual(['number']);
+    });
+
+    test('should return map iterator', () => {
+      const doc = getDocument(`
+        foo = {}
+        foo.xxx = "was"
+
+        for item in foo
+        end for
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const item = scope.resolveProperty('item');
+
+      expect(Array.from(item.types)).toEqual(['map']);
+      expect(Array.from(item.values.get('i:key').types)).toEqual(['string']);
+      expect(Array.from(item.values.get('i:value').types)).toEqual(['string']);
+    });
+
+    test('should return mixed iterator', () => {
+      const doc = getDocument(`
+        foo = "bar"
+        foo = [1, 2]
+        foo = {}
+        foo.xxx = "was"
+
+        for item in foo
+        end for
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const item = scope.resolveProperty('item');
+
+      expect(Array.from(item.types)).toEqual(['number', 'string', 'map']);
+      expect(Array.from(item.values.get('i:key').types)).toEqual(['number', 'string']);
+      expect(Array.from(item.values.get('i:value').types)).toEqual(['number', 'string']);
+    });
+  });
+
   describe('custom types', () => {
     test('should return entity of custom type', () => {
       const doc = getDocument(`
