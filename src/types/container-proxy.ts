@@ -30,7 +30,7 @@ export interface IContainerProxy {
     noInvoke?: boolean
   ): IEntity | null;
   getGeneralDefinition(property: string, noInvoke?: boolean): IEntity | null;
-  getAllIdentifier(
+  getAvailableIdentifier(
     type: string | SignatureDefinitionType
   ): Map<string, CompletionItem>;
   copy(): IContainerProxy;

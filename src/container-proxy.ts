@@ -30,7 +30,7 @@ export class ContainerProxy implements IContainerProxy {
   protected createPrimitives() {
     const primitives = new Map();
 
-    for (const [type, signature] of this._container.getPrimitives()) {
+    this._container.getPrimitives().forEach((signature, type) => {
       const signatureEntity = new Entity({
         source: 'internal',
         kind: CompletionItemKind.Internal,
@@ -41,7 +41,7 @@ export class ContainerProxy implements IContainerProxy {
         .insertSignature(signature);
 
       primitives.set(type, signatureEntity);
-    }
+    });
 
     return primitives;
   }
@@ -49,7 +49,7 @@ export class ContainerProxy implements IContainerProxy {
   protected createTypes() {
     const types = new Map();
 
-    for (const [type, signature] of this._container.getTypes()) {
+    this._container.getTypes().forEach((signature, type) => {
       const signatureEntity = new Entity({
         source: 'internal',
         kind: CompletionItemKind.Internal,
@@ -59,7 +59,7 @@ export class ContainerProxy implements IContainerProxy {
         .insertSignature(signature);
 
       types.set(type, signatureEntity);
-    }
+    });
 
     return types;
   }
@@ -71,13 +71,13 @@ export class ContainerProxy implements IContainerProxy {
   }
 
   mergeCustomTypes(proxy: ContainerProxy): void {
-    for (const type of proxy._customTypes) {
+    proxy._customTypes.forEach((type) => {
       const entity = proxy._types.get(type);
-      if (entity == null) continue;
+      if (entity == null) return;
       this.setCustomType(type, entity.copy({
         deepCopy: true
       }));
-    }
+    });
   }
 
   getTypeSignature(type: SignatureDefinitionType): IEntity | null {
@@ -89,13 +89,13 @@ export class ContainerProxy implements IContainerProxy {
     const typesSet = types.includes(SignatureDefinitionBaseType.Any) ? new Set(this._container.getAllVisibleTypes()) : new Set(types);
     const matches: Map<SignatureDefinitionType, IEntity> = new Map();
 
-    for (const type of typesSet) {
+    typesSet.forEach((type) => {
       const current = this.getTypeSignature(type);
-      if (current === null) continue;
+      if (current === null) return;
       const match = lookupProperty(PropertyType.Identifier, current, property);
-      if (match === null) continue;
+      if (match === null) return;
       matches.set(type, match);
-    }
+    });
 
     return matches;
   }
@@ -132,10 +132,10 @@ export class ContainerProxy implements IContainerProxy {
       container: this
     });
 
-    for (const value of matches.values()) {
+    matches.forEach((value) => {
       const result = Entity.resolveEntity(this, value, noInvoke);
       mergedEntity.extend(result, true, true);
-    }
+    });
 
     return mergedEntity;
   }
@@ -160,7 +160,7 @@ export class ContainerProxy implements IContainerProxy {
     }
   }
 
-  getAllIdentifier(type: string | SignatureDefinitionType): Map<string, CompletionItem> {
+  getAvailableIdentifier(type: string | SignatureDefinitionType): Map<string, CompletionItem> {
     const properties = new Map();
 
     if (type === SignatureDefinitionBaseType.Any) {

@@ -10,17 +10,17 @@ export const injectIdentifers = (
 
   for (let index = 0; index < entities.length; index++) {
     const entity = entities[index];
-    for (const [property, value] of entity.values) {
+    entity.values.forEach((value, property) => {
       if (property.startsWith(IdentifierPropertyPattern)) {
         const key = property.slice(2);
         if (properties.has(key)) {
-          continue;
+          return;
         }
         properties.set(key, {
           kind: value.kind,
           line: value.source === source.source ? value.line : -1
         });
       }
-    }
+    });
   }
 };

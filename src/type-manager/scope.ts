@@ -222,7 +222,15 @@ export class Scope implements IScope {
     return null;
   }
 
-  getAllIdentifier(): Map<string, CompletionItem> {
+  getPropertyTypes() {
+    return this._locals.getPropertyTypes();
+  }
+
+  getValueTypes() {
+    return this._locals.getValueTypes();
+  }
+
+  getAvailableIdentifier(): Map<string, CompletionItem> {
     const properties = new Map([
       [
         'globals',
@@ -245,7 +253,7 @@ export class Scope implements IScope {
           line: -1
         }
       ],
-      ...this._container.getAllIdentifier(SignatureDefinitionBaseType.General)
+      ...this._container.getAvailableIdentifier(SignatureDefinitionBaseType.General)
     ]);
 
     if (this._locals !== this._globals)

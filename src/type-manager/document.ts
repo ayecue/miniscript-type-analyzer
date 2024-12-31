@@ -257,12 +257,12 @@ export class Document implements IDocument {
       const current = this._scopeMapping.get(scopes[index]).aggregator;
       const definitions = current.definitions;
 
-      for (const definitionId of definitions.keys()) {
+      definitions.forEach((_, definitionId) => {
         if (definitionId.includes(query)) {
           const definition = definitions.get(definitionId)!;
           merge(assignments, definition);
         }
-      }
+      });
     }
 
     return assignments;

@@ -78,11 +78,11 @@ export class ObjectSet<T extends object> {
   }
 
   extend(value: ObjectSet<T>): this {
-    for (const [h, v] of value._map) {
+    value._map.forEach((v, h) => {
       this._map.set(h, v);
       this._first ??= h;
       this._last = h;
-    }
+    });
     return this;
   }
 

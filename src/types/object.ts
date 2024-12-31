@@ -4,7 +4,7 @@ import {
   SignatureDefinitionType,
   SignatureDefinitionTypeMeta
 } from 'meta-utils';
-import { ASTAssignmentStatement, ASTMapKeyString } from 'miniscript-core';
+import { ASTBase } from 'miniscript-core';
 
 import { ObjectSet } from '../utils/object-set';
 import { CompletionItem, CompletionItemKind } from './completion';
@@ -20,7 +20,7 @@ export const IsaPropertyPattern = `${PropertyType.Identifier}:__isa` as const;
 
 export type ASTDefinitionItem = {
   source: string;
-  node: ASTAssignmentStatement | ASTMapKeyString;
+  node: ASTBase;
 };
 
 export interface EntityOptions {
@@ -110,11 +110,13 @@ export interface IEntity {
     deepCopy?: boolean,
     refs?: WeakSet<IEntity>
   ): this;
-  getAllIdentifier(): Map<string, CompletionItem>;
+  getAvailableIdentifier(): Map<string, CompletionItem>;
   isCallable(): boolean;
   isAPI(): boolean;
   isFromSignature(): boolean;
   hasContext(): boolean;
+  getValueTypes(): SignatureDefinitionType[];
+  getPropertyTypes(): SignatureDefinitionType[];
   getCallableReturnTypes(): SignatureDefinitionTypeMeta[] | null;
   setReturnEntity(entitiy: IEntity): this;
   getReturnEntity(): IEntity;
