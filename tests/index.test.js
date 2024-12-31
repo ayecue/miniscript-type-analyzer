@@ -865,9 +865,9 @@ describe('type-manager', () => {
         test = []
       `);
       const scope = doc.getRootScopeContext().scope;
-      const identifiers = scope.getAllIdentifier();
+      const identifiers = scope.getAvailableIdentifier();
       const entity = scope.resolveProperty('test', true);
-      const entityIdentifiers = entity.getAllIdentifier();
+      const entityIdentifiers = entity.getAvailableIdentifier();
 
       expect(identifiers.size).toEqual(59);
       expect(identifiers.has('test')).toEqual(true);
@@ -883,7 +883,7 @@ describe('type-manager', () => {
         bar = 123
       `);
       const scope = doc.getRootScopeContext().scope;
-      const identifiers = scope.getAllIdentifier();
+      const identifiers = scope.getAvailableIdentifier();
 
       expect(identifiers.size).toEqual(59);
       expect(identifiers.has('bar')).toEqual(true);
@@ -897,7 +897,7 @@ describe('type-manager', () => {
       `);
       const scope = doc.getRootScopeContext().scope;
       const entity = scope.resolveProperty('test', true);
-      const entityIdentifiers = entity.getAllIdentifier();
+      const entityIdentifiers = entity.getAvailableIdentifier();
 
       expect(entityIdentifiers.size).toEqual(25);
       expect(entityIdentifiers.has('hasIndex')).toEqual(true);
@@ -911,7 +911,7 @@ describe('type-manager', () => {
       `);
       const scope = doc.getRootScopeContext().scope;
       const entity = scope.resolveProperty('test', true);
-      const entityIdentifiers = entity.getAllIdentifier();
+      const entityIdentifiers = entity.getAvailableIdentifier();
 
       expect(entityIdentifiers.size).toEqual(26);
       expect(entityIdentifiers.has('test')).toEqual(true);
@@ -919,7 +919,7 @@ describe('type-manager', () => {
 
     test('should return all identifiers of api', () => {
       const doc = getDocument(``);
-      const identifiers = doc.api.getAllIdentifier();
+      const identifiers = doc.api.getAvailableIdentifier();
 
       expect(identifiers.size).toEqual(55);
     });
@@ -935,7 +935,7 @@ describe('type-manager', () => {
       `);
       const mergedDoc = doc2.merge(doc1);
       const scope = mergedDoc.getRootScopeContext().scope;
-      const entityIdentifiers = Array.from(scope.getAllIdentifier());
+      const entityIdentifiers = Array.from(scope.getAvailableIdentifier());
 
       expect(entityIdentifiers[entityIdentifiers.length - 2][1].line).toEqual(-1);
       expect(entityIdentifiers[entityIdentifiers.length - 1][1].line).toEqual(2);
@@ -955,7 +955,7 @@ describe('type-manager', () => {
       `);
       const mergedDoc = doc2.merge(doc1);
       const scope = mergedDoc.getRootScopeContext().scope;
-      const entityIdentifiers = Array.from(scope.getAllIdentifier());
+      const entityIdentifiers = Array.from(scope.getAvailableIdentifier());
 
       expect(entityIdentifiers[entityIdentifiers.length - 1][1].line).toEqual(2);
     });
@@ -1098,7 +1098,7 @@ describe('type-manager', () => {
       const scope = mergedDoc.getRootScopeContext().scope;
 
       expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['number']);
-      expect(Array.from(scope.resolveProperty('test').getAllIdentifier().keys())).toEqual([
+      expect(Array.from(scope.resolveProperty('test').getAvailableIdentifier().keys())).toEqual([
         '__isa',
         'New',
         'virtualMoo',
@@ -1140,7 +1140,7 @@ describe('type-manager', () => {
       `);
       const scope = doc.getRootScopeContext().scope;
       const entity = scope.resolveProperty('nad', true);
-      const entityIdentifiers = entity.getAllIdentifier();
+      const entityIdentifiers = entity.getAvailableIdentifier();
 
       expect(entity.resolveProperty('doesNotExist')).toBeNull();
       expect(entityIdentifiers.size).toEqual(14);

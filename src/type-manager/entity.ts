@@ -171,11 +171,11 @@ export class Entity implements IEntity {
             context: origin
           });
 
-          for (const type of property.types) {
+          property.types.forEach((type) => {
             const entity = origin.values.get(`${PropertyType.Type}:${type}`);
-            if (!entity) continue;
+            if (!entity) return;
             aggregatedEntity.extend(entity);
-          }
+          });
 
           if (aggregatedEntity.types.size === 0) {
             aggregatedEntity.addType(SignatureDefinitionBaseType.Any);
@@ -191,7 +191,7 @@ export class Entity implements IEntity {
           entity: IEntity
         ): boolean {
           if (!isEligibleForProperties(origin)) return false;
-          for (const type of property.types) {
+          property.types.forEach((type) => {
             const key = `${PropertyType.Type}:${type}`;
             const existingEntity = origin.values.get(key);
 
@@ -208,7 +208,7 @@ export class Entity implements IEntity {
                 })
               );
             }
-          }
+          });
           return true;
         }
       },
@@ -541,7 +541,7 @@ export class Entity implements IEntity {
 
       target.addTypes(Array.from(source.types));
 
-      for (const [key, value] of source.values) {
+      source.values.forEach((value, key) => {
         const item = target._values.get(key);
 
         if (item == null) {
@@ -557,7 +557,7 @@ export class Entity implements IEntity {
           refs.add(value);
           stack.push({ target: item, source: value });
         }
-      }
+      });
     }
     return this;
   }
@@ -588,15 +588,43 @@ export class Entity implements IEntity {
     return this;
   }
 
-  getAllIdentifier(): Map<string, CompletionItem> {
+  getPropertyTypes() {
+    const types: Set<SignatureDefinitionType> = new Set();
+
+    this._values.forEach((_, key) => {
+      const [identifier, type] = key.split(':');
+
+      if (identifier === PropertyType.Type) {
+        types.add(type);
+      } else {
+        types.add(SignatureDefinitionBaseType.String);
+      }
+    });
+
+    return Array.from(types);
+  }
+
+  getValueTypes() {
+    const types: Set<SignatureDefinitionType> = new Set();
+
+    this._values.forEach((value) => {
+      value.types.forEach((type) => {
+        types.add(type);
+      });
+    });
+
+    return Array.from(types);
+  }
+
+  getAvailableIdentifier(): Map<string, CompletionItem> {
     const properties = new Map();
 
-    for (const type of this._types) {
-      const items = this._container.getAllIdentifier(type);
-      for (const keyPair of items) {
-        properties.set(...keyPair);
-      }
-    }
+    this._types.forEach((type) => {
+      const items = this._container.getAvailableIdentifier(type);
+      items.forEach((value, key) => {
+        properties.set(key, value);
+      });
+    });
 
     injectIdentifers(properties, this);
 
@@ -677,9 +705,9 @@ export class Entity implements IEntity {
 
       cache.set(entity, entityCopy);
 
-      for (const [key, value] of entity.values) {
+      entity.values.forEach((value, key) => {
         entityCopy._values.set(key, deepCopyEntity(entityCopy, value));
-      }
+      });
 
       entityCopy._definitions = [...entity.definitions];
 
@@ -688,9 +716,9 @@ export class Entity implements IEntity {
 
     newCopy._values = new Map();
 
-    for (const [key, value] of this._values) {
+    this._values.forEach((value, key) => {
       newCopy._values.set(key, deepCopyEntity(newCopy, value));
-    }
+    });
 
     newCopy._definitions = [...this._definitions];
 

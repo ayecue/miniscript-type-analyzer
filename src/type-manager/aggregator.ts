@@ -1,4 +1,7 @@
-import { ASTType as GreybelASTType } from 'greybel-core';
+import {
+  ASTFeatureImportExpression,
+  ASTType as GreybelASTType
+} from 'greybel-core';
 import {
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction
@@ -12,8 +15,10 @@ import {
   ASTCallStatement,
   ASTComment,
   ASTComparisonGroupExpression,
+  ASTForGenericStatement,
   ASTFunctionStatement,
   ASTIdentifier,
+  ASTIdentifierKind,
   ASTIndexExpression,
   ASTIsaExpression,
   ASTListConstructorExpression,
@@ -873,13 +878,13 @@ export class Aggregator implements IAggregator {
     return false;
   }
 
-  private addDefinition(item: ASTAssignmentStatement): void {
+  private addDefinition(node: ASTBase, variable: ASTBase): void {
     this._lastModifiedProperty?.definitions.push({
       source: this._document.source,
-      node: item
+      node
     });
 
-    let variableId = createExpressionId(item.variable);
+    let variableId = createExpressionId(variable);
     let definitions = this._definitions;
 
     if (variableId.startsWith('globals.')) {
@@ -898,13 +903,13 @@ export class Aggregator implements IAggregator {
     if (definition) {
       definition.push({
         source: this._document.source,
-        node: item
+        node
       });
     } else {
       definitions.set(variableId, [
         {
           source: this._document.source,
-          node: item
+          node
         }
       ]);
     }
@@ -918,16 +923,16 @@ export class Aggregator implements IAggregator {
       this._document.getRootScopeContext().aggregator
     ]) as Set<Aggregator>;
 
-    for (const aggregator of aggregators) {
+    aggregators.forEach((aggregator) => {
       const definitions = aggregator.definitions;
 
-      for (const definitionId of definitions.keys()) {
+      definitions.forEach((_, definitionId) => {
         if (definitionId.includes(query)) {
           const definition = definitions.get(definitionId)!;
           merge(assignments, definition);
         }
-      }
-    }
+      });
+    });
 
     return assignments;
   }
@@ -955,33 +960,116 @@ export class Aggregator implements IAggregator {
       aggregator._document.getRootScopeContext().aggregator
     ]) as Set<Aggregator>;
 
-    for (const aggregator of aggregators) {
-      if (aggregator == null) continue;
+    aggregators.forEach((aggregator) => {
+      if (aggregator == null) return;
       const entity = aggregator.resolveNamespace(item, true);
       if (entity != null) merge(assignments, entity.definitions);
-    }
+    });
 
     return assignments;
   }
 
-  analyze() {
-    for (let index = 0; index < this._root.assignments.length; index++) {
-      const item = this._root.assignments[index] as ASTAssignmentStatement;
-      const value =
-        this.resolveType(item.init)
-          ?.copy({ source: this._document.source })
-          .setLine(item.start.line) ??
-        this.factory(CompletionItemKind.Variable)
-          .addType(SignatureDefinitionBaseType.Any)
-          .setLine(item.start.line);
+  private analyzeAssignmentDefinition(item: ASTAssignmentStatement) {
+    const value =
+      this.resolveType(item.init)
+        ?.copy({ source: this._document.source })
+        .setLine(item.start.line) ??
+      this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line);
 
-      this.defineNamespace(item.variable, value);
-      this.addDefinition(item);
+    this.defineNamespace(item.variable, value);
+    this.addDefinition(item, item.variable);
+  }
+
+  private analyzeForDefinition(item: ASTForGenericStatement) {
+    // define the iterator variable
+    const iteratorValue =
+      this.resolveType(item.iterator)
+        ?.copy({ source: this._document.source })
+        .setLine(item.start.line) ??
+      this.factory(CompletionItemKind.Variable)
+        .addType(SignatureDefinitionBaseType.Any)
+        .setLine(item.start.line);
+    const value = this.factory(CompletionItemKind.Variable)
+      .setLine(item.start.line);
+
+    if (iteratorValue.types.has(SignatureDefinitionBaseType.List)) {
+      value.extend(iteratorValue.values.get(`${PropertyType.Type}:number`));
+    }
+
+    if (iteratorValue.types.has(SignatureDefinitionBaseType.String)) {
+      value.addType(SignatureDefinitionBaseType.String);
+    }
+
+    if (iteratorValue.types.has(SignatureDefinitionBaseType.Map)) {
+      const propertyEntity = this.factory(CompletionItemKind.Variable)
+        .addTypes(iteratorValue.getPropertyTypes())
+        .setLine(item.start.line);
+      const valueEntity = this.factory(CompletionItemKind.Property)
+        .addTypes(iteratorValue.getValueTypes())
+        .setLine(item.start.line);
+      value.addType(SignatureDefinitionBaseType.Map);
+      value.setProperty('key', propertyEntity);
+      value.setProperty('value', valueEntity);
+    }
+
+    if (value.types.size === 0) {
+      value.addType(SignatureDefinitionBaseType.Any);
+    }
+
+    this.defineNamespace(item.variable, value);
+    this.addDefinition(item, item.variable);
+
+    // define the index variable
+    const idxValue = this.factory(CompletionItemKind.Variable)
+      .addType(SignatureDefinitionBaseType.Number)
+      .setLine(item.start.line);
+    const idxItem = new ASTIdentifier({
+      name: `__${item.variable.name}_idx`,
+      kind: ASTIdentifierKind.Variable,
+      range: item.range,
+      start: item.start,
+      end: item.end
+    })
+
+    this.defineNamespace(idxItem, idxValue);
+    this.addDefinition(item, idxItem);
+  }
+
+  private analyzeImportDefinition(item: ASTFeatureImportExpression) {
+    // placeholder for now
+    const value = this.factory(CompletionItemKind.Variable)
+      .addType(SignatureDefinitionBaseType.Any)
+      .setLine(item.start.line);
+
+    this.defineNamespace(item.name, value);
+    this.addDefinition(item, item.name);
+  }
+
+  analyze() {
+    for (let index = 0; index < this._root.definitions.length; index++) {
+      const item = this._root.definitions[index];
+
+      switch (item.type) {
+        case ASTType.AssignmentStatement: {
+          this.analyzeAssignmentDefinition(item as ASTAssignmentStatement);
+          break;
+        }
+        case ASTType.ForGenericStatement: {
+          this.analyzeForDefinition(item as ASTForGenericStatement);
+          break;
+        }
+        case ASTType.ImportCodeExpression: {
+          this.analyzeImportDefinition(item as ASTFeatureImportExpression);
+          break;
+        }
+      }
     }
   }
 
   extend(aggregator: Aggregator): void {
-    for (const [key, value] of aggregator.definitions) {
+    aggregator.definitions.forEach((value, key) => {
       const definition = this.definitions.get(key);
 
       if (definition) {
@@ -989,6 +1077,6 @@ export class Aggregator implements IAggregator {
       } else {
         this.definitions.set(key, value);
       }
-    }
+    });
   }
 }
