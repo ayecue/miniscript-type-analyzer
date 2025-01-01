@@ -171,11 +171,18 @@ export class Entity implements IEntity {
             context: origin
           });
 
-          property.types.forEach((type) => {
-            const entity = origin.values.get(`${PropertyType.Type}:${type}`);
-            if (!entity) return;
-            aggregatedEntity.extend(entity);
-          });
+          // if there is any as property type then we can just extend all values from origin
+          if (property.types.has(SignatureDefinitionBaseType.Any)) {
+            origin.values.forEach((value) => {
+              aggregatedEntity.extend(value);
+            });
+          } else {
+            property.types.forEach((type) => {
+              const entity = origin.values.get(`${PropertyType.Type}:${type}`);
+              if (!entity) return;
+              aggregatedEntity.extend(entity);
+            });
+          }
 
           if (aggregatedEntity.types.size === 0) {
             aggregatedEntity.addType(SignatureDefinitionBaseType.Any);

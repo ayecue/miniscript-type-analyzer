@@ -117,6 +117,21 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('test').resolveProperty(stringKey).types.size).toEqual(1);
       expect(Array.from(scope.resolveProperty('test').resolveProperty(stringKey).types)).toEqual(['string']);
     });
+
+    test('should return entity from key of type any', () => {
+      const doc = getDocument(`
+        test = {
+          "name": "test",
+          123: "bar",
+          234: 234,
+        }
+
+        foo = test[bar]
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['string', 'number']);
+    });
   });
 
   describe('non identifier base', () => {
