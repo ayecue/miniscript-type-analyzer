@@ -1038,7 +1038,11 @@ export class Aggregator implements IAggregator {
   }
 
   private analyzeImportDefinition(item: ASTFeatureImportExpression) {
-    // placeholder for now
+    // use any if import namespace is not defined yet
+    if (this.resolveNamespace(item.name) !== null) {
+      return;
+    }
+
     const value = this.factory(CompletionItemKind.Variable)
       .addType(SignatureDefinitionBaseType.Any)
       .setLine(item.start.line);
