@@ -19,6 +19,6 @@ const chunk = parser.parseChunk();
 
 typeManager.analyze(document.uri, chunk);
 
-const allIdentifier = typeManager.getRootScopeContext().scope.getAllIdentifier();
+const allIdentifier = typeManager.getRootScopeContext().scope.getAvailableIdentifier();
 console.log(`Your code includes: ${allIdentifier.size}`);
 ```
