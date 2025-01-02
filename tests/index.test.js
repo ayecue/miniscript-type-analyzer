@@ -1263,4 +1263,62 @@ describe('type-manager', () => {
       expect(scope.resolveProperty('test').definitions.length).toEqual(1);
     });
   });
+
+  describe('receive meta data from entity', () => {
+    test('should resolve meta of list with singular type', () => {
+      const doc = getDocument(`
+        test = [1, 2, 3]
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('test').toMeta()).toEqual([{
+        type: 'list',
+        valueType: 'number'
+      }]);
+    });
+
+    test('should resolve meta of list with multiple types', () => {
+      const doc = getDocument(`
+        test = [1, 2, 3, "foo"]
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('test').toMeta()).toEqual([{
+        type: 'list',
+        valueType: 'any'
+      }]);
+    });
+
+    test('should resolve meta of map with singular type', () => {
+      const doc = getDocument(`
+        test = { "foo": 123, "bar": 456 }
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('test').toMeta()).toEqual([{
+        type: 'map',
+        keyType: 'string',
+        valueType: 'number'
+      }]);
+    });
+
+    test('should resolve meta of map with multiple types', () => {
+      const doc = getDocument(`
+        test = { "foo": 123, "bar": "test" }
+        test2 = { "foo": 123, 123: 456 }
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(scope.resolveProperty('test').toMeta()).toEqual([{
+        type: 'map',
+        keyType: 'string',
+        valueType: 'any'
+      }]);
+      expect(scope.resolveProperty('test2').toMeta()).toEqual([{
+        type: 'map',
+        keyType: 'any',
+        valueType: 'number'
+      }]);
+    });
+  });
 });

@@ -22,7 +22,9 @@ function parseItemType(item: string): SignaturePayloadDefinitionTypeMeta {
   return new TypeParser(item).parse();
 }
 
-function parseReturnType(commentType: Spec): SignaturePayloadDefinitionTypeMeta[] {
+function parseReturnType(
+  commentType: Spec
+): SignaturePayloadDefinitionTypeMeta[] {
   return commentType.type.split('|').map(parseItemType);
 }
 
@@ -46,7 +48,7 @@ function parseFunctionBlock(def: Block) {
     .map(parseArgType);
   const returns = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Return)
-    .flatMap(parseReturnType)
+    .flatMap(parseReturnType);
   const examples = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Example)
     .map(convertSpecToString);

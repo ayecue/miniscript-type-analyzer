@@ -2,16 +2,17 @@ import {
   Signature,
   SignatureDefinition,
   SignatureDefinitionBaseType,
-  SignatureDefinitionType
+  SignatureDefinitionType,
+  SignaturePayloadDefinitionType
 } from 'meta-utils';
 
 import { CompletionItem, CompletionItemKind } from '../types/completion';
 import { IContainerProxy } from '../types/container-proxy';
 import {
   EntityCopyOptions,
-  PropertyType,
   IEntity,
   IScope,
+  PropertyType,
   ScopeOptions
 } from '../types/object';
 import { injectIdentifers } from '../utils/inject-identifiers';
@@ -253,7 +254,9 @@ export class Scope implements IScope {
           line: -1
         }
       ],
-      ...this._container.getAvailableIdentifier(SignatureDefinitionBaseType.General)
+      ...this._container.getAvailableIdentifier(
+        SignatureDefinitionBaseType.General
+      )
     ]);
 
     if (this._locals !== this._globals)
@@ -291,6 +294,10 @@ export class Scope implements IScope {
 
   toJSON() {
     return this._locals.toJSON();
+  }
+
+  toMeta(): SignaturePayloadDefinitionType[] {
+    return this._locals.toMeta();
   }
 
   copy(options: EntityCopyOptions = {}): IScope {

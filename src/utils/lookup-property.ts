@@ -1,4 +1,4 @@
-import { PropertyType, IEntity } from '../types/object';
+import { IEntity, PropertyType } from '../types/object';
 import { isEligibleForProperties } from './is-eligible-for-properties';
 
 export const lookupProperty = (

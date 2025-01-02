@@ -40,7 +40,12 @@ import {
 } from '../types/aggregator';
 import { CompletionItemKind } from '../types/completion';
 import { IDocument } from '../types/document';
-import { ASTDefinitionItem, PropertyType, IEntity, IScope } from '../types/object';
+import {
+  ASTDefinitionItem,
+  IEntity,
+  IScope,
+  PropertyType
+} from '../types/object';
 import {
   isResolveChainItemWithIdentifier,
   isResolveChainItemWithIndex,
@@ -542,10 +547,12 @@ export class Aggregator implements IAggregator {
       if (field.key.type === ASTType.StringLiteral) {
         const property = (field.key as ASTLiteral).value.toString();
         mapEntity.setProperty(property, value);
-        mapEntity.values.get(`${PropertyType.Identifier}:${property}`)?.definitions.push({
-          source: this._document.source,
-          node: field
-        });
+        mapEntity.values
+          .get(`${PropertyType.Identifier}:${property}`)
+          ?.definitions.push({
+            source: this._document.source,
+            node: field
+          });
       } else {
         const key = this.resolveTypeWithDefault(field.key).setLine(
           field.start.line
@@ -991,11 +998,17 @@ export class Aggregator implements IAggregator {
       this.factory(CompletionItemKind.Variable)
         .addType(SignatureDefinitionBaseType.Any)
         .setLine(item.start.line);
-    const value = this.factory(CompletionItemKind.Variable)
-      .setLine(item.start.line);
+    const value = this.factory(CompletionItemKind.Variable).setLine(
+      item.start.line
+    );
 
     if (iteratorValue.types.has(SignatureDefinitionBaseType.List)) {
-      value.extend(iteratorValue.values.get(`${PropertyType.Type}:number`));
+      const itemEntity = iteratorValue.values.get(
+        `${PropertyType.Type}:number`
+      );
+      if (itemEntity != null) {
+        value.extend(itemEntity);
+      }
     }
 
     if (iteratorValue.types.has(SignatureDefinitionBaseType.String)) {
@@ -1031,7 +1044,7 @@ export class Aggregator implements IAggregator {
       range: item.range,
       start: item.start,
       end: item.end
-    })
+    });
 
     this.defineNamespace(idxItem, idxValue);
     this.addDefinition(item, idxItem);

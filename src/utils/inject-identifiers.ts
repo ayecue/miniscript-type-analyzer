@@ -1,5 +1,5 @@
 import { CompletionItem } from '../types/completion';
-import { IEntity, IdentifierPropertyPattern } from '../types/object';
+import { IdentifierPropertyPattern, IEntity } from '../types/object';
 import { aggregateEntity } from './aggregate-entities';
 
 export const injectIdentifers = (

@@ -4,7 +4,8 @@ import {
   SignatureDefinitionBaseType,
   SignatureDefinitionFunction,
   SignatureDefinitionType,
-  SignatureDefinitionTypeMeta
+  SignatureDefinitionTypeMeta,
+  SignaturePayloadDefinitionType
 } from 'meta-utils';
 
 import { CompletionItem, CompletionItemKind } from '../types/completion';
@@ -14,10 +15,10 @@ import {
   EntityCopyOptions,
   EntityExtendStackItem,
   EntityOptions,
-  PropertyType,
   IEntity,
   IEntityPropertyHandler,
-  IsaPropertyPattern
+  IsaPropertyPattern,
+  PropertyType
 } from '../types/object';
 import { isSignatureDefinitionFunction } from '../types/signature';
 import { injectIdentifers } from '../utils/inject-identifiers';
@@ -87,7 +88,8 @@ export class Entity implements IEntity {
           property: string,
           noInvoke: boolean = false
         ): IEntity | null {
-          const entity = lookupProperty(PropertyType.Identifier, origin, property) ?? null;
+          const entity =
+            lookupProperty(PropertyType.Identifier, origin, property) ?? null;
 
           if (entity == null) {
             if (!origin.isAPI()) {
@@ -370,8 +372,7 @@ export class Entity implements IEntity {
       isSignatureDefinitionFunction(item)
     ) as SignatureDefinitionFunction[];
     if (functionDefs.length === 0) return null;
-    return functionDefs
-      .flatMap((item) => item.getReturns());
+    return functionDefs.flatMap((item) => item.getReturns());
   }
 
   addSignatureType(definition: SignatureDefinition): this {
@@ -424,8 +425,14 @@ export class Entity implements IEntity {
   addTypeWithMeta(meta: SignatureDefinitionTypeMeta): this {
     this._types.add(meta.type);
 
-    if (meta.type === SignatureDefinitionBaseType.Map || meta.type === SignatureDefinitionBaseType.List) {
-      const keyType = meta.type === SignatureDefinitionBaseType.Map ? (meta.keyType.type ?? SignatureDefinitionBaseType.Any) : SignatureDefinitionBaseType.Number;
+    if (
+      meta.type === SignatureDefinitionBaseType.Map ||
+      meta.type === SignatureDefinitionBaseType.List
+    ) {
+      const keyType =
+        meta.type === SignatureDefinitionBaseType.Map
+          ? meta.keyType.type ?? SignatureDefinitionBaseType.Any
+          : SignatureDefinitionBaseType.Number;
 
       const valueEntity = new Entity({
         source: this._source,
@@ -434,13 +441,23 @@ export class Entity implements IEntity {
         context: this
       });
 
-      if (meta.valueType.type === SignatureDefinitionBaseType.Map || meta.valueType.type === SignatureDefinitionBaseType.List) {
+      if (
+        meta.valueType.type === SignatureDefinitionBaseType.Map ||
+        meta.valueType.type === SignatureDefinitionBaseType.List
+      ) {
         valueEntity.addTypeWithMeta(meta.valueType);
       } else {
-        valueEntity.addType(meta.valueType.type ?? SignatureDefinitionBaseType.Any);
+        valueEntity.addType(
+          meta.valueType.type ?? SignatureDefinitionBaseType.Any
+        );
       }
 
-      Entity.handlers.type.setProperty(this, this._container, keyType, valueEntity);
+      Entity.handlers.type.setProperty(
+        this,
+        this._container,
+        keyType,
+        valueEntity
+      );
     }
 
     return this;
@@ -638,7 +655,7 @@ export class Entity implements IEntity {
     return properties;
   }
 
-  toJSONInternal(visited = new WeakMap()) {
+  toJSON(visited = new WeakMap()) {
     if (visited.has(this)) {
       return visited.get(this);
     }
@@ -658,7 +675,7 @@ export class Entity implements IEntity {
     ref.values = Array.from(this._values).reduce<Record<string, object>>(
       (result, [key, value]) => {
         // for some reason value can be null here but shouldn't
-        result[key] = (value as Entity)?.toJSONInternal(visited);
+        result[key] = (value as Entity)?.toJSON(visited);
         return result;
       },
       {}
@@ -667,8 +684,53 @@ export class Entity implements IEntity {
     return ref;
   }
 
-  toJSON() {
-    return this.toJSONInternal();
+  toMeta(): SignaturePayloadDefinitionType[] {
+    const metaData: SignaturePayloadDefinitionType[] = [];
+
+    this.types.forEach((type) => {
+      const metaItem: SignaturePayloadDefinitionType = { type };
+
+      switch (type) {
+        case SignatureDefinitionBaseType.Map: {
+          const propertyTypes = this.getPropertyTypes();
+
+          if (propertyTypes.length === 1) {
+            metaItem.keyType = propertyTypes[0];
+          } else {
+            metaItem.keyType = SignatureDefinitionBaseType.Any;
+          }
+
+          const valueTypes = this.getValueTypes();
+
+          if (valueTypes.length === 1) {
+            metaItem.valueType = valueTypes[0];
+          } else {
+            metaItem.valueType = SignatureDefinitionBaseType.Any;
+          }
+
+          break;
+        }
+        case SignatureDefinitionBaseType.List: {
+          const valueTypes = Entity.handlers.type.resolveProperty(
+            this,
+            this._container,
+            SignatureDefinitionBaseType.Number
+          );
+
+          if (valueTypes != null && valueTypes.types.size === 1) {
+            metaItem.valueType = valueTypes.types.values().next().value;
+          } else {
+            metaItem.valueType = SignatureDefinitionBaseType.Any;
+          }
+
+          break;
+        }
+      }
+
+      metaData.push(metaItem);
+    });
+
+    return metaData;
   }
 
   copy(options: EntityCopyOptions = {}): IEntity {

@@ -2,7 +2,8 @@ import {
   Signature,
   SignatureDefinition,
   SignatureDefinitionType,
-  SignatureDefinitionTypeMeta
+  SignatureDefinitionTypeMeta,
+  SignaturePayloadDefinitionType
 } from 'meta-utils';
 import { ASTBase } from 'miniscript-core';
 
@@ -12,7 +13,7 @@ import { IContainerProxy } from './container-proxy';
 
 export enum PropertyType {
   Type = 't',
-  Identifier = 'i',
+  Identifier = 'i'
 }
 
 export const IdentifierPropertyPattern = `${PropertyType.Identifier}:` as const;
@@ -125,6 +126,7 @@ export interface IEntity {
   setLabel(label: string): this;
   setContext(context: IEntity): this;
   toJSON(): object;
+  toMeta(): SignaturePayloadDefinitionType[];
 }
 
 export interface ScopeOptions {
