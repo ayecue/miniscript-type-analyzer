@@ -1,5 +1,6 @@
 const { getDocument } = require('./utils');
 const { Entity } = require('../dist');
+const { ASTType } = require('greybel-core');
 
 describe('type-manager', () => {
   describe('1 level depth property', () => {
@@ -1261,6 +1262,57 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('test').resolveProperty('bar').types)).toEqual(['number']);
       expect(Array.from(scope.resolveProperty('test').resolveProperty('foo').types)).toEqual(['string']);
       expect(scope.resolveProperty('test').definitions.length).toEqual(1);
+    });
+  });
+
+  describe('resolve namespaces from import', () => {
+    test('should resolve entity with type any', () => {
+      const doc = getDocument(`
+        #import HelloWord from "library/hello-world.src";
+        #import HelloName from "library/hello-name.src";
+
+        HelloWord // prints "Hello world!"
+        HelloName("Joe") // prints "Hello Joe!"
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('HelloWord').types)).toEqual(['any']);
+      expect(Array.from(scope.resolveProperty('HelloName').types)).toEqual(['any']);
+    });
+
+    test('should resolve entity with type any and preset value', () => {
+      const doc1 = getDocument(`
+        #import HelloWord from "library/hello-world.src";
+        #import HelloName from "library/hello-name.src";
+
+        HelloWord // prints "Hello world!"
+        HelloName("Joe") // prints "Hello Joe!"
+      `);
+      const doc2 = getDocument('');
+
+      doc2
+        .getRootScopeContext()
+        .scope.setProperty('HelloWord', new Entity({
+          source: 'test',
+          kind: 'var',
+          container: doc2.container,
+          definitions: [{
+            source: 'test',
+            node: {
+              start: { line: 0, character: 0 },
+              end: { line: 1, character: 0 },
+              range: [0, 1],
+              type: 'Identifier'
+            }
+          }]
+        }).addType('string'), true);
+
+      const mergedDoc = doc1.merge(doc2);
+      const scope = mergedDoc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('HelloWord').types)).toEqual(['string']);
+      expect(scope.resolveProperty('HelloWord').definitions.length).toEqual(1);
+      expect(Array.from(scope.resolveProperty('HelloName').types)).toEqual(['any']);
     });
   });
 

@@ -1,4 +1,4 @@
-const { Parser } = require('miniscript-core');
+const { Parser } = require('greybel-core');
 const { miniscriptMeta } = require('miniscript-meta');
 const { TypeManager } = require('../dist');
 

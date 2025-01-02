@@ -1052,7 +1052,8 @@ export class Aggregator implements IAggregator {
 
   private analyzeImportDefinition(item: ASTFeatureImportExpression) {
     // use any if import namespace is not defined yet
-    const existingEntity = this.resolveNamespace(item.name);
+    const identifier = item.name as ASTIdentifier;
+    const existingEntity = this.scope.resolveProperty(identifier.name, true);
 
     if (existingEntity != null) {
       this._lastModifiedProperty = existingEntity;
@@ -1081,7 +1082,7 @@ export class Aggregator implements IAggregator {
           this.analyzeForDefinition(item as ASTForGenericStatement);
           break;
         }
-        case ASTType.ImportCodeExpression: {
+        case GreybelASTType.FeatureImportExpression: {
           this.analyzeImportDefinition(item as ASTFeatureImportExpression);
           break;
         }
