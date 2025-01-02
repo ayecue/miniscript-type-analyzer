@@ -69,195 +69,145 @@ export class Entity implements IEntity {
     entity: IEntityPropertyHandler<IEntity>;
     type: IEntityPropertyHandler<string>;
   } = {
-      identifier: {
-        hasProperty(
-          origin: IEntity,
-          container: IContainerProxy,
-          property: string
-        ): boolean {
-          return (
-            !!lookupProperty(PropertyType.Identifier, origin, property) ||
-            (!origin.isAPI() &&
-              !!container.getDefinition(Array.from(origin.types), property, true))
-          );
-        },
+    identifier: {
+      hasProperty(
+        origin: IEntity,
+        container: IContainerProxy,
+        property: string
+      ): boolean {
+        return (
+          !!lookupProperty(PropertyType.Identifier, origin, property) ||
+          (!origin.isAPI() &&
+            !!container.getDefinition(Array.from(origin.types), property, true))
+        );
+      },
 
-        resolveProperty(
-          origin: IEntity,
-          container: IContainerProxy,
-          property: string,
-          noInvoke: boolean = false
-        ): IEntity | null {
-          const entity =
-            lookupProperty(PropertyType.Identifier, origin, property) ?? null;
+      resolveProperty(
+        origin: IEntity,
+        container: IContainerProxy,
+        property: string,
+        noInvoke: boolean = false
+      ): IEntity | null {
+        const entity =
+          lookupProperty(PropertyType.Identifier, origin, property) ?? null;
 
-          if (entity == null) {
-            if (!origin.isAPI()) {
-              return container.getDefinition(
-                Array.from(origin.types),
-                property,
-                noInvoke
-              );
-            }
-
-            return null;
-          }
-
-          return Entity.resolveEntity(container, entity, noInvoke);
-        },
-
-        setProperty(
-          origin: IEntity,
-          container: IContainerProxy,
-          property: string,
-          entity: IEntity
-        ): boolean {
-          if (!isEligibleForProperties(origin)) return false;
-
-          const key = `${PropertyType.Identifier}:${property}`;
-          const existingEntity = origin.values.get(key);
-
-          if (existingEntity) {
-            existingEntity.extend(entity);
-          } else {
-            origin.values.set(
-              key,
-              entity.copy({
-                container,
-                label: property,
-                context: origin,
-                definitions: []
-              })
+        if (entity == null) {
+          if (!origin.isAPI()) {
+            return container.getDefinition(
+              Array.from(origin.types),
+              property,
+              noInvoke
             );
           }
 
-          return true;
+          return null;
         }
+
+        return Entity.resolveEntity(container, entity, noInvoke);
       },
-      entity: {
-        hasProperty(
-          origin: IEntity,
-          _container: IContainerProxy,
-          property: IEntity
-        ): boolean {
-          if (!isEligibleForProperties(origin)) return false;
-          for (const type of property.types) {
-            if (origin.values.has(`${PropertyType.Type}:${type}`)) {
-              return true;
-            }
-          }
-          return false;
-        },
 
-        resolveProperty(
-          origin: IEntity,
-          container: IContainerProxy,
-          property: IEntity,
-          noInvoke: boolean = false
-        ): IEntity | null {
-          if (!isEligibleForProperties(origin)) {
-            return new Entity({
-              source: origin.source,
-              kind: CompletionItemKind.Variable,
+      setProperty(
+        origin: IEntity,
+        container: IContainerProxy,
+        property: string,
+        entity: IEntity,
+        includeDefinitions: boolean = false
+      ): boolean {
+        if (!isEligibleForProperties(origin)) return false;
+
+        const key = `${PropertyType.Identifier}:${property}`;
+        const existingEntity = origin.values.get(key);
+
+        if (existingEntity) {
+          existingEntity.extend(entity, includeDefinitions);
+        } else {
+          origin.values.set(
+            key,
+            entity.copy({
               container,
-              label: property.label,
-              context: origin
-            }).addType(SignatureDefinitionBaseType.Any);
-          }
+              label: property,
+              context: origin,
+              definitions: includeDefinitions ? entity.definitions : []
+            })
+          );
+        }
 
-          const aggregatedEntity = new Entity({
-            source: property.source,
+        return true;
+      }
+    },
+    entity: {
+      hasProperty(
+        origin: IEntity,
+        _container: IContainerProxy,
+        property: IEntity
+      ): boolean {
+        if (!isEligibleForProperties(origin)) return false;
+        for (const type of property.types) {
+          if (origin.values.has(`${PropertyType.Type}:${type}`)) {
+            return true;
+          }
+        }
+        return false;
+      },
+
+      resolveProperty(
+        origin: IEntity,
+        container: IContainerProxy,
+        property: IEntity,
+        noInvoke: boolean = false
+      ): IEntity | null {
+        if (!isEligibleForProperties(origin)) {
+          return new Entity({
+            source: origin.source,
             kind: CompletionItemKind.Variable,
             container,
             label: property.label,
             context: origin
-          });
-
-          // if there is any as property type then we can just extend all values from origin
-          if (property.types.has(SignatureDefinitionBaseType.Any)) {
-            origin.values.forEach((value) => {
-              aggregatedEntity.extend(value);
-            });
-          } else {
-            property.types.forEach((type) => {
-              const entity = origin.values.get(`${PropertyType.Type}:${type}`);
-              if (!entity) return;
-              aggregatedEntity.extend(entity);
-            });
-          }
-
-          if (aggregatedEntity.types.size === 0) {
-            aggregatedEntity.addType(SignatureDefinitionBaseType.Any);
-          }
-
-          return Entity.resolveEntity(container, aggregatedEntity, noInvoke);
-        },
-
-        setProperty(
-          origin: IEntity,
-          container: IContainerProxy,
-          property: IEntity,
-          entity: IEntity
-        ): boolean {
-          if (!isEligibleForProperties(origin)) return false;
-          property.types.forEach((type) => {
-            const key = `${PropertyType.Type}:${type}`;
-            const existingEntity = origin.values.get(key);
-
-            if (existingEntity) {
-              existingEntity.extend(entity);
-            } else {
-              origin.values.set(
-                key,
-                entity.copy({
-                  container,
-                  label: type,
-                  context: origin,
-                  definitions: []
-                })
-              );
-            }
-          });
-          return true;
+          }).addType(SignatureDefinitionBaseType.Any);
         }
+
+        const aggregatedEntity = new Entity({
+          source: property.source,
+          kind: CompletionItemKind.Variable,
+          container,
+          label: property.label,
+          context: origin
+        });
+
+        // if there is any as property type then we can just extend all values from origin
+        if (property.types.has(SignatureDefinitionBaseType.Any)) {
+          origin.values.forEach((value) => {
+            aggregatedEntity.extend(value);
+          });
+        } else {
+          property.types.forEach((type) => {
+            const entity = origin.values.get(`${PropertyType.Type}:${type}`);
+            if (!entity) return;
+            aggregatedEntity.extend(entity);
+          });
+        }
+
+        if (aggregatedEntity.types.size === 0) {
+          aggregatedEntity.addType(SignatureDefinitionBaseType.Any);
+        }
+
+        return Entity.resolveEntity(container, aggregatedEntity, noInvoke);
       },
-      type: {
-        hasProperty(
-          origin: IEntity,
-          _container: IContainerProxy,
-          type: string
-        ): boolean {
-          return !!lookupProperty(PropertyType.Type, origin, type);
-        },
 
-        resolveProperty(
-          origin: IEntity,
-          container: IContainerProxy,
-          type: string,
-          noInvoke: boolean = false
-        ): IEntity | null {
-          const entity = lookupProperty(PropertyType.Type, origin, type) ?? null;
-
-          if (entity == null) {
-            return null;
-          }
-
-          return Entity.resolveEntity(container, entity, noInvoke);
-        },
-
-        setProperty(
-          origin: IEntity,
-          container: IContainerProxy,
-          type: string,
-          entity: IEntity
-        ): boolean {
-          if (!isEligibleForProperties(origin)) return false;
-
+      setProperty(
+        origin: IEntity,
+        container: IContainerProxy,
+        property: IEntity,
+        entity: IEntity,
+        includeDefinitions: boolean = false
+      ): boolean {
+        if (!isEligibleForProperties(origin)) return false;
+        property.types.forEach((type) => {
           const key = `${PropertyType.Type}:${type}`;
           const existingEntity = origin.values.get(key);
 
           if (existingEntity) {
-            existingEntity.extend(entity);
+            existingEntity.extend(entity, includeDefinitions);
           } else {
             origin.values.set(
               key,
@@ -265,15 +215,68 @@ export class Entity implements IEntity {
                 container,
                 label: type,
                 context: origin,
-                definitions: []
+                definitions: includeDefinitions ? entity.definitions : []
               })
             );
           }
-
-          return true;
-        }
+        });
+        return true;
       }
-    };
+    },
+    type: {
+      hasProperty(
+        origin: IEntity,
+        _container: IContainerProxy,
+        type: string
+      ): boolean {
+        return !!lookupProperty(PropertyType.Type, origin, type);
+      },
+
+      resolveProperty(
+        origin: IEntity,
+        container: IContainerProxy,
+        type: string,
+        noInvoke: boolean = false
+      ): IEntity | null {
+        const entity = lookupProperty(PropertyType.Type, origin, type) ?? null;
+
+        if (entity == null) {
+          return null;
+        }
+
+        return Entity.resolveEntity(container, entity, noInvoke);
+      },
+
+      setProperty(
+        origin: IEntity,
+        container: IContainerProxy,
+        type: string,
+        entity: IEntity,
+        includeDefinitions: boolean = false
+      ): boolean {
+        if (!isEligibleForProperties(origin)) return false;
+
+        const key = `${PropertyType.Type}:${type}`;
+        const existingEntity = origin.values.get(key);
+
+        if (existingEntity) {
+          existingEntity.extend(entity, includeDefinitions);
+        } else {
+          origin.values.set(
+            key,
+            entity.copy({
+              container,
+              label: type,
+              context: origin,
+              definitions: includeDefinitions ? entity.definitions : []
+            })
+          );
+        }
+
+        return true;
+      }
+    }
+  };
 
   protected _source: string;
   protected _kind: CompletionItemKind;
@@ -513,14 +516,19 @@ export class Entity implements IEntity {
     }
   }
 
-  setProperty(property: string | IEntity, entity: IEntity): boolean {
+  setProperty(
+    property: string | IEntity,
+    entity: IEntity,
+    includeDefinitions: boolean = false
+  ): boolean {
     switch (typeof property) {
       case 'object': {
         return Entity.handlers.entity.setProperty(
           this,
           this._container,
           property as IEntity,
-          entity
+          entity,
+          includeDefinitions
         );
       }
       default: {
@@ -528,7 +536,8 @@ export class Entity implements IEntity {
           this,
           this._container,
           property,
-          entity
+          entity,
+          includeDefinitions
         );
       }
     }

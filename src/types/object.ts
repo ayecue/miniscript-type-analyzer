@@ -79,7 +79,8 @@ export interface IEntityPropertyHandler<T> {
     origin: IEntity,
     container: IContainerProxy,
     property: T,
-    item: IEntity
+    item: IEntity,
+    includeDefinitions?: boolean
   ): boolean;
 }
 
@@ -98,7 +99,11 @@ export interface IEntity {
   addSignatureType(definition: SignatureDefinition): this;
   hasProperty(name: string | IEntity): boolean;
   resolveProperty(name: string | IEntity, noInvoke?: boolean): IEntity | null;
-  setProperty(name: string | IEntity, item: IEntity): boolean;
+  setProperty(
+    name: string | IEntity,
+    item: IEntity,
+    includeDefinitions?: boolean
+  ): boolean;
   addTypes(types: string[]): this;
   addType(type: SignatureDefinitionType): this;
   addTypesWithMeta(types: SignatureDefinitionTypeMeta[]): this;
