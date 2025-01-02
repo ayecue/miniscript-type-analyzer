@@ -1055,6 +1055,7 @@ export class Aggregator implements IAggregator {
     const existingEntity = this.resolveNamespace(item.name);
 
     if (existingEntity != null) {
+      this._lastModifiedProperty = existingEntity;
       this.addDefinition(item, item.name);
       return;
     }
