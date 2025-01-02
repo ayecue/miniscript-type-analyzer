@@ -1052,7 +1052,10 @@ export class Aggregator implements IAggregator {
 
   private analyzeImportDefinition(item: ASTFeatureImportExpression) {
     // use any if import namespace is not defined yet
-    if (this.resolveNamespace(item.name) !== null) {
+    const existingEntity = this.resolveNamespace(item.name);
+
+    if (existingEntity != null) {
+      this.addDefinition(item, item.name);
       return;
     }
 
