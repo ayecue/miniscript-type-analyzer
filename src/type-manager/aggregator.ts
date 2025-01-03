@@ -381,7 +381,7 @@ export class Aggregator implements IAggregator {
 
       const path = property.path.split('.');
       const propertyEntity = this.factory(CompletionItemKind.Property)
-        .addType(property.type)
+        .addTypesWithMeta(property.type)
         .setLabel(path[path.length - 1]);
 
       this.setEntityInPath(entity, path, propertyEntity);

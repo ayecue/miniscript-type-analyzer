@@ -1,9 +1,14 @@
 import { Block, parse, Spec } from 'comment-parser';
+import { SignatureDefinitionTypeMeta } from 'meta-utils';
+
+function parseItemType(item: string): SignatureDefinitionTypeMeta {
+  return SignatureDefinitionTypeMeta.fromString(item);
+}
 
 function parseMapBlockProperty(def: Spec) {
   return {
     path: def.name,
-    type: def.type
+    type: def.type.split('|').map(parseItemType)
   };
 }
 

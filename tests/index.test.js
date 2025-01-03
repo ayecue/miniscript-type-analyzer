@@ -1058,6 +1058,24 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('abc').types)).toEqual(['string']);
     });
 
+    test('should return nested entity of custom type', () => {
+      const doc = getDocument(`
+        // @type OtherCustomType
+        // @property {string} foo
+        // @property {number} test
+        OtherCustomType = {}
+
+        // @type CustomType
+        // @property {list<string>} columns
+        CustomType = {}
+
+        item = CustomType.columns[2]
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('item').types)).toEqual(['string']);
+    });
+
     test('should return entity of custom type virtual property', () => {
       const doc = getDocument(`
         // @type test
