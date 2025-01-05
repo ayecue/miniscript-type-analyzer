@@ -24,7 +24,7 @@ import { isSignatureDefinitionFunction } from '../types/signature';
 import { injectIdentifers } from '../utils/inject-identifiers';
 import { isEligibleForProperties } from '../utils/is-eligible-for-properties';
 import { lookupProperty } from '../utils/lookup-property';
-import { mergeUnique } from '../utils/mergeUnique';
+import { mergeUnique } from '../utils/merge-unique';
 import { ObjectSet } from '../utils/object-set';
 
 export class Entity implements IEntity {

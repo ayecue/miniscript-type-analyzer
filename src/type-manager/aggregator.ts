@@ -58,7 +58,7 @@ import { createResolveChain } from '../utils/create-resolve-chain';
 import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information';
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 import { merge } from '../utils/merge';
-import { mergeUnique } from '../utils/mergeUnique';
+import { mergeUnique } from '../utils/merge-unique';
 import { parseMapDescription } from '../utils/parse-map-description';
 import { Entity } from './entity';
 
@@ -202,11 +202,11 @@ export class ASTChainIterator implements Iterator<IEntity> {
   private getNext(): IEntity {
     let current: IEntity = this.current;
     const item = this.chain[this.index];
-    const itemNoInvoke =
-      (item.unary?.operator === '@' && !item.isInCallExpression) ||
-      (this.noInvoke && this.index === this.endIndex);
 
     if (isResolveChainItemWithMember(item)) {
+      const itemNoInvoke =
+        (item.unary?.operator === '@' && !item.isInCallExpression) ||
+        (this.noInvoke && this.index === this.endIndex);
       let nextEntity = current.resolveProperty(item.getter.name, itemNoInvoke);
 
       if (nextEntity == null) {
@@ -215,10 +215,15 @@ export class ASTChainIterator implements Iterator<IEntity> {
 
       current = nextEntity;
     } else if (isResolveChainItemWithIndex(item)) {
+      const itemNoInvoke =
+        (item.unary?.operator === '@' && !item.isInCallExpression) ||
+        (this.noInvoke && this.index === this.endIndex) ||
+        !item.ref.isStatementStart;
+
       // index expressions do not get invoked automatically
       if (isValidIdentifierLiteral(item.getter)) {
         const name = item.getter.value.toString();
-        let nextEntity = current.resolveProperty(name, item.isInCallExpression);
+        let nextEntity = current.resolveProperty(name, itemNoInvoke);
 
         if (nextEntity == null) {
           nextEntity = this.defineAssumedProperty(current, name);
