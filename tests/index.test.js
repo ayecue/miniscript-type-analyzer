@@ -461,6 +461,27 @@ describe('type-manager', () => {
       expect(Array.from(arg.types)).toEqual(['map']);
       expect(Array.from(arg.resolveProperty('bar').types)).toEqual(['string']);
     });
+
+    test('should return entity from nested function', () => {
+      const doc = getDocument(`
+        // @return {list<string>}
+        foo = function
+          // @param {string}
+          // @param {string}
+          // @return {list<string>}
+          globals.test = function(a, b)
+
+          end function
+        end function
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signature = scope.resolveProperty('test', true).signatureDefinitions.first();
+
+      expect(signature.getArguments().length).toEqual(2);
+      expect(signature.getArgument('a').getTypes().map((it) => it.type)).toEqual(['string']);
+      expect(signature.getArgument('b').getTypes().map((it) => it.type)).toEqual(['string']);
+      expect(signature.getReturns().map((it) => it.type)).toEqual(['list']);
+    })
   });
 
   describe('addressOf', () => {

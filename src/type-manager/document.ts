@@ -228,11 +228,23 @@ export class Document implements IDocument {
   getLastASTItemOfLine(line: number): ASTBase {
     const items = this._root.lines[line];
 
-    if (items && items.length > 0) {
-      return items[items.length - 1];
+    if (!items || items.length === 0) return null;
+
+    let lastItem = items[0];
+
+    for (let i = 1; i < items.length; i++) {
+      const current = items[i];
+
+      if (
+        current.start.line > lastItem.start.line ||
+        (current.start.line === lastItem.start.line &&
+          current.start.character > lastItem.start.character)
+      ) {
+        lastItem = current;
+      }
     }
 
-    return null;
+    return lastItem;
   }
 
   findASTItemInLine(line: number, type: ASTType): ASTBase {
