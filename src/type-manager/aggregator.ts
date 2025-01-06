@@ -218,7 +218,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
       const itemNoInvoke =
         (item.unary?.operator === '@' && !item.isInCallExpression) ||
         (this.noInvoke && this.index === this.endIndex) ||
-        !item.ref.isStatementStart;
+        (!item.ref.isStatementStart && !item.isInCallExpression);
 
       // index expressions do not get invoked automatically
       if (isValidIdentifierLiteral(item.getter)) {
@@ -234,7 +234,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
         const index = this.aggregator.resolveTypeWithDefault(item.getter);
         let nextEntity = current.resolveProperty(
           index,
-          item.isInCallExpression
+          itemNoInvoke
         );
 
         if (nextEntity == null) {

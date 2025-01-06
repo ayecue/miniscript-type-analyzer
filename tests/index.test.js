@@ -133,6 +133,36 @@ describe('type-manager', () => {
 
       expect(Array.from(scope.resolveProperty('foo').types)).toEqual(['string', 'number']);
     });
+
+    test('should return entity properly depending on resolve chain', () => {
+      const doc = getDocument(`
+        test = {}
+
+        // @return {string}
+        test.testFn = function(a = 2, b = "test")
+        end function
+
+        a = test["testFn"]()
+        b = test["testFn"]
+        c = @test["testFn"]()
+        d = @test["testFn"]
+
+        e = @test.testFn
+        f = @test.testFn()
+        g = test.testFn
+        h = test.testFn()
+      `);
+      const scope = doc.getRootScopeContext().scope;
+
+      expect(Array.from(scope.resolveProperty('a', true).types)).toEqual(['string']);
+      expect(Array.from(scope.resolveProperty('b', true).types)).toEqual(['function']);
+      expect(Array.from(scope.resolveProperty('c', true).types)).toEqual(['string']);
+      expect(Array.from(scope.resolveProperty('d', true).types)).toEqual(['function']);
+      expect(Array.from(scope.resolveProperty('e', true).types)).toEqual(['function']);
+      expect(Array.from(scope.resolveProperty('f', true).types)).toEqual(['string']);
+      expect(Array.from(scope.resolveProperty('g', true).types)).toEqual(['string']);
+      expect(Array.from(scope.resolveProperty('h', true).types)).toEqual(['string']);
+    })
   });
 
   describe('non identifier base', () => {
