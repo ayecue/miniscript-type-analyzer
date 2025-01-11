@@ -514,6 +514,35 @@ describe('type-manager', () => {
     })
   });
 
+  describe('comment parsing', () => {
+    test('should return signature description without swallowing leading asterisk', () => {
+      const doc = getDocument(`
+        // **Hello** world
+        test = function()
+        end function
+
+        // **Hello** world
+        // another line
+        foo = function()
+        end function
+
+        // **Hello** world
+        // another line
+        // @return {number}
+        bar = function()
+        end function
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signatureTest = scope.resolveProperty('test', true).signatureDefinitions.first();
+      const signatureFoo = scope.resolveProperty('foo', true).signatureDefinitions.first();
+      const signatureBar = scope.resolveProperty('bar', true).signatureDefinitions.first();
+
+      expect(signatureTest.getDescription()).toEqual("**Hello** world");
+      expect(signatureFoo.getDescription()).toEqual("**Hello** world\n\nanother line");
+      expect(signatureBar.getDescription()).toEqual("**Hello** world another line");
+    });
+  });
+
   describe('addressOf', () => {
     test('should return entity with signature', () => {
       const doc = getDocument(`

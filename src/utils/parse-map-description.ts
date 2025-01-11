@@ -1,6 +1,8 @@
 import { Block, parse, Spec } from 'comment-parser';
 import { SignatureDefinitionTypeMeta } from 'meta-utils';
 
+import { createCommentBlock } from './create-comment-block';
+
 function parseItemType(item: string): SignatureDefinitionTypeMeta {
   return SignatureDefinitionTypeMeta.fromString(item);
 }
@@ -28,9 +30,7 @@ function parseMapBlock(def: Block) {
 }
 
 export function parseMapDescription(source: string) {
-  const commentDefs = parse(`/**
-    ${source}
-  */`);
+  const commentDefs = parse(createCommentBlock(source));
   const [commentDef] = commentDefs;
 
   if (commentDef.tags.length > 0) {

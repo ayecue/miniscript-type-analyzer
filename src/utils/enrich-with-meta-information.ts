@@ -7,6 +7,8 @@ import {
   TypeParser
 } from 'meta-utils';
 
+import { createCommentBlock } from './create-comment-block';
+
 function convertSpecToString(it: Spec): string {
   return [it.name, it.description].filter((it) => it !== undefined).join(' ');
 }
@@ -62,9 +64,7 @@ function parseFunctionBlock(def: Block) {
 }
 
 export function enrichWithMetaInformation(item: SignatureDefinitionFunction) {
-  const commentDefs = parse(`/**
-    ${item.getDescription()}
-  */`);
+  const commentDefs = parse(createCommentBlock(item.getDescription()));
   const [commentDef] = commentDefs;
 
   if (commentDef.tags.length > 0) {

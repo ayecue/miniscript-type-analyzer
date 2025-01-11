@@ -59,6 +59,7 @@ import { enrichWithMetaInformation } from '../utils/enrich-with-meta-information
 import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 import { merge } from '../utils/merge';
 import { mergeUnique } from '../utils/merge-unique';
+import { normalizeText } from '../utils/normalize-text';
 import { parseMapDescription } from '../utils/parse-map-description';
 import { Entity } from './entity';
 
@@ -232,10 +233,7 @@ export class ASTChainIterator implements Iterator<IEntity> {
         current = nextEntity;
       } else {
         const index = this.aggregator.resolveTypeWithDefault(item.getter);
-        let nextEntity = current.resolveProperty(
-          index,
-          itemNoInvoke
-        );
+        let nextEntity = current.resolveProperty(index, itemNoInvoke);
 
         if (nextEntity == null) {
           nextEntity = this.defineAssumedProperty(current, index);
@@ -419,7 +417,7 @@ export class Aggregator implements IAggregator {
 
         if (item instanceof ASTComment) {
           visited.add(item);
-          lines.unshift(item.value);
+          lines.unshift(normalizeText(item.value));
         } else {
           break;
         }
@@ -427,16 +425,17 @@ export class Aggregator implements IAggregator {
 
       return lines.join('\n\n');
     } else if (currentItem instanceof ASTComment) {
-      return currentItem.value;
+      return normalizeText(currentItem.value);
     }
 
     return defaultText;
   }
 
   protected resolveFunctionStatement(item: ASTFunctionStatement) {
+    const description = this.createFunctionDescription(item);
     const signature = SignatureDefinitionFunction.parse({
       type: SignatureDefinitionBaseType.Function,
-      description: this.createFunctionDescription(item),
+      description,
       arguments: item.parameters.map((arg: ASTBase) => {
         if (arg.type === ASTType.Identifier) {
           return {
