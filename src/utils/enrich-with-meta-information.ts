@@ -10,7 +10,7 @@ import {
 import { createCommentBlock } from './create-comment-block';
 
 function convertSpecToString(it: Spec): string {
-  return [it.name, it.description].filter((it) => it !== undefined).join(' ');
+  return [`@${it.tag}`, it.name, it.description].filter((it) => it !== undefined).join(' ');
 }
 
 export enum FunctionBlockTag {
@@ -20,17 +20,19 @@ export enum FunctionBlockTag {
   Example = 'example'
 }
 
+const AllowedFunctionBlockTags: Set<string> = new Set(Object.values(FunctionBlockTag));
+
 function parseItemType(item: string): SignaturePayloadDefinitionTypeMeta {
   return new TypeParser(item).parse();
 }
 
 function parseReturnType(
-  commentType: Spec
+  commentType: Pick<Spec, 'type'>
 ): SignaturePayloadDefinitionTypeMeta[] {
   return commentType.type.split('|').map(parseItemType);
 }
 
-function parseArgType(commentType: Spec): SignaturePayloadDefinitionArg {
+function parseArgType(commentType: Pick<Spec, 'type' | 'name' | 'optional'>): SignaturePayloadDefinitionArg {
   return {
     types: commentType.type.split('|').map(parseItemType),
     label: commentType.name,
@@ -42,18 +44,22 @@ function parseFunctionBlock(def: Block) {
   const descriptions = [
     def.description ?? '',
     ...def.tags
-      .filter((it) => it.tag === FunctionBlockTag.Description)
+      .filter((it) => it.tag === FunctionBlockTag.Description || !isSupportedTag(it))
       .map(convertSpecToString)
   ].join('\n\n');
   const args: SignaturePayloadDefinitionArg[] = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Param)
     .map(parseArgType);
-  const returns = def.tags
+  let returns = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Return)
     .flatMap(parseReturnType);
   const examples = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Example)
     .map(convertSpecToString);
+
+  if (returns.length === 0) {
+    returns = parseReturnType({ type: SignatureDefinitionBaseType.Any });
+  }
 
   return {
     descriptions,
@@ -63,11 +69,16 @@ function parseFunctionBlock(def: Block) {
   };
 }
 
+function isSupportedTag(item: Pick<Spec, 'tag'>) {
+  return AllowedFunctionBlockTags.has(item.tag);
+}
+
 export function enrichWithMetaInformation(item: SignatureDefinitionFunction) {
   const commentDefs = parse(createCommentBlock(item.getDescription()));
   const [commentDef] = commentDefs;
+  const tags = commentDef.tags.filter(isSupportedTag);
 
-  if (commentDef.tags.length > 0) {
+  if (tags.length > 0) {
     const {
       descriptions: commentDescription,
       args: commentArgs,

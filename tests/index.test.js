@@ -406,6 +406,37 @@ describe('type-manager', () => {
       expect(Array.from(scope.resolveProperty('output').types)).toEqual(['crypto']);
     });
 
+    test('should return any when missing return', () => {
+      const doc = getDocument(`
+        // Hello world
+        // @param {number}
+        test = function(a)
+        end function
+        output = test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signature = scope.resolveProperty('test', true).signatureDefinitions.first();
+      const returnType = signature.getReturns()[0];
+
+      expect(returnType.type).toEqual('any');
+    });
+
+    test('should use default return when invalid tag is used', () => {
+      const doc = getDocument(`
+        // @public
+        // Hello world
+        test = function(a)
+        end function
+        output = test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signature = scope.resolveProperty('test', true).signatureDefinitions.first();
+      const returnType = signature.getReturns()[0];
+
+      expect(signature.getDescription()).toContain('@public');
+      expect(returnType.type).toEqual('any');
+    });
+
     test('should return entity of nested return value', () => {
       const doc = getDocument(`
         // Hello world
