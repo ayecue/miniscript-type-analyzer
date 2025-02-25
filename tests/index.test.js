@@ -424,6 +424,7 @@ describe('type-manager', () => {
     test('should use default return when invalid tag is used', () => {
       const doc = getDocument(`
         // @public
+        // @description Hello world
         // Hello world
         test = function(a)
         end function
@@ -434,6 +435,7 @@ describe('type-manager', () => {
       const returnType = signature.getReturns()[0];
 
       expect(signature.getDescription()).toContain('@public');
+      expect(signature.getDescription()).not.toContain('@description');
       expect(returnType.type).toEqual('any');
     });
 
@@ -451,6 +453,21 @@ describe('type-manager', () => {
 
       expect(returnType.valueType.type).toEqual('list');
       expect(returnType.valueType.valueType.type).toEqual('string');
+    });
+
+    test('should return entity when using alternative return tag', () => {
+      const doc = getDocument(`
+        // Hello world
+        // @returns {string} - Some info about return
+        test = function
+        end function
+        output = test
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const signature = scope.resolveProperty('test', true).signatureDefinitions.first();
+      const returnType = signature.getReturns()[0];
+
+      expect(returnType.type).toEqual('string');
     });
 
     test('should return entities from arguments', () => {

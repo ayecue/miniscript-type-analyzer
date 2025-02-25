@@ -10,6 +10,10 @@ import {
 import { createCommentBlock } from './create-comment-block';
 
 function convertSpecToString(it: Spec): string {
+  if (it.tag === FunctionBlockTag.Description) {
+    return [it.name, it.description].filter((it) => it !== undefined).join(' ');
+  }
+
   return [`@${it.tag}`, it.name, it.description].filter((it) => it !== undefined).join(' ');
 }
 
@@ -17,6 +21,7 @@ export enum FunctionBlockTag {
   Description = 'description',
   Param = 'param',
   Return = 'return',
+  Returns = 'returns',
   Example = 'example'
 }
 
@@ -51,7 +56,7 @@ function parseFunctionBlock(def: Block) {
     .filter((it) => it.tag === FunctionBlockTag.Param)
     .map(parseArgType);
   let returns = def.tags
-    .filter((it) => it.tag === FunctionBlockTag.Return)
+    .filter((it) => it.tag === FunctionBlockTag.Return || it.tag === FunctionBlockTag.Returns)
     .flatMap(parseReturnType);
   const examples = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Example)
