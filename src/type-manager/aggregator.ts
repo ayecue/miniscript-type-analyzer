@@ -60,6 +60,7 @@ import { isValidIdentifierLiteral } from '../utils/is-valid-identifier-literal';
 import { merge } from '../utils/merge';
 import { mergeUnique } from '../utils/merge-unique';
 import { normalizeText } from '../utils/normalize-text';
+import { parseAssignDescription } from '../utils/parse-assign-description';
 import { parseMapDescription } from '../utils/parse-map-description';
 import { Entity } from './entity';
 
@@ -329,7 +330,7 @@ export class Aggregator implements IAggregator {
     });
   }
 
-  protected createMapDescription(item: ASTBase): string | null {
+  protected resolveRelatedCommentLines(item: ASTBase): string[] | null {
     const previousItem = this._document.getLastASTItemOfLine(
       item.start.line - 1
     );
@@ -340,7 +341,7 @@ export class Aggregator implements IAggregator {
 
     if (previousItem instanceof ASTComment) {
       const visited: Set<ASTBase> = new Set();
-      const lines = [];
+      const lines: string[] = [];
       let index = item.start.line - 1;
 
       while (index >= 0) {
@@ -350,27 +351,28 @@ export class Aggregator implements IAggregator {
 
         if (item instanceof ASTComment) {
           visited.add(item);
-          lines.unshift(item.value);
+          lines.unshift(normalizeText(item.value));
         } else {
           break;
         }
       }
 
-      return lines.join('\n');
+      return lines;
     } else if (currentItem instanceof ASTComment) {
-      return currentItem.value;
+      return [normalizeText(currentItem.value)];
     }
 
     return null;
   }
 
   createCustomTypeFromMap(item: ASTBase, entity: IEntity): void {
-    const comment = this.createMapDescription(item);
+    const commentLines = this.resolveRelatedCommentLines(item);
 
-    if (comment == null) {
+    if (commentLines == null) {
       return;
     }
 
+    const comment = commentLines.join('\n');
     const result = parseMapDescription(comment);
 
     if (result == null) {
@@ -397,38 +399,13 @@ export class Aggregator implements IAggregator {
     item: ASTBase,
     defaultText: string = DEFAULT_CUSTOM_FUNCTION_DESCRIPTION
   ): string | null {
-    const previousItem = this._document.getLastASTItemOfLine(
-      item.start.line - 1
-    );
-    const currentItem = this._document.findASTItemInLine(
-      item.start.line,
-      ASTType.Comment
-    );
+    const description = this.resolveRelatedCommentLines(item);
 
-    if (previousItem instanceof ASTComment) {
-      const visited: Set<ASTBase> = new Set();
-      const lines = [];
-      let index = item.start.line - 1;
-
-      while (index >= 0) {
-        const item = this._document.getLastASTItemOfLine(index--);
-
-        if (visited.has(item)) continue;
-
-        if (item instanceof ASTComment) {
-          visited.add(item);
-          lines.unshift(normalizeText(item.value));
-        } else {
-          break;
-        }
-      }
-
-      return lines.join('\n\n');
-    } else if (currentItem instanceof ASTComment) {
-      return normalizeText(currentItem.value);
+    if (description == null) {
+      return defaultText;
     }
 
-    return defaultText;
+    return description.join('\n\n');
   }
 
   protected resolveFunctionStatement(item: ASTFunctionStatement) {
@@ -980,8 +957,26 @@ export class Aggregator implements IAggregator {
     return assignments;
   }
 
+  resolveCommentDefinition(item: ASTBase): IEntity | null {
+    const commentLines = this.resolveRelatedCommentLines(item);
+
+    if (commentLines != null) {
+      const comment = commentLines.join('\n');
+      const result = parseAssignDescription(comment);
+
+      if (result != null) {
+        return this.factory(CompletionItemKind.Variable).addTypesWithMeta(
+          result.type
+        );
+      }
+    }
+
+    return null;
+  }
+
   private analyzeAssignmentDefinition(item: ASTAssignmentStatement) {
     const value =
+      this.resolveCommentDefinition(item.init)?.setLine(item.start.line) ??
       this.resolveType(item.init)
         ?.copy({ source: this._document.source })
         .setLine(item.start.line) ??

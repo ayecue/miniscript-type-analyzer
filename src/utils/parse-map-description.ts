@@ -3,6 +3,13 @@ import { SignatureDefinitionTypeMeta } from 'meta-utils';
 
 import { createCommentBlock } from './create-comment-block';
 
+export enum MapTag {
+  Type = 'type',
+  Property = 'property'
+}
+
+const AllowedMapTags: Set<string> = new Set(Object.values(MapTag));
+
 function parseItemType(item: string): SignatureDefinitionTypeMeta {
   return SignatureDefinitionTypeMeta.fromString(item);
 }
@@ -15,13 +22,13 @@ function parseMapBlockProperty(def: Spec) {
 }
 
 function parseMapBlock(def: Block) {
-  const typeTag = def.tags.find((it) => it.tag === 'type');
+  const typeTag = def.tags.find((it) => it.tag === MapTag.Type);
 
   if (!typeTag) {
     return null;
   }
 
-  const properties = def.tags.filter((it) => it.tag === 'property');
+  const properties = def.tags.filter((it) => it.tag === MapTag.Property);
 
   return {
     type: typeTag.name,
@@ -29,11 +36,16 @@ function parseMapBlock(def: Block) {
   };
 }
 
+function isSupportedTag(item: Pick<Spec, 'tag'>) {
+  return AllowedMapTags.has(item.tag);
+}
+
 export function parseMapDescription(source: string) {
   const commentDefs = parse(createCommentBlock(source));
   const [commentDef] = commentDefs;
+  const tags = commentDef.tags.filter(isSupportedTag);
 
-  if (commentDef.tags.length > 0) {
+  if (tags.length > 0) {
     return parseMapBlock(commentDef);
   }
 

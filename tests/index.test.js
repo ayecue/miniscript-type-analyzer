@@ -425,6 +425,7 @@ describe('type-manager', () => {
       const doc = getDocument(`
         // @public
         // @description Hello world
+        // @example print "test"
         // Hello world
         test = function(a)
         end function
@@ -436,7 +437,20 @@ describe('type-manager', () => {
 
       expect(signature.getDescription()).toContain('@public');
       expect(signature.getDescription()).not.toContain('@description');
+      expect(signature.getExample().join('\n')).not.toContain('@example');
       expect(returnType.type).toEqual('any');
+    });
+
+    test('should override type resolve via define', () => {
+      const doc = getDocument(`
+        // @define {list<string>}
+        foo = 123
+      `);
+      const scope = doc.getRootScopeContext().scope;
+      const entity = scope.resolveProperty('foo', true);
+
+      expect(Array.from(entity.types)).toEqual(['list']);
+      expect(Array.from(entity.values.get('t:number').types)).toEqual(['string']);
     });
 
     test('should return entity of nested return value', () => {

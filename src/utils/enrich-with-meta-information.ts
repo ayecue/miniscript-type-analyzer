@@ -9,14 +9,6 @@ import {
 
 import { createCommentBlock } from './create-comment-block';
 
-function convertSpecToString(it: Spec): string {
-  if (it.tag === FunctionBlockTag.Description) {
-    return [it.name, it.description].filter((it) => it !== undefined).join(' ');
-  }
-
-  return [`@${it.tag}`, it.name, it.description].filter((it) => it !== undefined).join(' ');
-}
-
 export enum FunctionBlockTag {
   Description = 'description',
   Param = 'param',
@@ -25,7 +17,23 @@ export enum FunctionBlockTag {
   Example = 'example'
 }
 
-const AllowedFunctionBlockTags: Set<string> = new Set(Object.values(FunctionBlockTag));
+const AllowedFunctionBlockTags: Set<string> = new Set(
+  Object.values(FunctionBlockTag)
+);
+
+function parseDescription(it: Spec): string {
+  if (it.tag === FunctionBlockTag.Description) {
+    return [it.name, it.description].filter((it) => it !== undefined).join(' ');
+  }
+
+  return [`@${it.tag}`, it.name, it.description]
+    .filter((it) => it !== undefined)
+    .join(' ');
+}
+
+function parseExample(it: Spec): string {
+  return [it.name, it.description].filter((it) => it !== undefined).join(' ');
+}
 
 function parseItemType(item: string): SignaturePayloadDefinitionTypeMeta {
   return new TypeParser(item).parse();
@@ -37,7 +45,9 @@ function parseReturnType(
   return commentType.type.split('|').map(parseItemType);
 }
 
-function parseArgType(commentType: Pick<Spec, 'type' | 'name' | 'optional'>): SignaturePayloadDefinitionArg {
+function parseArgType(
+  commentType: Pick<Spec, 'type' | 'name' | 'optional'>
+): SignaturePayloadDefinitionArg {
   return {
     types: commentType.type.split('|').map(parseItemType),
     label: commentType.name,
@@ -49,18 +59,24 @@ function parseFunctionBlock(def: Block) {
   const descriptions = [
     def.description ?? '',
     ...def.tags
-      .filter((it) => it.tag === FunctionBlockTag.Description || !isSupportedTag(it))
-      .map(convertSpecToString)
+      .filter(
+        (it) => it.tag === FunctionBlockTag.Description || !isSupportedTag(it)
+      )
+      .map(parseDescription)
   ].join('\n\n');
   const args: SignaturePayloadDefinitionArg[] = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Param)
     .map(parseArgType);
   let returns = def.tags
-    .filter((it) => it.tag === FunctionBlockTag.Return || it.tag === FunctionBlockTag.Returns)
+    .filter(
+      (it) =>
+        it.tag === FunctionBlockTag.Return ||
+        it.tag === FunctionBlockTag.Returns
+    )
     .flatMap(parseReturnType);
   const examples = def.tags
     .filter((it) => it.tag === FunctionBlockTag.Example)
-    .map(convertSpecToString);
+    .map(parseExample);
 
   if (returns.length === 0) {
     returns = parseReturnType({ type: SignatureDefinitionBaseType.Any });
