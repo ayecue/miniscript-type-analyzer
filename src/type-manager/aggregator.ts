@@ -125,45 +125,27 @@ export class ASTChainIterator implements Iterator<IEntity> {
       (this.noInvoke && this.index === this.endIndex);
 
     if (isResolveChainItemWithIdentifier(first)) {
+      const context = document.getScopeContext(first.ref.scope)?.scope.context;
+      const parentContext = context?.getIsa();
+
       if (first.getter.name === 'globals') {
         initial = scope.globals;
       } else if (first.getter.name === 'outer') {
         initial = scope.outer;
       } else if (first.getter.name === 'locals') {
         initial = scope.locals;
-      } else if (first.getter.name === 'super') {
-        const context = document
-          .getScopeContext(first.ref.scope)
-          ?.scope.context?.getIsa();
-
-        if (context == null) {
-          initial = this.aggregator
-            .factory(CompletionItemKind.Constant)
-            .addType('null')
-            .setLabel('super');
-        } else {
-          initial = context.copy({
-            kind: CompletionItemKind.Constant,
-            label: 'super',
-            values: context.values
-          });
-        }
-      } else if (first.getter.name === 'self') {
-        const context = document.getScopeContext(first.ref.scope)?.scope
-          .context;
-
-        if (context == null) {
-          initial = this.aggregator
-            .factory(CompletionItemKind.Constant)
-            .addType('null')
-            .setLabel('self');
-        } else {
-          initial = context.copy({
-            kind: CompletionItemKind.Constant,
-            label: 'self',
-            values: context.values
-          });
-        }
+      } else if (first.getter.name === 'super' && parentContext != null) {
+        initial = parentContext.copy({
+          kind: CompletionItemKind.Constant,
+          label: 'super',
+          values: context.values
+        });
+      } else if (first.getter.name === 'self' && context != null) {
+        initial = context.copy({
+          kind: CompletionItemKind.Constant,
+          label: 'self',
+          values: context.values
+        });
       } else {
         let nextEntity = scope.resolveNamespace(
           first.getter.name,

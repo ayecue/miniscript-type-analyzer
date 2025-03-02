@@ -791,6 +791,36 @@ describe('type-manager', () => {
     });
   });
 
+  describe('self', () => {
+    test('should use self as context since context is available', () => {
+      const doc = getDocument(`
+        MyClass = {}
+        MyClass.init = function
+          self.foo = "12345"
+          self.foo
+        end function
+      `);
+      const line = doc.root.lines[5][0];
+      const aggregator = doc.getScopeContext(doc.root.scopes[0]).aggregator;
+
+      expect(Array.from(aggregator.resolveNamespace(line).types)).toEqual(['string']);
+    });
+
+    test('should use self as variable since no context is available', () => {
+      const doc = getDocument(`
+        MyClass = {}
+        MyClass = function
+          self = new MyClass
+          self.foo = "12345"
+        end function
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+
+      expect(Array.from(scope.resolveProperty('self', true).types)).toEqual(['map']);
+      expect(Array.from(scope.resolveProperty('self', true).resolveProperty('foo', true).types)).toEqual(['string']);
+    });
+  });
+
   describe('super', () => {
     test('should return entity from __isa', () => {
       const doc = getDocument(`
@@ -809,8 +839,22 @@ describe('type-manager', () => {
       const lineB = doc.root.lines[9][0];
       const aggregatorB = doc.getScopeContext(doc.root.scopes[1]).aggregator;
 
-      expect(Array.from(aggregatorA.resolveNamespace(lineA).types)).toEqual(['null']);
+      expect(Array.from(aggregatorA.resolveNamespace(lineA).types)).toEqual(['any']);
       expect(Array.from(aggregatorB.resolveNamespace(lineB).types)).toEqual(['map']);
+    });
+
+    test('should use super as variable since no context is available', () => {
+      const doc = getDocument(`
+        MyClass = {}
+        MyClass = function
+          super = new MyClass
+          super.foo = "12345"
+        end function
+      `);
+      const scope = doc.getScopeContext(doc.root.scopes[0]).scope;
+
+      expect(Array.from(scope.resolveProperty('super', true).types)).toEqual(['map']);
+      expect(Array.from(scope.resolveProperty('super', true).resolveProperty('foo', true).types)).toEqual(['string']);
     });
   });
 
