@@ -1,4 +1,4 @@
-import { hash } from 'object-code';
+import { objectHash } from './hash';
 
 export class ObjectSetIterator<T extends object> implements Iterator<T> {
   value: T[];
@@ -34,7 +34,10 @@ export class ObjectSet<T extends object> {
 
   constructor(values?: readonly T[] | null) {
     const items = values ? Array.from(values) : [];
-    const entries: [number, T][] = items.map((value) => [hash(value), value]);
+    const entries: [number, T][] = items.map((value) => [
+      objectHash(value),
+      value
+    ]);
 
     this._map = new Map(entries);
     this._first = null;
@@ -65,7 +68,7 @@ export class ObjectSet<T extends object> {
   }
 
   add(value: T): this {
-    const key = hash(value);
+    const key = objectHash(value);
     this._map.set(key, value);
     this._first ??= key;
     this._last = key;
@@ -73,7 +76,7 @@ export class ObjectSet<T extends object> {
   }
 
   delete(value: T): boolean {
-    const key = hash(value);
+    const key = objectHash(value);
     return this._map.delete(key);
   }
 

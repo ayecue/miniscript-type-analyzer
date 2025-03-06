@@ -1,3 +1,8 @@
+import { SignatureDefinitionFunction } from 'meta-utils';
+import { hash } from 'object-code';
+
+import { LRUCache } from './cache';
+
 export function rotateBits(n: number) {
   return (n >> 1) | (n << 31);
 }
@@ -11,9 +16,9 @@ export function getHashCode(value: number, offset: number = 0): number {
 }
 
 export const getStringHashCode = (function () {
-  const cache = new Map<string, number>();
+  const cache = new LRUCache<string, number>();
   const generateHash = (s: string) => {
-    let i, h;
+    let i, h: number;
     for (i = 0, h = 0; i < s.length; i++)
       h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
     return h;
@@ -26,7 +31,7 @@ export const getStringHashCode = (function () {
 
     const cachedHash = cache.get(value);
 
-    if (cachedHash !== undefined) {
+    if (cachedHash != null) {
       return cachedHash;
     }
 
@@ -35,3 +40,10 @@ export const getStringHashCode = (function () {
     return hash;
   };
 })();
+
+export function objectHash(obj: object) {
+  if (obj instanceof SignatureDefinitionFunction) {
+    return getStringHashCode(obj.getId());
+  }
+  return hash(obj);
+}

@@ -6,6 +6,7 @@ import {
   SignaturePayloadDefinitionTypeMeta,
   TypeParser
 } from 'meta-utils';
+import { nanoid } from 'nanoid';
 
 import { createCommentBlock } from './create-comment-block';
 
@@ -107,7 +108,8 @@ export function enrichWithMetaInformation(item: SignatureDefinitionFunction) {
       examples: commentExample
     } = parseFunctionBlock(commentDef);
 
-    return SignatureDefinitionFunction.parse({
+    return SignatureDefinitionFunction.parse('custom', {
+      id: nanoid(),
       type: SignatureDefinitionBaseType.Function,
       arguments: item.getArguments().map((item, index) => {
         const label = item.getLabel();

@@ -32,6 +32,7 @@ import {
   ASTUnaryExpression,
   Keyword
 } from 'miniscript-core';
+import { nanoid } from 'nanoid';
 
 import {
   AggregatorOptions,
@@ -392,7 +393,8 @@ export class Aggregator implements IAggregator {
 
   protected resolveFunctionStatement(item: ASTFunctionStatement) {
     const description = this.createFunctionDescription(item);
-    const signature = SignatureDefinitionFunction.parse({
+    const signature = SignatureDefinitionFunction.parse('custom', {
+      id: nanoid(),
       type: SignatureDefinitionBaseType.Function,
       description,
       arguments: item.parameters.map((arg: ASTBase) => {
